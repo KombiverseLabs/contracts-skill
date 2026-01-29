@@ -36,22 +36,32 @@ This forces a fresh download and runs the installer in your current session; use
 
 This installs the skill to `.agent/skills/contracts/` in your current project.
 
-### Step 2: Initialize Contracts
+### Step 2: Initialize Contracts (assistant-driven)
 
-After installation, initialize the contracts system:
+Initialization is now an assistant-driven, interactive process. Please use your AI coding assistant (recommended) or the provided local PoC tool to run initialization safely.
 
-**PowerShell:**
-```powershell
-.\.agent\skills\contracts\scripts\init-contracts.ps1 -Path "."
+Option A — Use your AI assistant (recommended):
+- Ask: **"Initialize contracts for this project"**
+- The assistant will:
+  - Run a dry-run scan and present proposed `CONTRACT.md` / `CONTRACT.yaml` drafts and diffs
+  - Ask for your explicit approval before creating or committing any files
+  - Optionally open a PR or commit locally after your approval
+
+Option B — Local PoC (manual):
+```bash
+# Show diffs (dry-run)
+node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --dry-run
+
+# Apply and write files after manual confirmation
+node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --apply
+
+# Apply and create a commit (after confirmation)
+node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --apply --commit
 ```
 
-**Or simply ask your AI assistant:**
-> "Initialize contracts for this project"
-
-The initialization will:
-- 🔍 Scan your project for modules (e.g., `src/core/*`, `src/features/*`)
-- 📝 Create `CONTRACT.md` (your spec) and `CONTRACT.yaml` (AI-maintained) for each module
-- 📋 Generate a central registry at `.contracts/registry.yaml`
+Important:
+- The assistant must present diffs and ask for an explicit YES before writing or committing files.
+- The legacy script `scripts/init-contracts.ps1` has been removed. Use the assistant-driven flow above or the local PoC.
 
 ### Step 3: Start Using
 

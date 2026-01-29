@@ -71,11 +71,11 @@ function Install-ContractsSkill {
 
         if ($Init) {
             $initScript = Join-Path $targetDir 'scripts\init-contracts.ps1'
-            if (Test-Path $initScript) { & $initScript -Path (Get-Location) -Interactive $true } else { Write-Host 'Init script not found' -ForegroundColor Yellow }
+            if (Test-Path $initScript) { & $initScript -Path (Get-Location) -Interactive $true } else { Write-Host 'Init script not found; use your Assistant to initialize or run the init PoC' -ForegroundColor Yellow }
         }
 
         Write-Host 'Installation complete.' -ForegroundColor Green
-        Write-Host "Next: pwsh $targetDir\scripts\init-contracts.ps1 -Path ." -ForegroundColor Cyan
+        Write-Host "Next: Ask your AI assistant: `Initialize contracts for this project` or run the local PoC:`node $targetDir\skill\ai\init-agent\index.js --path . --dry-run`" -ForegroundColor Cyan
     }
     finally { if (Test-Path $tempDir) { Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue } }
 }
