@@ -95,15 +95,29 @@ Supports: GitHub Copilot, Claude Code, Cursor, Windsurf, Cline, Aider
 
 ### Manual Installation
 
+**Bash / Zsh (macOS / Linux):**
 ```bash
 # Clone to your project
 git clone https://github.com/KombiverseLabs/contracts-skill.git .contracts-skill-temp
 cp -r .contracts-skill-temp/skill/ .agent/skills/contracts/
 rm -rf .contracts-skill-temp
 
-# Or clone globally for all projects
+# Or clone globally (~/.copilot/skills)
 git clone https://github.com/KombiverseLabs/contracts-skill.git ~/.copilot/skills/contracts
 ```
+
+**Windows PowerShell:**
+```powershell
+# Clone to your project
+git clone https://github.com/KombiverseLabs/contracts-skill.git .contracts-skill-temp
+Copy-Item -Path ".\.contracts-skill-temp\skill\*" -Destination ".agent\skills\contracts" -Recurse -Force
+Remove-Item -Path ".\.contracts-skill-temp" -Recurse -Force
+
+# Or clone globally (per-user profile)
+git clone https://github.com/KombiverseLabs/contracts-skill.git "$env:USERPROFILE\.copilot\skills\contracts"
+```
+
+> 💡 Hinweis: In PowerShell funktionieren Unix-Flags wie `rm -rf` oder `cp -r` nicht. Verwende stattdessen `Remove-Item -Recurse -Force` und `Copy-Item -Recurse -Force`.
 
 ---
 
