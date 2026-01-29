@@ -1,0 +1,15 @@
+#!/bin/sh
+# Prevent committing local/generated artifacts (.agent, .contracts, test-*)
+# Run: git diff --cached --name-only
+
+STAGED_FILES=$(git diff --cached --name-only)
+
+if echo "$STAGED_FILES" | grep -E '(^|/)(\.agent/|\.contracts/|test-|test_)' >/dev/null; then
+  echo "\nERROR: Attempt to commit local/generated artifacts detected." >&2
+  echo "Files matching .agent/, .contracts/, or test-* are not allowed in the repo." >&2
+  echo "Please remove them from staging and add to .gitignore if appropriate." >&2
+  echo "To unstage: git restore --staged <path>" >&2
+  exit 1
+fi
+
+exit 0

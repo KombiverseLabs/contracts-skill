@@ -348,6 +348,22 @@ changelog:
 
 Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
+### 🔒 Install local git hooks (recommended)
+
+To avoid accidentally committing local artifacts (like `.agent/`, `.contracts/`, or temporary `test-*` projects), install the repository's git hooks:
+
+Bash:
+```sh
+sh ./scripts/install-git-hooks.sh
+```
+
+PowerShell:
+```powershell
+.\scripts\install-git-hooks.ps1
+```
+
+This sets `core.hooksPath` to `.githooks` and activates the pre-commit check that prevents committing these files.
+
 ---
 
 ## License
