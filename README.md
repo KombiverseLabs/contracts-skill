@@ -11,65 +11,42 @@ Keep your AI coding assistant aligned with your specifications. Never let implem
 
 ---
 
-## 🚀 Getting Started (2 Minutes)
+## Quick Start
 
-### Step 1: Install the Skill
+1) Install
 
-**PowerShell (Windows):**
+- PowerShell:
 ```powershell
 irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1 | iex
 ```
 
-**Bash/Zsh (macOS/Linux):**
+- Bash:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.sh | bash
 ```
 
-**If the PowerShell one-liner appears silent (CDN caching or shell quirks):**
+2) Initialize (MANDATORY — assistant-driven)
 
-```powershell
-# Cache-busted fetch and execute (recommended if the one-liner prints nothing):
-$s = Invoke-RestMethod "https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1?$(Get-Date -UFormat %s)" -UseBasicParsing; Invoke-Expression $s
-```
+**This is crucial:** initialization only works when the assistant is given the initialization hook file as _context_ before asking to initialize. Mark the hook file as context in your assistant UI, then say: **"Initialize contracts for this project"**.
 
-This forces a fresh download and runs the installer in your current session; use it when `irm ... | iex` prints nothing.
+- Hook file (installed): `.agent/skills/contracts/references/assistant-hooks/init-contracts.md`
+- Hook file (repo): `skill/references/assistant-hooks/init-contracts.md`
 
-This installs the skill to `.agent/skills/contracts/` in your current project.
+The assistant will run a dry-run, show diffs, ask for your approval, then apply and optionally commit or open a PR. This is the only supported initialization method — without marking the hook file, the assistant cannot initialize.
 
-### Step 2: Initialize Contracts (assistant-driven)
+3) Manual PoC (advanced, optional)
 
-Initialization is now an assistant-driven, interactive process. Please use your AI coding assistant (recommended) or the provided local PoC tool to run initialization safely.
-
-Option A — Use your AI assistant (recommended):
-- Ask: **"Initialize contracts for this project"**
-- The assistant will:
-  - Run a dry-run scan and present proposed `CONTRACT.md` / `CONTRACT.yaml` drafts and diffs
-  - Ask for your explicit approval before creating or committing any files
-  - Optionally open a PR or commit locally after your approval
-
-Option B — Local PoC (manual):
 ```bash
-# Show diffs (dry-run)
 node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --dry-run
-
-# Apply and write files after manual confirmation
-node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --apply
-
-# Apply and create a commit (after confirmation)
+# After review
 node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --apply --commit
 ```
 
-Important:
-- The assistant must present diffs and ask for an explicit YES before writing or committing files.
-- The legacy script `scripts/init-contracts.ps1` has been removed. Use the assistant-driven flow above or the local PoC.
+4) Validate contracts
 
-### Step 3: Start Using
-
-After initialization, your AI assistant will:
-- ✅ Read `CONTRACT.md` before making any changes
-- ✅ Verify changes align with your specifications
-- ✅ Keep `CONTRACT.yaml` in sync when you update specs
-- ⚠️ Alert you if the code drifts from the contract
+```powershell
+pwsh .agent/skills/contracts/scripts/validate-contracts.ps1 -Path .
+```
 
 ---
 
@@ -198,24 +175,22 @@ When you update CONTRACT.md, the AI:
 
 ---
 
-## Quick Start
+## Quick Start (short)
 
-### Initialize Your Project
+### Initialize Your Project (MANDATORY: assistant-driven)
 
-```powershell
-# After installation, run:
-.agent/skills/contracts/scripts/init-contracts.ps1 -Path "."
-```
+**Before asking your assistant to initialize, mark the hook file as context:**
+- `.agent/skills/contracts/references/assistant-hooks/init-contracts.md`
 
-Or ask your AI assistant: **"Initialize contracts for this project"**
+Then ask: **"Initialize contracts for this project"** — the assistant will show diffs and ask for approval before writing files.
 
 ### Check for Drift
 
 ```powershell
-.agent/skills/contracts/scripts/validate-contracts.ps1
+pwsh .agent/skills/contracts/scripts/validate-contracts.ps1 -Path .
 ```
 
-Or ask: **"Check contracts"**
+Or ask your assistant: **"Check contracts"**
 
 ---
 
