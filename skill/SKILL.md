@@ -227,10 +227,12 @@ These phrases trigger specific behaviors:
 | Command | Action |
 |---------|--------|
 | "check contracts" | Scan all contracts, report drift/sync status |
-| "init contracts" | Run initialization workflow |
+| "init contracts" | Run initialization workflow (assistant-driven; see `references/assistant-hooks/init-contracts.md`) |
 | "sync contracts" | Update all YAML files from changed MDs |
 | "contract for [module]" | Show or create contract for specific module |
 | "validate contracts" | Run validation scripts, check exports |
+
+> Assistant implementers: read `references/assistant-hooks/init-contracts.md` to discover how to perform initialization safely and interactively.
 
 ---
 
