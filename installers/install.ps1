@@ -84,13 +84,19 @@ function Install-ContractsSkill {
         
         # Method 1: Try git clone (faster, preserves structure)
         if (Get-Command git -ErrorAction SilentlyContinue) {
-            git clone --depth 1 --branch $GitBranch "https://github.com/$RepoOwner/$RepoName.git" $tempDir 2>&1 | Out-Null
-            
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "Downloaded via git clone" -ForegroundColor Green
+            Push-Location
+            try {
+                git clone --depth 1 --branch $GitBranch "https://github.com/$RepoOwner/$RepoName.git" $tempDir 2>&1 | Out-Null
+                
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "Downloaded via git clone" -ForegroundColor Green
+                }
+                else {
+                    throw "Git clone failed"
+                }
             }
-            else {
-                throw "Git clone failed"
+            finally {
+                Pop-Location
             }
         }
         else {
