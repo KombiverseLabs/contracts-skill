@@ -82,14 +82,24 @@ function Install-ContractsSkill {
 
 # Auto-run if piped via iex or executed via Invoke-Expression
 $invokedByIex = $false
+$autoRunExecuted = $false
 try { if ($MyInvocation.Line -match 'iex') { $invokedByIex = $true } } catch { }
 
 if ($MyInvocation.InvocationName -match 'Invoke-Expression' -or $invokedByIex) {
     try {
         Install-ContractsSkill -Scope project
+        $autoRunExecuted = $true
     } catch {
         Write-Host "Auto-install failed: $($_.Exception.Message)" -ForegroundColor Red
     }
+}
+
+# If the script was loaded but auto-run did not execute, show a helpful hint so the one-liner isn't silent
+if (-not $autoRunExecuted) {
+    Write-Host "Installer loaded. To run the installer manually execute:" -ForegroundColor Cyan
+    Write-Host "  Install-ContractsSkill -Scope project" -ForegroundColor Cyan
+    Write-Host "Or to install and initialize in one step:" -ForegroundColor Cyan
+    Write-Host "  Install-ContractsSkill -Scope project -Init" -ForegroundColor Cyan
 }
 
 try { Export-ModuleMember -Function Install-ContractsSkill -ErrorAction Stop } catch { }
