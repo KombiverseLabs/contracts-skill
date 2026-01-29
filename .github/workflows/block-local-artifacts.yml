@@ -1,0 +1,38 @@
+name: Block local/generated artifacts
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  check-local-artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine changed files
+        run: |
+          # Fetch base branch and list changed files between base and head
+          git fetch origin ${{ github.event.pull_request.base.ref }}:base
+          files=$(git diff --name-only base...HEAD || true)
+          echo "::group::Changed files"
+          echo "$files"
+          echo "::endgroup::"
+          echo "$files" > changed.txt
+
+      - name: Block local or generated artifacts
+        run: |
+          files=$(cat changed.txt)
+          # Look for offending patterns: .agent/, .contracts/, or test-* (prefix)
+          echo "$files" | grep -E '(^|/)(\.agent/|\.contracts/|test-|test_)' > /tmp/offenders || true
+          if [ -s /tmp/offenders ]; then
+            echo "ERROR: Forbidden local/generated artifacts included in this PR:" >&2
+            cat /tmp/offenders >&2
+            echo "Remove these files from the PR (e.g., git restore --staged <path>) and add to .gitignore if appropriate." >&2
+            exit 1
+          else
+            echo "No forbidden files found."
+          fi
