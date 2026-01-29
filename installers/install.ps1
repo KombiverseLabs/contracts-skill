@@ -75,7 +75,8 @@ function Install-ContractsSkill {
         }
 
         Write-Host 'Installation complete.' -ForegroundColor Green
-        Write-Host "Next: Ask your AI assistant: `Initialize contracts for this project` or run the local PoC:`node $targetDir\skill\ai\init-agent\index.js --path . --dry-run`" -ForegroundColor Cyan
+        Write-Host "Next: Ask your AI assistant: \"Initialize contracts for this project\"" -ForegroundColor Cyan
+        Write-Host "Or run the local PoC: node $targetDir\skill\ai\init-agent\index.js --path . --dry-run" -ForegroundColor Cyan
     }
     finally { if (Test-Path $tempDir) { Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue } }
 }
