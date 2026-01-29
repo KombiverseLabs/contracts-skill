@@ -16,11 +16,18 @@ Keep your AI coding assistant aligned with your specifications. Never let implem
 1) Install
 
 - PowerShell (safer - recommended):
-```powershell
-# Robust one-liner: download to temp and run (works when piping fails)
-pwsh -NoProfile -ExecutionPolicy Bypass -Command "Invoke-RestMethod 'https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/bootstrap-install.ps1' -UseBasicParsing | Invoke-Expression"
-```
 
+  - If you have PowerShell Core (pwsh):
+  ```powershell
+  pwsh -NoProfile -ExecutionPolicy Bypass -Command "Invoke-RestMethod 'https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/bootstrap-install.ps1' -UseBasicParsing | Invoke-Expression"
+  ```
+
+  - If you don't have pwsh (Windows PowerShell):
+  ```powershell
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-RestMethod 'https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/bootstrap-install.ps1' -UseBasicParsing | Invoke-Expression"
+  ```
+
+  If neither `pwsh` nor `powershell` is available, download the bootstrap script manually and run it with an appropriate PowerShell executable.
 - Bash:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.sh | bash
