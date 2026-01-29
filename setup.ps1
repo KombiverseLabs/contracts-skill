@@ -238,10 +238,16 @@ function Download-Skill {
     
     # Try git clone first
     if (Get-Command git -ErrorAction SilentlyContinue) {
-        $cloneResult = git clone --depth 1 --branch $Branch "https://github.com/$RepoOwner/$RepoName.git" $TempDir 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Color "✓ Downloaded via git" Green
-            return Join-Path $TempDir "skill"
+        Push-Location
+        try {
+            git clone --depth 1 --branch $Branch "https://github.com/$RepoOwner/$RepoName.git" $TempDir 2>&1 | Out-Null
+            if ($LASTEXITCODE -eq 0) {
+                Write-Color "Downloaded via git" Green
+                return Join-Path $TempDir "skill"
+            }
+        }
+        finally {
+            Pop-Location
         }
     }
     
@@ -255,7 +261,7 @@ function Download-Skill {
     Remove-Item $zipPath
     
     $extractedFolder = Get-ChildItem $TempDir -Directory | Select-Object -First 1
-    Write-Color "✓ Downloaded via ZIP" Green
+    Write-Color "Downloaded via ZIP" Green
     
     return Join-Path $extractedFolder.FullName "skill"
 }
