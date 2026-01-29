@@ -248,7 +248,6 @@ function Test-SkillInstalled {
 function Get-PreferredInstallPath {
     param($Agent)
     
-    # Return first path that exists or can be created
     foreach ($path in $Agent.Paths) {
         $parent = Split-Path $path -Parent
         if ((Test-Path $parent) -or $Agent.AlwaysOffer) {
@@ -265,13 +264,11 @@ function Install-SkillToAgent {
         [hashtable]$Agent
     )
     
-    # Create parent directory if needed
     $parent = Split-Path $TargetPath -Parent
     if (-not (Test-Path $parent)) {
         New-Item -ItemType Directory -Path $parent -Force | Out-Null
     }
     
-    # Copy skill
     if (Test-Path $TargetPath) {
         Remove-Item -Recurse -Force $TargetPath
     }
@@ -296,16 +293,15 @@ function Add-InstructionHook {
         $content = Get-Content $instructionPath -Raw
         if ($content -notmatch 'Contracts System') {
             Add-Content -Path $instructionPath -Value $Agent.InstructionSnippet
-            Write-Color "    → Added hook to $($Agent.InstructionFile)" 'Gray'
+            Write-Color "    -> Added hook to $($Agent.InstructionFile)" 'Gray'
         }
     } else {
-        # Create the instruction file
         $dir = Split-Path $instructionPath -Parent
         if (-not (Test-Path $dir)) {
             New-Item -ItemType Directory -Path $dir -Force | Out-Null
         }
         Set-Content -Path $instructionPath -Value $Agent.InstructionSnippet.Trim()
-        Write-Color "    → Created $($Agent.InstructionFile)" 'Gray'
+        Write-Color "    -> Created $($Agent.InstructionFile)" 'Gray'
     }
 }
 
@@ -317,15 +313,15 @@ function Download-Skill {
     # Try git clone first
     if (Get-Command git -ErrorAction SilentlyContinue) {
         try {
-            git clone --depth 1 --branch $GitBranch "https://github.com/$RepoOwner/$RepoName.git" $TempDir 2>&1 | Out-Null
+            $gitOutput = git clone --quiet --depth 1 --branch $GitBranch "https://github.com/$RepoOwner/$RepoName.git" $TempDir 2>&1
             
-            if ($LASTEXITCODE -eq 0) {
+            if ($LASTEXITCODE -eq 0 -and (Test-Path $TempDir)) {
                 Write-Color 'Downloaded via git' 'Green'
                 return Join-Path $TempDir 'skill'
             }
         }
         catch {
-            # Git failed, continue to ZIP fallback
+            Write-Color "Git clone failed, trying ZIP fallback..." 'Yellow'
         }
     }
     
@@ -334,14 +330,22 @@ function Download-Skill {
     $zipUrl = "https://github.com/$RepoOwner/$RepoName/archive/refs/heads/$GitBranch.zip"
     $zipPath = Join-Path $env:TEMP 'contracts-skill.zip'
     
-    Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
-    Expand-Archive -Path $zipPath -DestinationPath $TempDir -Force
-    Remove-Item $zipPath
-    
-    $extractedFolder = Get-ChildItem $TempDir -Directory | Select-Object -First 1
-    Write-Color 'Downloaded via ZIP' 'Green'
-    
-    return Join-Path $extractedFolder.FullName 'skill'
+    try {
+        Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing -ErrorAction Stop
+        Expand-Archive -Path $zipPath -DestinationPath $TempDir -Force
+        Remove-Item $zipPath -ErrorAction SilentlyContinue
+        
+        $extractedFolder = Get-ChildItem $TempDir -Directory | Select-Object -First 1
+        if (-not $extractedFolder) {
+            throw "ZIP extraction failed - no directory found in $TempDir"
+        }
+        Write-Color 'Downloaded via ZIP' 'Green'
+        
+        return Join-Path $extractedFolder.FullName 'skill'
+    }
+    catch {
+        throw "Failed to download skill from GitHub: $_"
+    }
 }
 
 # Main installation flow
@@ -383,7 +387,7 @@ Write-Host ''
 if ($installedAgents.Count -gt 0) {
     Write-Color 'Already installed:' 'Green'
     foreach ($item in $installedAgents) {
-        Write-Color "  ✓ $($item.Agent.Name) → $($item.Path)" 'Gray'
+        Write-Color "  v $($item.Agent.Name) -> $($item.Path)" 'Gray'
     }
     Write-Host ''
 }
@@ -422,7 +426,7 @@ else {
     foreach ($agent in $detectedAgents) {
         $installPath = Get-PreferredInstallPath -Agent $agent
         Write-Host "  [$index] $($agent.Icon) $($agent.Name)" -NoNewline
-        Write-Host " → " -NoNewline -ForegroundColor Gray
+        Write-Host " -> " -NoNewline -ForegroundColor Gray
         Write-Host $installPath -ForegroundColor Gray
         $index++
     }
@@ -432,7 +436,7 @@ else {
     Write-Host '  [Q] Quit'
     Write-Host ''
     
-    $selection = Read-Host 'Enter selection (e.g., ''1,2'' or ''A'')'
+    $selection = Read-Host 'Enter selection (e.g., "1,2" or "A")'
     
     if ($selection -eq 'Q' -or $selection -eq 'q') {
         Write-Color 'Installation cancelled.' 'Yellow'
@@ -489,7 +493,7 @@ try {
             $success = Install-SkillToAgent -TargetPath $targetPath -SourcePath $skillSource -Agent $agent
             
             if ($success) {
-                Write-Color ' ✓' 'Green'
+                Write-Color ' v' 'Green'
                 $successCount++
                 
                 # Add instruction hook if applicable
@@ -497,11 +501,11 @@ try {
                     Add-InstructionHook -Agent $agent -ProjectPath $projectPath
                 }
             } else {
-                Write-Color ' ✗ Failed' 'Red'
+                Write-Color ' x Failed' 'Red'
             }
         }
         catch {
-            Write-Color " ✗ Error: $($_.Exception.Message)" 'Red'
+            Write-Color " x Error: $($_.Exception.Message)" 'Red'
         }
     }
     

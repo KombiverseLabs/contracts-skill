@@ -38,10 +38,10 @@ function Write-Color {
 
 function Write-Header {
     Write-Host ""
-    Write-Color "╔══════════════════════════════════════════════════════════════╗" Cyan
-    Write-Color "║           Contracts Skill - Automated Installer             ║" Cyan
-    Write-Color "║         Spec-Driven Development for AI Assistants            ║" Cyan
-    Write-Color "╚══════════════════════════════════════════════════════════════╝" Cyan
+    Write-Color "========================================" Cyan
+    Write-Color " Contracts Skill - Automated Installer" Cyan
+    Write-Color " Spec-Driven Development for AI Assistants" Cyan
+    Write-Color "========================================" Cyan
     Write-Host ""
 }
 
@@ -136,8 +136,8 @@ CONTRACT.md = user-owned specs (never edit), CONTRACT.yaml = AI-maintained.
             (Join-Path $env:USERPROFILE ".aider"),
             (Join-Path $env:USERPROFILE ".aider.conf.yml")
         )
-        InstructionFile = ".aider.conf.yml"
-        InstructionSnippet = $null  # Aider uses different config format
+        InstructionFile = $null
+        InstructionSnippet = $null
     },
     @{
         Name = "Cline (VS Code)"
@@ -200,7 +200,6 @@ function Test-SkillInstalled {
 function Get-PreferredInstallPath {
     param($Agent)
     
-    # Return first path that exists or can be created
     foreach ($path in $Agent.Paths) {
         $parent = Split-Path $path -Parent
         if ((Test-Path $parent) -or $Agent.AlwaysOffer) {
@@ -216,13 +215,11 @@ function Install-SkillToAgent {
         [string]$SourcePath
     )
     
-    # Create parent directory if needed
     $parent = Split-Path $TargetPath -Parent
     if (-not (Test-Path $parent)) {
         New-Item -ItemType Directory -Path $parent -Force | Out-Null
     }
     
-    # Copy skill
     if (Test-Path $TargetPath) {
         Remove-Item -Recurse -Force $TargetPath
     }
@@ -238,17 +235,16 @@ function Download-Skill {
     
     # Try git clone first
     if (Get-Command git -ErrorAction SilentlyContinue) {
-        Push-Location
         try {
-            git clone --depth 1 --branch $Branch "https://github.com/$RepoOwner/$RepoName.git" $TempDir 2>&1 | Out-Null
+            $gitOutput = git clone --quiet --depth 1 --branch $Branch "https://github.com/$RepoOwner/$RepoName.git" $TempDir 2>&1
             
-            if ($LASTEXITCODE -eq 0) {
+            if ($LASTEXITCODE -eq 0 -and (Test-Path $TempDir)) {
                 Write-Color "Downloaded via git" Green
                 return Join-Path $TempDir "skill"
             }
         }
-        finally {
-            Pop-Location
+        catch {
+            Write-Color "Git clone failed, trying ZIP fallback..." Yellow
         }
     }
     
@@ -257,14 +253,22 @@ function Download-Skill {
     $zipUrl = "https://github.com/$RepoOwner/$RepoName/archive/refs/heads/$Branch.zip"
     $zipPath = Join-Path $env:TEMP "contracts-skill.zip"
     
-    Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
-    Expand-Archive -Path $zipPath -DestinationPath $TempDir -Force
-    Remove-Item $zipPath
-    
-    $extractedFolder = Get-ChildItem $TempDir -Directory | Select-Object -First 1
-    Write-Color "Downloaded via ZIP" Green
-    
-    return Join-Path $extractedFolder.FullName "skill"
+    try {
+        Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing -ErrorAction Stop
+        Expand-Archive -Path $zipPath -DestinationPath $TempDir -Force
+        Remove-Item $zipPath -ErrorAction SilentlyContinue
+        
+        $extractedFolder = Get-ChildItem $TempDir -Directory | Select-Object -First 1
+        if (-not $extractedFolder) {
+            throw "ZIP extraction failed - no directory found in $TempDir"
+        }
+        Write-Color "Downloaded via ZIP" Green
+        
+        return Join-Path $extractedFolder.FullName "skill"
+    }
+    catch {
+        throw "Failed to download skill from GitHub: $_"
+    }
 }
 
 # Main installation flow
@@ -294,7 +298,7 @@ foreach ($agent in $AgentConfigs) {
     $color = switch ($status) {
         "[INSTALLED]" { "Green" }
         "[DETECTED]" { "Yellow" }
-        default { "DarkGray" }
+        default { "Gray" }
     }
     
     Write-Color "  $($agent.Icon) $($agent.Name): $status" $color
@@ -306,7 +310,7 @@ Write-Host ""
 if ($installedAgents.Count -gt 0) {
     Write-Color "Already installed:" Green
     foreach ($item in $installedAgents) {
-        Write-Color "  ✓ $($item.Agent.Name) → $($item.Path)" DarkGray
+        Write-Color "  v $($item.Agent.Name) -> $($item.Path)" Gray
     }
     Write-Host ""
 }
@@ -332,11 +336,11 @@ foreach ($agent in $detectedAgents) {
     if ($Auto) {
         $selectedAgents += @{ Agent = $agent; Path = $installPath }
         Write-Color "  [$index] $($agent.Icon) $($agent.Name)" Green
-        Write-Color "      → $installPath" DarkGray
+        Write-Color "      -> $installPath" Gray
     } else {
         Write-Host "  [$index] $($agent.Icon) $($agent.Name)" -NoNewline
-        Write-Host " → " -NoNewline -ForegroundColor DarkGray
-        Write-Host $installPath -ForegroundColor DarkGray
+        Write-Host " -> " -NoNewline -ForegroundColor Gray
+        Write-Host $installPath -ForegroundColor Gray
     }
     $index++
 }
@@ -403,34 +407,33 @@ try {
             $success = Install-SkillToAgent -TargetPath $targetPath -SourcePath $skillSource
             
             if ($success) {
-                Write-Color " ✓" Green
+                Write-Color " v" Green
                 $successCount++
                 
                 # Add instruction snippet if applicable
                 if ($agent.InstructionFile -and $agent.InstructionSnippet) {
-                    # For project-level files
                     $projectInstructionFile = Join-Path (Get-Location) $agent.InstructionFile
                     
                     if (Test-Path $projectInstructionFile) {
                         $content = Get-Content $projectInstructionFile -Raw
                         if ($content -notmatch "Contracts System") {
                             Add-Content -Path $projectInstructionFile -Value $agent.InstructionSnippet
-                            Write-Color "    → Added hook to $($agent.InstructionFile)" DarkGray
+                            Write-Color "    -> Added hook to $($agent.InstructionFile)" Gray
                         }
                     }
                 }
             } else {
-                Write-Color " ✗ Failed" Red
+                Write-Color " x Failed" Red
             }
         } catch {
-            Write-Color " ✗ Error: $($_.Exception.Message)" Red
+            Write-Color " x Error: $($_.Exception.Message)" Red
         }
     }
     
     Write-Host ""
-    Write-Color "════════════════════════════════════════════════════════════════" Cyan
+    Write-Color "========================================" Cyan
     Write-Color " Installation Complete: $successCount/$($selectedAgents.Count) agents" $(if ($successCount -eq $selectedAgents.Count) { "Green" } else { "Yellow" })
-    Write-Color "════════════════════════════════════════════════════════════════" Cyan
+    Write-Color "========================================" Cyan
     
     Write-Host ""
     Write-Color "Next steps:" Yellow
