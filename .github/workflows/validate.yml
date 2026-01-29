@@ -1,0 +1,46 @@
+name: Validate Contracts
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup PowerShell
+        shell: bash
+        run: |
+          # PowerShell Core is pre-installed on ubuntu-latest
+          pwsh --version
+          
+      - name: Validate Example Contracts
+        shell: pwsh
+        run: |
+          ./skill/scripts/validate-contracts.ps1 -Path "./examples/sample-project" -OutputFormat github-actions
+          
+      - name: Test Installation Script
+        shell: pwsh
+        run: |
+          # Dry run of install script parsing
+          $content = Get-Content ./install.ps1 -Raw
+          [scriptblock]::Create($content) | Out-Null
+          Write-Host "✅ install.ps1 syntax valid"
+          
+  test-bash-install:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Test Bash Install Script Syntax
+        run: |
+          bash -n ./install.sh
+          echo "✅ install.sh syntax valid"

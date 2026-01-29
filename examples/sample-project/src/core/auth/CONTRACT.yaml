@@ -1,0 +1,60 @@
+# CONTRACT.yaml - Technical specification derived from CONTRACT.md
+# This file is auto-synced with CONTRACT.md.
+
+meta:
+  source_hash: "sha256:2df853d87161fcf8a0f6e798260f840e32d4bb35f810d7420fa658eb5ddf5105"
+  last_sync: "2026-01-29T10:00:00Z"
+  tier: core
+  version: "1.0"
+
+module:
+  name: "auth"
+  type: "core"
+  path: "src/core/auth"
+
+features:
+  - id: "email-password-login"
+    description: "Email/password login"
+    status: implemented
+    entry_point: "./login.ts"
+    tests: "./login.test.ts"
+    
+  - id: "session-tokens"
+    description: "Session tokens with automatic refresh"
+    status: implemented
+    entry_point: "./session.ts"
+    tests: "./session.test.ts"
+    
+  - id: "oauth2-integration"
+    description: "OAuth2 integration (Google, GitHub)"
+    status: planned
+    notes: "Waiting for OAuth app credentials"
+    
+  - id: "password-reset"
+    description: "Password reset via email"
+    status: planned
+
+constraints:
+  must:
+    - "Use bcrypt with cost factor 12 for password hashing"
+    - "Expire sessions after 24 hours of inactivity"
+    - "Use HTTP-only cookies for session tokens"
+  must_not:
+    - "Store passwords in plain text"
+    - "Log sensitive authentication data"
+
+relationships:
+  depends_on: []
+  consumed_by:
+    - "src/features/dashboard"
+
+validation:
+  exports: ["login", "logout", "refreshSession", "validateSession"]
+  test_pattern: "*.test.ts"
+  custom_script: null
+
+changelog:
+  - date: "2026-01-29"
+    version: "1.0"
+    change: "Initial contract"
+    author: "system"

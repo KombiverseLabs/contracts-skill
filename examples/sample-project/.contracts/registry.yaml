@@ -1,0 +1,24 @@
+# .contracts/registry.yaml
+# Central index of all contracts in this project
+
+project:
+  name: "sample-project"
+  initialized: "2026-01-29T10:00:00Z"
+  initialized_by: "contracts-skill v1.0"
+
+contracts:
+  - path: "src/core/auth"
+    name: "Authentication"
+    tier: core
+    type: core
+    summary: "User login, logout, and session management"
+    features_count: 4
+    last_modified: "2026-01-29"
+
+  - path: "src/features/dashboard"
+    name: "Dashboard"
+    tier: standard
+    type: feature
+    summary: "Main user interface after login"
+    features_count: 4
+    last_modified: "2026-01-29"

@@ -1,0 +1,53 @@
+# CONTRACT.yaml - Technical specification derived from CONTRACT.md
+
+meta:
+  source_hash: "sha256:879c8e74d6b701bfa771d811dfd57cdba1f3991d46844c96e0c0519073c07515"
+  last_sync: "2026-01-29T10:00:00Z"
+  tier: standard
+  version: "1.0"
+
+module:
+  name: "dashboard"
+  type: "feature"
+  path: "src/features/dashboard"
+
+features:
+  - id: "profile-widget"
+    description: "User profile summary widget"
+    status: planned
+    
+  - id: "activity-feed"
+    description: "Recent activity feed"
+    status: planned
+    
+  - id: "quick-actions"
+    description: "Quick action buttons"
+    status: planned
+    
+  - id: "notifications"
+    description: "Notification center"
+    status: planned
+
+constraints:
+  must:
+    - "Load within 2 seconds on 3G connection"
+    - "Be fully responsive (mobile, tablet, desktop)"
+    - "Gracefully handle missing data"
+  must_not:
+    - "Make more than 3 API calls on initial load"
+
+relationships:
+  depends_on:
+    - "src/core/auth"
+  consumed_by: []
+
+validation:
+  exports: ["Dashboard", "DashboardWidget"]
+  test_pattern: "*.test.tsx"
+  custom_script: null
+
+changelog:
+  - date: "2026-01-29"
+    version: "1.0"
+    change: "Initial contract"
+    author: "system"
