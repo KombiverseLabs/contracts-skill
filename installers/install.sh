@@ -102,6 +102,12 @@ AGENT_PATHS["cline"]="$HOME/.cline/skills/$SKILL_NAME"
 AGENT_ICONS["cline"]="📟"
 AGENT_DETECT_PATHS["cline"]="$HOME/.cline"
 
+# OpenCode
+AGENT_NAMES["opencode"]="OpenCode"
+AGENT_PATHS["opencode"]="$HOME/.opencode/skills/$SKILL_NAME"
+AGENT_ICONS["opencode"]="🔓"
+AGENT_DETECT_PATHS["opencode"]="$HOME/.opencode:$HOME/Library/Application Support/OpenCode"
+
 # Aider
 AGENT_NAMES["aider"]="Aider"
 AGENT_PATHS["aider"]="$HOME/.aider/skills/$SKILL_NAME"

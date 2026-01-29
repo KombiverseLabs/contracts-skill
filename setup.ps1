@@ -158,6 +158,24 @@ CONTRACT.md = user specs (read-only), CONTRACT.yaml = sync when MD changes.
 "@
     },
     @{
+        Name = "OpenCode"
+        Icon = "🔓"
+        Paths = @(
+            (Join-Path $env:USERPROFILE ".opencode\skills\$SkillName")
+        )
+        DetectPaths = @(
+            (Join-Path $env:USERPROFILE ".opencode"),
+            (Join-Path $env:APPDATA "OpenCode")
+        )
+        InstructionFile = ".opencodesettings"
+        InstructionSnippet = @"
+
+# Contracts System
+Before modifying any module, check for CONTRACT.md files.
+CONTRACT.md = user-owned specs (never edit), CONTRACT.yaml = AI-maintained.
+"@
+    },
+    @{
         Name = "Project Local (.agent)"
         Icon = "📁"
         Paths = @(

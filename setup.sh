@@ -81,6 +81,11 @@ AGENTS["cline"]="Cline"
 AGENT_PATHS["cline"]="$HOME/.cline/skills/$SKILL_NAME"
 AGENT_ICONS["cline"]="📟"
 
+# OpenCode
+AGENTS["opencode"]="OpenCode"
+AGENT_PATHS["opencode"]="$HOME/.opencode/skills/$SKILL_NAME"
+AGENT_ICONS["opencode"]="🔓"
+
 # Aider
 AGENTS["aider"]="Aider"
 AGENT_PATHS["aider"]="$HOME/.aider/skills/$SKILL_NAME"
@@ -109,6 +114,9 @@ detect_agent() {
             ;;
         cline)
             [[ -d "$HOME/.cline" ]] && return 0
+            ;;
+        opencode)
+            [[ -d "$HOME/.opencode" ]] || [[ -d "$HOME/Library/Application Support/OpenCode" ]] && return 0
             ;;
         aider)
             [[ -f "$HOME/.aider.conf.yml" ]] || [[ -d "$HOME/.aider" ]] && return 0
