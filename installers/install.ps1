@@ -85,7 +85,15 @@ $invokedByIex = $false
 $autoRunExecuted = $false
 try { if ($MyInvocation.Line -match 'iex') { $invokedByIex = $true } } catch { }
 
-if ($MyInvocation.InvocationName -match 'Invoke-Expression' -or $invokedByIex) {
+# Determine if the script was piped into the shell (iex) — in that case $MyInvocation.ScriptName and $PSCommandPath are typically empty
+$scriptName = $null
+try { $scriptName = $MyInvocation.ScriptName } catch { }
+$psCommandPath = $null
+try { $psCommandPath = $PSCommandPath } catch { }
+
+$shouldAutoRun = ($invokedByIex -or ($MyInvocation.InvocationName -match 'Invoke-Expression') -or [string]::IsNullOrEmpty($scriptName) -or [string]::IsNullOrEmpty($psCommandPath))
+
+if ($shouldAutoRun) {
     try {
         Install-ContractsSkill -Scope project
         $autoRunExecuted = $true
