@@ -15,9 +15,10 @@ Keep your AI coding assistant aligned with your specifications. Never let implem
 
 1) Install
 
-- PowerShell:
+- PowerShell (safer - recommended):
 ```powershell
-irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1 | iex
+# Robust one-liner: download to temp and run (works when piping fails)
+pwsh -NoProfile -ExecutionPolicy Bypass -Command "Invoke-RestMethod 'https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/bootstrap-install.ps1' -UseBasicParsing | Invoke-Expression"
 ```
 
 - Bash:
