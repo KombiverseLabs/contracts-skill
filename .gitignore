@@ -80,3 +80,15 @@ coverage.*
 #   git rm -r --cached .agent node_modules .env .venv
 #   git commit -m "Remove ignored files from repository"
 #   git push
+
+# --- Project / test artifacts to ignore ---
+# Local agent skills and generated contracts (not source)
+.agent/
+.contracts/
+
+# Temporary test projects created during development
+test-fresh-project/
+test-installation-project/
+
+# Any folder starting with test-
+test-*/
