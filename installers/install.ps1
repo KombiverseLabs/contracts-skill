@@ -80,7 +80,16 @@ function Install-ContractsSkill {
     finally { if (Test-Path $tempDir) { Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue } }
 }
 
-# auto-run if piped via iex
-if ($MyInvocation.Line -match 'iex') { Install-ContractsSkill -Scope project }
+# Auto-run if piped via iex or executed via Invoke-Expression
+$invokedByIex = $false
+try { if ($MyInvocation.Line -match 'iex') { $invokedByIex = $true } } catch { }
+
+if ($MyInvocation.InvocationName -match 'Invoke-Expression' -or $invokedByIex) {
+    try {
+        Install-ContractsSkill -Scope project
+    } catch {
+        Write-Host "Auto-install failed: $($_.Exception.Message)" -ForegroundColor Red
+    }
+}
 
 try { Export-ModuleMember -Function Install-ContractsSkill -ErrorAction Stop } catch { }
