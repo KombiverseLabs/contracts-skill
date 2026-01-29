@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Contracts Skill Installer
-# One-liner: curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/install.sh | bash
+# One-liner: curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.sh | bash
 #
 
 set -e

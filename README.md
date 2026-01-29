@@ -29,12 +29,12 @@ git clone https://github.com/KombiverseLabs/contracts-skill.git ~/.copilot/skill
 
 **PowerShell:**
 ```powershell
-irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1 | iex
 ```
 
 **Bash/Zsh:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.sh | bash
 ```
 
 ### Automated Installer (Recommended)

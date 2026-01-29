@@ -16,15 +16,15 @@
 
 .EXAMPLE
     # One-liner install (paste in PowerShell):
-    irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/install.ps1 | iex
+    irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1 | iex
 
 .EXAMPLE
     # Install globally:
-    irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/install.ps1 | iex; Install-ContractsSkill -Scope global
+    irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1 | iex; Install-ContractsSkill -Scope global
 
 .EXAMPLE
     # Install and initialize:
-    irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/install.ps1 | iex; Install-ContractsSkill -Init
+    irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1 | iex; Install-ContractsSkill -Init
 #>
 
 $ErrorActionPreference = "Stop"
