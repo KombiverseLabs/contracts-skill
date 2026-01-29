@@ -11,21 +11,52 @@ Keep your AI coding assistant aligned with your specifications. Never let implem
 
 ---
 
-## Quick Install
+## 🚀 Getting Started (2 Minutes)
 
-### Manual Installation
+### Step 1: Install the Skill
 
-```bash
-# Clone to your project
-git clone https://github.com/KombiverseLabs/contracts-skill.git .contracts-skill-temp
-cp -r .contracts-skill-temp/skill/ .agent/skills/contracts/
-rm -rf .contracts-skill-temp
-
-# Or clone globally
-git clone https://github.com/KombiverseLabs/contracts-skill.git ~/.copilot/skills/contracts
+**PowerShell (Windows):**
+```powershell
+irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1 | iex
 ```
 
-### Simple One-Liner (Single Location)
+**Bash/Zsh (macOS/Linux):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.sh | bash
+```
+
+This installs the skill to `.agent/skills/contracts/` in your current project.
+
+### Step 2: Initialize Contracts
+
+After installation, initialize the contracts system:
+
+**PowerShell:**
+```powershell
+.\.agent\skills\contracts\scripts\init-contracts.ps1 -Path "."
+```
+
+**Or simply ask your AI assistant:**
+> "Initialize contracts for this project"
+
+The initialization will:
+- 🔍 Scan your project for modules (e.g., `src/core/*`, `src/features/*`)
+- 📝 Create `CONTRACT.md` (your spec) and `CONTRACT.yaml` (AI-maintained) for each module
+- 📋 Generate a central registry at `.contracts/registry.yaml`
+
+### Step 3: Start Using
+
+After initialization, your AI assistant will:
+- ✅ Read `CONTRACT.md` before making any changes
+- ✅ Verify changes align with your specifications
+- ✅ Keep `CONTRACT.yaml` in sync when you update specs
+- ⚠️ Alert you if the code drifts from the contract
+
+---
+
+## 📦 Installation Options
+
+### Simple One-Liner (Project Local)
 
 **PowerShell:**
 ```powershell
@@ -37,9 +68,9 @@ irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/instal
 curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.sh | bash
 ```
 
-### Automated Installer (Recommended)
+### Multi-Agent Installer (Detects All AI Assistants)
 
-Automatically detects all your AI coding assistants and installs to each one:
+Automatically finds and installs to all your AI coding assistants:
 
 **PowerShell:**
 ```powershell
@@ -51,10 +82,19 @@ irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/setup.
 curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/setup.sh | bash
 ```
 
-This will:
-- Scan for installed AI assistants (Copilot, Claude, Cursor, Windsurf, Cline, Aider)
-- Let you select which ones to install to
-- Also offer project-local installation
+Supports: GitHub Copilot, Claude Code, Cursor, Windsurf, Cline, Aider
+
+### Manual Installation
+
+```bash
+# Clone to your project
+git clone https://github.com/KombiverseLabs/contracts-skill.git .contracts-skill-temp
+cp -r .contracts-skill-temp/skill/ .agent/skills/contracts/
+rm -rf .contracts-skill-temp
+
+# Or clone globally for all projects
+git clone https://github.com/KombiverseLabs/contracts-skill.git ~/.copilot/skills/contracts
+```
 
 ---
 

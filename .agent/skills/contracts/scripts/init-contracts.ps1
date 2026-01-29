@@ -175,9 +175,6 @@ foreach ($mod in $newModules) {
         # Compute hash
         $hash = (Get-FileHash -Path $contractMd -Algorithm SHA256).Hash.ToLower()
         
-        # Determine tier based on module type (PS 5.1 compatible)
-        $tier = if ($mod.Type -eq 'core') { 'core' } else { 'standard' }
-        
         # Create CONTRACT.yaml
         $yamlContent = @"
 # CONTRACT.yaml - Technical specification derived from CONTRACT.md
@@ -186,7 +183,7 @@ foreach ($mod in $newModules) {
 meta:
   source_hash: "sha256:$hash"
   last_sync: "$(Get-Date -Format 'yyyy-MM-ddTHH:mm:ssZ')"
-  tier: $tier
+  tier: $($mod.Type -eq 'core' ? 'core' : 'standard')
   version: "1.0"
 
 module:
@@ -221,11 +218,10 @@ changelog:
     }
     
     # Add to registry
-    $tierValue = if ($mod.Type -eq 'core') { 'core' } else { 'standard' }
     $registry.contracts += @{
         path = $mod.Path.Replace('\', '/')
         name = $mod.Name
-        tier = $tierValue
+        tier = if ($mod.Type -eq 'core') { 'core' } else { 'standard' }
         type = $mod.Type
         summary = "Auto-generated contract"
     }

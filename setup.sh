@@ -1,4 +1,4 @@
-please add the .agent to#!/bin/bash
+#!/bin/bash
 #
 # Contracts Skill - Automated Installer
 # Detects AI coding assistants and installs to all of them

@@ -1,0 +1,34 @@
+﻿# CONTRACT.yaml - Technical specification derived from CONTRACT.md
+# This file is auto-synced with CONTRACT.md.
+
+meta:
+  source_hash: "sha256:328b6340d283d392373b06a2167d7f9896eca556c88e5ce6ac51c14c14e4db76"
+  last_sync: "2026-01-29T15:28:02Z"
+  tier: standard
+  version: "1.0"
+
+module:
+  name: "dashboard"
+  type: "feature"
+  path: "src/features/dashboard"
+
+features: []
+
+constraints:
+  must: []
+  must_not: []
+
+relationships:
+  depends_on: []
+  consumed_by: []
+
+validation:
+  exports: []
+  test_pattern: "*.test.ts"
+  custom_script: null
+
+changelog:
+  - date: "2026-01-29"
+    version: "1.0"
+    change: "Initial contract (auto-generated)"
+    author: "init-contracts"

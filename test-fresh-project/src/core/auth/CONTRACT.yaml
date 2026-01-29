@@ -1,0 +1,34 @@
+﻿# CONTRACT.yaml - Technical specification derived from CONTRACT.md
+# This file is auto-synced with CONTRACT.md.
+
+meta:
+  source_hash: "sha256:9464bd31635e53a031dc2fcf002012786cfd5c3726e6fd013b2eaeb878301d19"
+  last_sync: "2026-01-29T15:28:02Z"
+  tier: core
+  version: "1.0"
+
+module:
+  name: "auth"
+  type: "core"
+  path: "src/core/auth"
+
+features: []
+
+constraints:
+  must: []
+  must_not: []
+
+relationships:
+  depends_on: []
+  consumed_by: []
+
+validation:
+  exports: []
+  test_pattern: "*.test.ts"
+  custom_script: null
+
+changelog:
+  - date: "2026-01-29"
+    version: "1.0"
+    change: "Initial contract (auto-generated)"
+    author: "init-contracts"
