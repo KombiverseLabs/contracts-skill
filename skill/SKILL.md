@@ -19,7 +19,8 @@ This prevents spec drift during long development cycles by keeping requirements 
 1. **User Authority**: `CONTRACT.md` is sacred. Only the user modifies it.
 2. **Sync Obligation**: When `.md` changes, `.yaml` MUST be updated in the same session.
 3. **Drift Detection**: Hash-based verification catches silent divergence.
-4. **Minimal Overhead**: Contracts are brief (50/100 lines max) — clarity over completeness.
+4. **AI Assistance**: Initialization and analysis are AI-assisted, not script-based.
+5. **Minimal Overhead**: Contracts are brief (50/100 lines max) — clarity over completeness.
 
 ---
 
@@ -168,34 +169,73 @@ Central index of all contracts in the project:
 project:
   name: "project-name"
   initialized: "2026-01-29"
+  initialized_by: "contracts-skill v2.0 (AI-assisted)"
   
 contracts:
   - path: "src/core/auth"
     name: "Authentication"
     tier: core
+    type: core
     summary: "User login, logout, session management"
     
   - path: "src/features/dashboard"
     name: "Dashboard"
     tier: standard
+    type: feature
     summary: "Main user interface after login"
     depends_on: ["src/core/auth"]
 ```
 
 ---
 
-## Initialization Mode
+## Initialization Mode (AI-Assisted)
 
 > **Note**: This section is only used during first-time setup. See `references/initialization.md` for the full initialization workflow.
 
-**Quick Reference:**
-1. Run: `contracts --init` or ask "initialize contracts for this project"
-2. The skill scans for existing spec files (SPEC.md, ARCHITECTURE.md, ADRs)
-3. Identifies key modules that need contracts
-4. Creates draft CONTRACT.md files (presented for user approval)
-5. Generates matching CONTRACT.yaml files
-6. Creates `.contracts/registry.yaml`
-7. Adds instruction hooks to `.github/copilot-instructions.md`, `CLAUDE.md`, etc.
+The initialization is **AI-assisted** — not script-based. The AI analyzes your codebase semantically to understand:
+- Project type and structure
+- Module boundaries and complexity
+- Public APIs and exports
+- Test coverage and maturity
+
+### Quick Reference:
+
+**Ask your AI assistant:**
+```
+"Initialize contracts for this project"
+"Analyze my project and suggest contracts"
+```
+
+**Or use the CLI directly:**
+```bash
+# Analyze project and show recommendations
+node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --analyze
+
+# Preview contract drafts
+node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --dry-run
+
+# Apply after review
+node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --apply --yes
+```
+
+### How It Works
+
+1. **AI Analysis**: Scans project structure, reads configs (package.json, pyproject.toml, etc.), analyzes source code
+2. **Module Detection**: Identifies modules by complexity, not just directory patterns
+3. **Intelligent Scoring**: Ranks modules by importance (exports, test coverage, dependencies)
+4. **Contextual Drafts**: Generates CONTRACT.md content based on actual code exports
+5. **Interactive Approval**: Presents recommendations for your review before creating files
+
+### What Gets Analyzed
+
+- Configuration files (detects project type)
+- Source directory structure
+- Export patterns (functions, classes, components)
+- Test file presence
+- Import relationships
+- Code complexity metrics
+
+See `references/initialization.md` for complete details.
 
 ---
 
@@ -208,6 +248,7 @@ contracts:
 - ❌ Create code in a module without checking for contracts first
 - ❌ Ignore hash mismatches — always sync first
 - ❌ Delete or overwrite changelog entries
+- ❌ Create contract files without explicit user approval during initialization
 
 ### ALWAYS Do
 
@@ -217,6 +258,7 @@ contracts:
 - ✅ Verify feature status matches actual implementation
 - ✅ Flag when implementation deviates from contract
 - ✅ Suggest contract updates when user requests features not in spec
+- ✅ Use AI-assisted analysis for initialization (not pattern matching)
 
 ---
 
@@ -226,8 +268,8 @@ These phrases trigger specific behaviors:
 
 | Command | Action |
 |---------|--------|
+| "init contracts" | Run AI-assisted initialization workflow (see `references/assistant-hooks/init-contracts.md`) |
 | "check contracts" | Scan all contracts, report drift/sync status |
-| "init contracts" | Run initialization workflow (assistant-driven; see `references/assistant-hooks/init-contracts.md`) |
 | "sync contracts" | Update all YAML files from changed MDs |
 | "contract for [module]" | Show or create contract for specific module |
 | "validate contracts" | Run validation scripts, check exports |
@@ -249,8 +291,11 @@ For automated CI/CD integration, use the validation script:
 
 ## References
 
-- `references/initialization.md` — Full initialization workflow
+- `references/initialization.md` — AI-assisted initialization workflow
+- `references/assistant-hooks/init-contracts.md` — Implementation guide for AI assistants
+- `references/cheatsheet.md` — Quick reference
 - `references/templates/` — Templates for different module types
+- `ai/init-agent/analyzer.js` — Semantic analysis engine
 - `scripts/validate-contracts.ps1` — CI/CD validation script
 - `scripts/compute-hash.ps1` — Hash computation utility
 
@@ -265,7 +310,7 @@ For automated CI/CD integration, use the validation script:
  ## Core Features
  - [x] Login with email/password
  - [x] Session management
-+- [ ] OAuth2 integration (Google, GitHub)
+ +- [ ] OAuth2 integration (Google, GitHub)
 ```
 
 **AI Response:**
@@ -298,4 +343,39 @@ The CONTRACT.md has changed since last sync.
 Please review changes before I update the YAML.
 
 Show diff? [y/n]
+```
+
+### Example: AI-Assisted Initialization
+
+```
+🔍 AI-Assisted Project Analysis
+================================
+
+Project: my-app (nodejs)
+Type: Node.js/Express application
+
+📊 Found 8 potential modules
+
+1. ○ auth (core, core)
+   Path: src/core/auth
+   Files: 5, Lines: ~340, Score: 82.5
+   Exports: login, logout, validateSession, refreshToken, hashPassword
+
+2. ○ dashboard (feature, standard)
+   Path: src/features/dashboard
+   Files: 8, Lines: ~520, Score: 78.0
+   Exports: Dashboard, Widget, Chart
+
+📋 Top Recommendations for Contracts:
+=====================================
+
+1. auth
+   Reason: core functionality, public API surface, test coverage exists
+   Suggested tier: core
+
+2. dashboard
+   Reason: significant codebase, complex structure
+   Suggested tier: standard
+
+💡 Run with --recommend to generate contract drafts for these modules
 ```

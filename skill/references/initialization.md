@@ -1,254 +1,286 @@
-# Contracts Initialization Workflow
+# Contracts Initialization Workflow (AI-Assisted)
 
-This document describes the one-time initialization process for setting up the contracts system in a project.
+This document describes the AI-assisted initialization process for setting up the contracts system in a project.
+
+> **What's New in v2.0**: The initialization is now AI-assisted rather than script-based. The AI analyzes your codebase semantically to understand its structure and purpose, then recommends appropriate contracts rather than following fixed patterns.
+
+---
+
+## Overview
+
+The AI-assisted initialization process:
+
+1. **Analyzes** your project structure semantically (not just pattern matching)
+2. **Understands** the codebase by reading configs, READMEs, and source files
+3. **Identifies** modules that would benefit from contracts
+4. **Generates** intelligent contract drafts with context-aware content
+5. **Presents** recommendations for your review and approval
+
+---
 
 ## Prerequisites
 
 - Access to the project root directory
-- Ability to read existing documentation (README, SPEC, ARCHITECTURE files)
+- The `contracts` skill installed in your AI assistant
 - Permission to create new files and directories
-
-## Initialization Steps
-
-### Phase 1: Discovery
-
-1. **Scan for Existing Specifications**
-   
-   Search for files that contain project requirements:
-   ```
-   - README.md (project overview)
-   - SPEC.md, SPECIFICATION.md
-   - ARCHITECTURE.md, DESIGN.md
-   - docs/architecture/*.md
-   - docs/specs/*.md
-   - .adr/, docs/adr/ (Architecture Decision Records)
-   - requirements.txt, requirements/*.md
-   ```
-
-2. **Identify Module Structure**
-   
-   Detect the project's organizational pattern:
-   ```
-   - src/features/* → Feature modules
-   - src/core/* → Core modules
-   - src/lib/* → Utility modules
-   - src/components/* → UI components (may group by feature)
-   - packages/* → Monorepo packages
-   - apps/* → Multi-app structure
-   ```
-
-3. **Evaluate Existing Docs**
-   
-   For each spec document found:
-   - Extract core requirements
-   - Identify module boundaries
-   - Note constraints and success criteria
-   - Map to discovered module structure
-
-### Phase 2: Planning
-
-1. **Propose Contract Locations**
-   
-   Present a list to the user:
-   ```markdown
-   ## Proposed Contracts
-   
-   Based on project analysis, I recommend contracts for:
-   
-   | Location | Type | Reason |
-   |----------|------|--------|
-   | src/core/auth | core | Handles authentication, critical path |
-   | src/core/database | core | Data layer, many dependencies |
-   | src/features/dashboard | standard | Main user interface |
-   | src/features/settings | standard | User configuration |
-   | src/lib/utils | core | Shared utilities |
-   
-   Approve this list? Or modify? [approve/modify/add/remove]
-   ```
-
-2. **Determine Tiers**
-   
-   For each proposed contract:
-   - `core` (30 lines) — Single responsibility, foundational
-   - `standard` (50 lines) — Typical feature scope
-   - `complex` (80 lines) — Integration or orchestration layer
-
-3. **Map Dependencies**
-   
-   Identify relationships:
-   ```yaml
-   # Example dependency map
-   src/features/dashboard:
-     depends_on: [src/core/auth, src/core/database]
-   src/features/settings:
-     depends_on: [src/core/auth]
-   ```
-
-### Phase 3: Generation
-
-1. **Create .contracts Directory**
-   
-   ```
-   .contracts/
-   ├── registry.yaml        # Central index
-   └── templates/           # (Optional) Custom templates
-   ```
-
-2. **Generate CONTRACT.md Drafts**
-   
-   For each approved location:
-   - Use appropriate template (feature/core/integration)
-   - Pre-fill from discovered specifications
-   - Mark as DRAFT for user review
-   
-   ```markdown
-   <!-- DRAFT: Please review and modify, then remove this line -->
-   # Authentication
-   
-   ## Purpose
-   [Extracted from existing docs or inferred]
-   
-   ## Core Features
-   - [ ] Feature 1
-   - [ ] Feature 2
-   
-   ## Constraints
-   - MUST: [From existing specs]
-   
-   ## Success Criteria
-   [Inferred or placeholder]
-   ```
-
-3. **Present Drafts for Approval**
-   
-   Show each draft to user:
-   ```
-   ## Draft Contract: src/core/auth/CONTRACT.md
-   
-   [content]
-   
-   ---
-   Actions:
-   - [a]pprove as-is
-   - [e]dit inline
-   - [s]kip this module
-   - [r]egenerate with different focus
-   ```
-
-4. **Generate CONTRACT.yaml Files**
-   
-   After user approves each .md:
-   - Compute source_hash
-   - Set initial metadata
-   - Map features to technical structure
-   - Detect existing files as entry points
-   - Set all features to appropriate status
-
-5. **Create Registry**
-   
-   Compile all contracts into `.contracts/registry.yaml`:
-   ```yaml
-   project:
-     name: "project-name"
-     initialized: "2026-01-29T10:00:00Z"
-     initialized_by: "contracts-skill v1.0"
-     
-   contracts:
-     - path: "src/core/auth"
-       name: "Authentication"
-       tier: core
-       summary: "User authentication and session management"
-       features_count: 4
-       status: initialized
-   ```
-
-### Phase 4: Integration
-
-1. **Add Instruction Hooks**
-   
-   Append to IDE instruction files:
-   
-   **`.github/copilot-instructions.md`:**
-   ```markdown
-   ## Contracts
-   
-   This project uses the contracts system for spec-driven development.
-   Before modifying any module, consult `contracts` skill and check for CONTRACT.md files.
-   ```
-   
-   **`CLAUDE.md` / `.claude/instructions.md`:**
-   ```markdown
-   ## Contracts System
-   
-   Before any code changes, check for CONTRACT.md in the target directory.
-   See `.agent/skills/contracts/SKILL.md` for full workflow.
-   ```
-   
-   **`.cursorrules`:**
-   ```markdown
-   # Contracts
-   Always check for CONTRACT.md before modifying code. Never edit CONTRACT.md files.
-   ```
-
-2. **Optionally Add Git Hooks**
-   
-   If user approves, create pre-commit hook:
-   ```bash
-   # .git/hooks/pre-commit
-   .agent/skills/contracts/scripts/validate-contracts.ps1
-   ```
-
-### Phase 5: Completion
-
-1. **Summary Report**
-   
-   ```markdown
-   ## Initialization Complete
-   
-   Created:
-   - 5 CONTRACT.md files
-   - 5 CONTRACT.yaml files
-   - 1 registry.yaml
-   - Instruction hooks in 2 files
-   
-   Contracts Index:
-   | Module | Tier | Features | Status |
-   |--------|------|----------|--------|
-   | auth | core | 4 | ready |
-   | database | core | 3 | ready |
-   | dashboard | standard | 6 | ready |
-   | settings | standard | 4 | ready |
-   | utils | core | 2 | ready |
-   
-   Next Steps:
-   1. Review each CONTRACT.md and adjust as needed
-   2. Run "check contracts" to verify sync
-   3. Start development with contract-aware workflow
-   ```
-
-2. **Self-Update Skill**
-   
-   After initialization, the main SKILL.md no longer needs the initialization section.
-   The skill now operates in "maintenance mode" with focus on:
-   - Drift detection
-   - Sync on changes
-   - Validation
-   - New module contract creation
 
 ---
 
-## Re-Initialization
+## Initialization Methods
 
-If contracts need to be reset:
+### Method 1: AI Assistant Command (Recommended)
+
+Ask your AI assistant:
 
 ```
-contracts --reinit
+"Initialize contracts for this project"
+"Analyze my project and suggest contracts"
+"Set up contracts using AI-assisted initialization"
 ```
 
-This will:
-1. Backup existing contracts to `.contracts/backup/[timestamp]/`
-2. Run discovery again
-3. Merge or replace as user chooses
+The AI will:
+1. Run semantic analysis on your project
+2. Present recommended modules with reasoning
+3. Generate draft contracts for your review
+4. Create files after your approval
+
+### Method 2: Direct Tool Usage
+
+```bash
+# Analyze project and show recommendations
+node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --analyze
+
+# Generate contract drafts for recommended modules
+node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --recommend
+
+# Preview what would be created (dry-run)
+node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --dry-run
+
+# Apply and create files (with confirmation)
+node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --apply --yes
+
+# Create contract for specific module
+node .agent/skills/contracts/skill/ai/init-agent/index.js --module ./src/auth --yes
+```
+
+---
+
+## How AI Analysis Works
+
+### Phase 1: Project Discovery
+
+The AI analyzes:
+
+```
+Configuration Files:
+├── package.json (Node.js projects)
+├── pyproject.toml / setup.py (Python projects)
+├── go.mod (Go projects)
+├── Cargo.toml (Rust projects)
+└── README.md (All projects)
+
+Source Structure:
+├── Detects project type from configs
+├── Identifies source directories (src/, lib/, app/, etc.)
+├── Maps module boundaries
+└── Finds entry points and public APIs
+```
+
+### Phase 2: Semantic Module Analysis
+
+For each potential module, the AI evaluates:
+
+| Factor | What it measures | Impact |
+|--------|------------------|--------|
+| **Code Volume** | Lines of code, file count | Module importance |
+| **Complexity** | Subdirectory depth, structure | Tier assignment (core/standard/complex) |
+| **Public API** | Exports, entry points | Feature extraction |
+| **Test Coverage** | Presence of test files | Module maturity |
+| **Relationships** | Import patterns | Dependency mapping |
+
+### Phase 3: Intelligent Recommendations
+
+Based on the analysis, the AI:
+
+1. **Scores** each module by relevance
+2. **Ranks** modules by importance
+3. **Suggests** appropriate tiers (core/standard/complex)
+4. **Generates** context-aware contract content
+5. **Explains** why each contract is recommended
+
+---
+
+## Understanding Recommendations
+
+When the AI presents recommendations, you'll see:
+
+```
+📋 Top Recommendations for Contracts:
+=====================================
+
+1. Authentication
+   Reason: core functionality, public API surface, test coverage exists
+   Suggested tier: core
+   Path: src/core/auth
+
+2. Dashboard
+   Reason: significant codebase, complex structure
+   Suggested tier: standard
+   Path: src/features/dashboard
+```
+
+### Recommendation Reasons
+
+| Reason | Meaning |
+|--------|---------|
+| "core functionality" | Foundational module with many dependents |
+| "public API surface" | Exports functions/classes used by other modules |
+| "significant codebase" | Large amount of code (>200 lines) |
+| "complex structure" | Multiple subdirectories or intricate organization |
+| "test coverage exists" | Already has tests, indicating mature code |
+
+---
+
+## Contract Draft Generation
+
+The AI generates contract drafts with:
+
+### From Code Analysis:
+- **Purpose**: Inferred from exports and module name
+- **Features**: Extracted from public API exports
+- **Constraints**: Based on error handling patterns found
+- **Success Criteria**: Derived from existing tests
+
+### From Project Context:
+- **Module Type**: Determined by location (core/, features/, etc.)
+- **Tier**: Based on complexity metrics
+- **Relationships**: From import analysis
+
+Example AI-generated draft:
+
+```markdown
+<!-- DRAFT: Please review and modify, then remove this line -->
+# Authentication
+
+## Purpose
+Provides login, logout, validateSession, refreshToken functions.
+
+## Core Features
+- [ ] login: Implementation pending
+- [ ] logout: Implementation pending
+- [ ] validateSession: Implementation pending
+- [ ] refreshToken: Implementation pending
+
+## Constraints
+- MUST: Maintain backward compatibility for public API
+- MUST: Have comprehensive test coverage
+- MUST: Follow project coding standards
+- MUST NOT: Introduce circular dependencies
+
+## Success Criteria
+Module functions as expected and integrates with the rest of the application.
+```
+
+---
+
+## Review and Approval Process
+
+### Step 1: Review Recommendations
+
+The AI presents a list of recommended modules. You can:
+- ✅ **Approve** - Accept all recommendations
+- 📝 **Modify** - Select specific modules
+- ➕ **Add** - Suggest additional modules
+- ➖ **Skip** - Exclude specific modules
+
+### Step 2: Review Drafts
+
+For each contract, review:
+- Is the **purpose** accurate?
+- Are the **features** complete?
+- Are the **constraints** appropriate?
+- Is the **tier** correct?
+
+### Step 3: Apply Changes
+
+After your approval, the AI:
+1. Creates CONTRACT.md files (marked as DRAFT)
+2. Creates CONTRACT.yaml files with proper hashes
+3. Updates/creates `.contracts/registry.yaml`
+4. Presents a summary
+
+---
+
+## Post-Initialization
+
+### Files Created
+
+```
+your-project/
+├── .contracts/
+│   └── registry.yaml          # Central contract index
+├── src/
+│   ├── core/
+│   │   └── auth/
+│   │       ├── CONTRACT.md    # User-owned specification (DRAFT)
+│   │       └── CONTRACT.yaml  # Technical mapping
+│   └── features/
+│       └── dashboard/
+│           ├── CONTRACT.md    # User-owned specification (DRAFT)
+│           └── CONTRACT.yaml  # Technical mapping
+```
+
+### Next Steps
+
+1. **Review CONTRACT.md files**
+   - Remove the `<!-- DRAFT -->` comment when ready
+   - Adjust purpose, features, and constraints as needed
+
+2. **Ask AI to help implement**
+   ```
+   "Help me implement the authentication contract"
+   "Check what's missing from the dashboard contract"
+   ```
+
+3. **Monitor sync status**
+   ```
+   "Check contracts"
+   "Are my contracts in sync?"
+   ```
+
+---
+
+## Supported Project Types
+
+The AI-assisted initialization recognizes:
+
+| Type | Detection | Analysis Features |
+|------|-----------|-------------------|
+| **Node.js** | package.json | ES6/CJS exports, test patterns |
+| **Python** | pyproject.toml, setup.py | `__init__.py`, `__all__` exports |
+| **Go** | go.mod | Package structure, main packages |
+| **Rust** | Cargo.toml | Module hierarchy |
+| **Generic** | README.md | Directory structure heuristics |
+
+---
+
+## Customization
+
+### For Specific Modules
+
+If the AI misses a module:
+
+```bash
+# Create contract for specific path
+node .agent/skills/contracts/skill/ai/init-agent/index.js --module ./src/my-module --yes
+```
+
+### For Custom Project Structures
+
+Projects with non-standard layouts can still be analyzed. The AI will:
+1. Scan all directories (respecting ignore patterns)
+2. Identify modules by code complexity
+3. Suggest appropriate contracts
 
 ---
 
@@ -256,22 +288,82 @@ This will:
 
 ### "No modules detected"
 
-The project structure doesn't match common patterns. Manually specify:
-```
-init contracts for: src/services/auth, src/services/api, src/ui/components
+**Cause**: Project structure doesn't match common patterns.
+
+**Solutions**:
+- Ensure you have source files (not just configs)
+- Check that files aren't in ignored directories
+- Use `--module` to create contracts manually
+
+### "All recommendations already have contracts"
+
+**Cause**: Contracts already exist for the main modules.
+
+**Solutions**:
+- Use `--force` to regenerate drafts
+- Review existing contracts with "check contracts"
+- Add contracts for smaller modules manually
+
+### "Generated drafts don't match my project well"
+
+**Cause**: AI analysis didn't fully capture project semantics.
+
+**Solutions**:
+- Review and edit the DRAFT comments
+- Provide feedback to your AI assistant
+- The AI will learn from your edits for future contracts
+
+---
+
+## Re-Initialization
+
+To regenerate contracts:
+
+```bash
+# Backup existing contracts and re-analyze
+node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --apply --force --yes
 ```
 
-### "Existing CONTRACT.md found"
-
-Skip or merge:
-- Skip: Preserve existing contract, just ensure YAML exists
-- Merge: Combine discovered specs with existing contract
-
-### "Can't determine project type"
-
-Provide hints:
+Or ask your AI:
 ```
-init contracts --type=nextjs
-init contracts --type=python
-init contracts --type=monorepo
+"Re-initialize contracts for this project, backing up existing ones"
 ```
+
+---
+
+## Migration from v1.0
+
+If you have contracts created with the old pattern-based initialization:
+
+1. Your existing contracts remain valid
+2. The new AI analysis may suggest additional modules
+3. Old and new contracts work together seamlessly
+4. Consider running analysis to discover any missing contracts
+
+---
+
+## Best Practices
+
+### For AI Assistants
+
+1. **Always analyze first** - Run `--analyze` before recommending contracts
+2. **Explain reasoning** - Tell the user why each module was selected
+3. **Present drafts** - Show the generated content before creating files
+4. **Respect existing** - Don't overwrite without `--force`
+5. **Wait for approval** - Never create files without explicit user consent
+
+### For Users
+
+1. **Review DRAFT comments** - They're there for your attention
+2. **Adjust tiers** - If the AI suggests 'standard' but it's core, change it
+3. **Add missing features** - The AI extracts exports, but may miss some
+4. **Refine constraints** - Add project-specific rules the AI couldn't know
+5. **Iterate** - Contracts evolve with your project
+
+---
+
+## Related Documentation
+
+- [`SKILL.md`](../SKILL.md) - Main skill documentation
+- [`cheatsheet.md`](cheatsheet.md) - Quick reference
+- [`assistant-hooks/init-contracts.md`](assistant-hooks/init-contracts.md) - Implementation guide for AI assistants
