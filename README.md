@@ -25,6 +25,15 @@ irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/instal
 curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.sh | bash
 ```
 
+**If the PowerShell one-liner appears silent (CDN caching or shell quirks):**
+
+```powershell
+# Cache-busted fetch and execute (recommended if the one-liner prints nothing):
+$s = Invoke-RestMethod "https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1?$(Get-Date -UFormat %s)" -UseBasicParsing; Invoke-Expression $s
+```
+
+This forces a fresh download and runs the installer in your current session; use it when `irm ... | iex` prints nothing.
+
 This installs the skill to `.agent/skills/contracts/` in your current project.
 
 ### Step 2: Initialize Contracts
