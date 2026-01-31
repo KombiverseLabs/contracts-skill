@@ -20,18 +20,12 @@ Keep your AI coding assistant aligned with your specifications. Never let implem
 
 Choose your preferred method:
 
-# Contracts Skill
+Recommended (most robust one-liner; downloads installer then runs it, while keeping interactive agent + UI selection prompts):
 
-Spec-driven development with living contracts for AI-assisted coding. The goal is to prevent spec drift by keeping requirements (`CONTRACT.md`) and an AI-maintained technical mirror (`CONTRACT.yaml`) in sync.
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Works with: Copilot](https://img.shields.io/badge/Works%20with-GitHub%20Copilot-blue)](https://github.com/features/copilot)
-
----
-
-## Quick Start
-
-### 1) Install
+```powershell
+# PowerShell
+irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/bootstrap-install.ps1 | iex
+```
 
 Recommended (interactive multi-agent installer):
 
@@ -60,7 +54,22 @@ curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main
 Optional: add the Contracts UI into your repo (copies to `./contracts-ui/`):
 
 ```powershell
-irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1 | iex -UI minimal-ui
+$script = irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1
+& ([scriptblock]::Create($script)) -UI minimal-ui
+```
+
+Optional: choose agents explicitly (still works with UI choice):
+
+```powershell
+$script = irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1
+& ([scriptblock]::Create($script)) -Agents "copilot,claude" -UI minimal-ui
+```
+
+Optional: same, but using the bootstrap installer while passing args through:
+
+```powershell
+$boot = irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/bootstrap-install.ps1
+& ([scriptblock]::Create($boot)) -InstallerArgs @('-Agents','copilot,claude','-UI','minimal-ui')
 ```
 
 ### 2) Initialize contracts (AI-assisted)
@@ -164,4 +173,3 @@ sh ./scripts/install-git-hooks.sh
 ## License
 
 MIT © KombiverseLabs
-## Installation Options
