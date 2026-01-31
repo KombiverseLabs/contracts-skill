@@ -18,11 +18,14 @@
     .\setup.ps1 -Auto
 #>
 
+& {
+[CmdletBinding()]
 param(
     [switch]$Auto,
 
     [ValidateSet('minimal-ui','php-ui','none')]
-    [string]$UI = $null,
+    [Alias('UI')]
+    [string]$UiMode = $null,
 
     [switch]$InstallUI,
 
@@ -616,7 +619,7 @@ function Install-ContractsUI {
     }
 
     if (Test-Path (Join-Path $dest 'index.html')) {
-        try { Write-ContractsBundle -ProjectRoot (Get-Location) -UiDir $dest } catch { Write-Color "Warning: failed to generate contracts-bundle.js ($_)" Yellow }
+        try { Write-ContractsBundle -ProjectRoot (Get-Location) -UiDir $dest } catch { Write-Color "Warning: failed to generate contracts-bundle.js ($_ )" Yellow }
         Write-Color "Installed Contracts UI (minimal-ui) -> .\$TargetDir" Green
         Write-Color "Open: $TargetDir\index.html (auto-loads this project)" Gray
         return $true
@@ -689,7 +692,7 @@ if ($Auto) {
         Write-Color "No detected agents found." Yellow
         Write-Host ""
         Write-Color "Tip: Run this in a project directory to install locally to .agent/skills/" Cyan
-        exit 0
+        return
     }
     foreach ($agent in $detectedAgents) {
         $selectedAgents += @{ Agent = $agent; Path = (Get-PreferredInstallPath -Agent $agent) }
@@ -698,7 +701,7 @@ if ($Auto) {
     $chosenAgents = Select-AgentsCheckbox -AllAgents $allOfferAgents -DetectedByName $detectedByName -InstalledByName $installedByName
     if ($chosenAgents.Count -eq 0) {
         Write-Color "No agents selected." Yellow
-        exit 0
+        return
     }
 
     foreach ($agent in $chosenAgents) {
@@ -714,7 +717,7 @@ if ($Auto) {
 
 if ($selectedAgents.Count -eq 0) {
     Write-Color "No agents selected." Yellow
-    exit 0
+    return
 }
 
 Write-Host ""
@@ -785,7 +788,7 @@ try {
 
     # Optional: install the web UI into the current project
     $uiType = $null
-    if ($UI) { $uiType = $UI }
+    if ($UiMode) { $uiType = $UiMode }
     elseif ($InstallUI) { $uiType = 'minimal-ui' }
 
     if (-not $uiType -and -not $SkipUI -and (Test-IsContractsSkillRepo -Path (Get-Location))) {
@@ -829,3 +832,5 @@ try {
         Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue
     }
 }
+
+} @args
