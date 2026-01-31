@@ -1,0 +1,15 @@
+{
+  "name": "contracts-skill",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test tests/ui",
+    "test:installer": "playwright test tests/installer",
+    "test:update": "playwright test --update-snapshots",
+    "test:ui:update": "playwright test tests/ui --update-snapshots"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

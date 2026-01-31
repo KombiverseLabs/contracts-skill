@@ -48,19 +48,19 @@ The AI will:
 
 ```bash
 # Analyze project and show recommendations
-node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --analyze
+node .github/skills/contracts/ai/init-agent/index.js --path . --analyze
 
 # Generate contract drafts for recommended modules
-node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --recommend
+node .github/skills/contracts/ai/init-agent/index.js --path . --recommend
 
 # Preview what would be created (dry-run)
-node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --dry-run
+node .github/skills/contracts/ai/init-agent/index.js --path . --dry-run
 
 # Apply and create files (with confirmation)
-node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --apply --yes
+node .github/skills/contracts/ai/init-agent/index.js --path . --apply --yes
 
 # Create contract for specific module
-node .agent/skills/contracts/skill/ai/init-agent/index.js --module ./src/auth --yes
+node .github/skills/contracts/ai/init-agent/index.js --module ./src/auth --yes
 ```
 
 ---
@@ -272,7 +272,7 @@ If the AI misses a module:
 
 ```bash
 # Create contract for specific path
-node .agent/skills/contracts/skill/ai/init-agent/index.js --module ./src/my-module --yes
+node .github/skills/contracts/ai/init-agent/index.js --module ./src/my-module --yes
 ```
 
 ### For Custom Project Structures
@@ -321,7 +321,7 @@ To regenerate contracts:
 
 ```bash
 # Backup existing contracts and re-analyze
-node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --apply --force --yes
+node .github/skills/contracts/ai/init-agent/index.js --path . --apply --force --yes
 ```
 
 Or ask your AI:

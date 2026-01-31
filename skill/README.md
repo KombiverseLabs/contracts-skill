@@ -16,7 +16,7 @@ This prevents the common problem of "spec drift" where implementations gradually
 Copy the `contracts` folder to your agent skills directory:
 
 ```
-.agent/skills/contracts/
+.github/skills/contracts/
 ├── SKILL.md                 # Main skill definition
 ├── references/
 │   ├── initialization.md    # Full init workflow
@@ -24,6 +24,7 @@ Copy the `contracts` folder to your agent skills directory:
 │   └── templates/           # File templates
 └── scripts/
     ├── init-contracts.ps1   # Project initialization
+  ├── init-contracts.sh    # Project initialization (bash)
     ├── validate-contracts.ps1  # CI/CD validation
     └── compute-hash.ps1     # Hash utility
 ```
@@ -40,6 +41,12 @@ Or run the PowerShell script:
 
 ```powershell
 .\.agent\skills\contracts\scripts\init-contracts.ps1 -Path "."
+```
+
+Or run the Bash script:
+
+```bash
+./.github/skills/contracts/scripts/init-contracts.sh --path .
 ```
 
 ### Create a Contract for a Module
@@ -142,7 +149,7 @@ Consult `contracts` skill before modifying any module. Check for CONTRACT.md fil
 **`CLAUDE.md`:**
 ```markdown
 ## Contracts System
-Before code changes, check for CONTRACT.md. See `.agent/skills/contracts/SKILL.md`.
+Before code changes, check for CONTRACT.md. See `.github/skills/contracts/SKILL.md`.
 ```
 
 ## CI/CD Integration
@@ -152,7 +159,7 @@ Add to your pipeline:
 ```yaml
 - name: Validate Contracts
   run: |
-    pwsh .agent/skills/contracts/scripts/validate-contracts.ps1 -OutputFormat github-actions
+    pwsh .github/skills/contracts/scripts/validate-contracts.ps1 -OutputFormat github-actions
 ```
 
 ## License

@@ -70,11 +70,25 @@ logs/
 coverage/
 coverage.*
 
+# Playwright
+playwright-report/
+test-results/
+
+# Contracts UI runtime artifacts (when installed into a project)
+contracts-ui/.logs/
+contracts-ui/contracts-ui.config.json
+
+# Repo minimal-ui runtime artifacts
+skill/ui/minimal-ui/.logs/
+
 # --- Misc ---
 *.bak
 *.swp
 *.tmp
 *.DS_Store
+
+# npm pack/publish artifacts
+*.tgz
 
 # If any of these were already committed, run e.g.:
 #   git rm -r --cached .agent node_modules .env .venv
@@ -89,6 +103,9 @@ coverage.*
 # Temporary test projects created during development
 test-fresh-project/
 test-installation-project/
+
+# Local sandbox project (not committed)
+local-test-project/
 
 # Any folder starting with test-
 test-*/

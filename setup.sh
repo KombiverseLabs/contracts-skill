@@ -24,10 +24,43 @@ NC='\033[0m'
 
 # Parse arguments
 AUTO=false
+INSTALL_UI=false
+UI_TYPE=""
+UI_DIR="contracts-ui"
+UI_FORCE=false
+SKIP_UI=false
 while [[ $# -gt 0 ]]; do
     case $1 in
         --auto|-a)
             AUTO=true
+            shift
+            ;;
+        --ui|-u)
+            INSTALL_UI=true
+            if [ -n "$2" ] && [[ "$2" != -* ]]; then
+                UI_TYPE="$2"
+                shift 2
+            else
+                shift
+            fi
+            ;;
+        --ui-type)
+            UI_TYPE="$2"
+            INSTALL_UI=true
+            shift 2
+            ;;
+        --ui-dir)
+            UI_DIR="$2"
+            INSTALL_UI=true
+            shift 2
+            ;;
+        --ui-force)
+            UI_FORCE=true
+            INSTALL_UI=true
+            shift
+            ;;
+        --no-ui)
+            SKIP_UI=true
             shift
             ;;
         --help|-h)
@@ -35,6 +68,11 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Options:"
             echo "  --auto, -a    Install to all detected agents without prompting"
+            echo "  --ui, -u      Install Contracts Web UI into this project (optional arg: minimal-ui|php-ui|none)"
+            echo "  --ui-type <t> UI type: minimal-ui | php-ui | none"
+            echo "  --ui-dir <d>  Target directory for UI (default: contracts-ui)"
+            echo "  --ui-force    Overwrite existing UI directory"
+            echo "  --no-ui       Do not prompt for UI"
             echo "  --help, -h    Show this help"
             exit 0
             ;;
@@ -58,7 +96,7 @@ declare -A AGENT_ICONS
 
 # GitHub Copilot
 AGENTS["copilot"]="GitHub Copilot (VS Code)"
-AGENT_PATHS["copilot"]="$HOME/.copilot/skills/$SKILL_NAME"
+AGENT_PATHS["copilot"]="./.github/skills/$SKILL_NAME"
 AGENT_ICONS["copilot"]="🤖"
 
 # Claude
@@ -301,3 +339,81 @@ echo -e "${YELLOW}Next steps:${NC}"
 echo -e "  1. Open a project and run: ${CYAN}init contracts${NC}"
 echo -e "  2. Or ask your AI: ${CYAN}\"Initialize contracts for this project\"${NC}"
 echo ""
+
+# Optional: install web UI into current project
+is_contracts_skill_repo() {
+    [[ -f "./skill/SKILL.md" ]] && [[ -f "./installers/install.sh" ]] && [[ -f "./setup.sh" ]]
+}
+
+install_ui_now() {
+    local t="$UI_TYPE"; [ -z "$t" ] && t="minimal-ui";
+    [ "$t" = "none" ] && return 0
+    local src
+    if [ "$t" = "php-ui" ]; then
+        src="$SKILL_SOURCE/ui/contracts-ui"
+    else
+        src="$SKILL_SOURCE/ui/minimal-ui"
+    fi
+    local dst="$UI_DIR"
+
+    if is_contracts_skill_repo && [ "$dst" = "contracts-ui" ] && [ "$UI_FORCE" != true ]; then
+        echo -e "${YELLOW}Refusing to install Contracts UI into the contracts-skill repo itself.${NC}"
+        echo -e "${GRAY}Tip: run from your project folder, or use --ui-dir test-installation-project/contracts-ui, or pass --ui-force.${NC}"
+        return 1
+    fi
+
+    if [ ! -d "$src" ]; then
+        echo -e "${YELLOW}Contracts UI not found in downloaded skill (${src#$SKILL_SOURCE/}).${NC}"
+        return 1
+    fi
+    if [ -e "$dst" ] && [ "$UI_FORCE" != true ]; then
+        echo -e "${YELLOW}Contracts UI already exists at ./$dst (use --ui-force to overwrite).${NC}"
+        return 1
+    fi
+    rm -rf "$dst"
+    cp -r "$src" "$dst"
+
+    if [ "$t" = "php-ui" ]; then
+        if [ -f "$dst/index.php" ]; then
+            echo -e "${GREEN}✓ Installed Contracts UI (php-ui) -> ./$dst${NC}"
+            echo -e "${GRAY}Run: php -S localhost:8080 -t $dst${NC}"
+            return 0
+        fi
+        echo -e "${RED}Error: UI install failed (missing index.php).${NC}"
+        return 1
+    fi
+
+    if [ -f "$dst/index.html" ]; then
+        # Best-effort: generate bundle so the UI works via file:// without folder picking.
+        if [ -f "$dst/refresh.sh" ]; then
+            (cd "$(pwd)" && CONTRACTS_PROJECT_ROOT="$(pwd)" sh "$dst/refresh.sh" >/dev/null 2>&1) || true
+        fi
+        echo -e "${GREEN}✓ Installed Contracts UI (minimal-ui) -> ./$dst${NC}"
+        echo -e "${GRAY}Open: $dst/index.html (auto-loads this project)${NC}"
+        return 0
+    fi
+
+    echo -e "${RED}Error: UI install failed (missing index.html).${NC}"
+    return 1
+}
+
+if [ "$INSTALL_UI" = true ]; then
+    [ -z "$UI_TYPE" ] && UI_TYPE="minimal-ui"
+    [ "$UI_TYPE" = "none" ] && SKIP_UI=true
+    install_ui_now || true
+elif [ "$SKIP_UI" != true ] && [ -t 0 ]; then
+    if is_contracts_skill_repo; then
+        echo -e "${GRAY}Note: running inside the contracts-skill repo; skipping UI install prompt.${NC}"
+    else
+        echo "Install Contracts Web UI into this project?"
+        echo "  [1] minimal-ui (browser-only)"
+        echo "  [2] php-ui     (PHP)"
+        echo "  [3] none"
+        read -p "Selection (default: 3): " ui_answer
+        case "$ui_answer" in
+            1) UI_TYPE="minimal-ui"; install_ui_now || true ;;
+            2) UI_TYPE="php-ui"; install_ui_now || true ;;
+            *) : ;;
+        esac
+    fi
+fi

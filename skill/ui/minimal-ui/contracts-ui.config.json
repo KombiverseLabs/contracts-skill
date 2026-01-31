@@ -1,0 +1,6 @@
+﻿{
+    "autoStart":  null,
+    "openBrowser":  true,
+    "port":  8787,
+    "projectRoot":  "."
+}

@@ -24,7 +24,7 @@ This hook guides AI assistants through the AI-assisted contract initialization p
 Before proceeding, ensure the contracts skill is available:
 
 ```
-Check if .agent/skills/contracts/ or equivalent skill path exists
+Check if .github/skills/contracts/ (or equivalent skill path) exists
 Look for SKILL.md in the skill directory
 ```
 
@@ -36,7 +36,7 @@ If not found:
 Use the analyzer to understand the project:
 
 ```bash
-node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --analyze
+node .github/skills/contracts/ai/init-agent/index.js --path . --analyze
 ```
 
 Or programmatically:
@@ -89,7 +89,7 @@ Options to present:
 If the user wants to see drafts before creating files:
 
 ```bash
-node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --recommend
+node .github/skills/contracts/ai/init-agent/index.js --path . --recommend
 ```
 
 Present the first draft as an example:
@@ -128,13 +128,13 @@ Module functions as expected and integrates with the rest of the application.
 Once approved, run:
 
 ```bash
-node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --apply --yes
+node .github/skills/contracts/ai/init-agent/index.js --path . --apply --yes
 ```
 
 Or for specific modules only:
 ```bash
-node .agent/skills/contracts/skill/ai/init-agent/index.js --module ./src/auth --yes
-node .agent/skills/contracts/skill/ai/init-agent/index.js --module ./src/dashboard --yes
+node .github/skills/contracts/ai/init-agent/index.js --module ./src/auth --yes
+node .github/skills/contracts/ai/init-agent/index.js --module ./src/dashboard --yes
 ```
 
 ### Step 6: Present Summary
@@ -378,8 +378,8 @@ Would you like me to create contracts for these additional modules?"
 When referring to this hook, use:
 
 - **In skill:** `skill/references/assistant-hooks/init-contracts.md`
-- **Installed:** `.agent/skills/contracts/references/assistant-hooks/init-contracts.md`
+- **Installed:** `.github/skills/contracts/references/assistant-hooks/init-contracts.md`
 
 The analyzer module is at:
 - **In skill:** `skill/ai/init-agent/analyzer.js`
-- **Installed:** `.agent/skills/contracts/ai/init-agent/analyzer.js`
+- **Installed:** `.github/skills/contracts/ai/init-agent/analyzer.js`

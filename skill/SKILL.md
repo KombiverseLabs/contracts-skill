@@ -209,13 +209,13 @@ The initialization is **AI-assisted** — not script-based. The AI analyzes your
 **Or use the CLI directly:**
 ```bash
 # Analyze project and show recommendations
-node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --analyze
+node .github/skills/contracts/ai/init-agent/index.js --path . --analyze
 
 # Preview contract drafts
-node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --dry-run
+node .github/skills/contracts/ai/init-agent/index.js --path . --dry-run
 
 # Apply after review
-node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --apply --yes
+node .github/skills/contracts/ai/init-agent/index.js --path . --apply --yes
 ```
 
 ### How It Works
@@ -269,6 +269,7 @@ These phrases trigger specific behaviors:
 | Command | Action |
 |---------|--------|
 | "init contracts" | Run AI-assisted initialization workflow (see `references/assistant-hooks/init-contracts.md`) |
+| "contract preflight" | Read relevant CONTRACT.md/yaml for the target scope and summarize constraints (≤ 5 sentences) |
 | "check contracts" | Scan all contracts, report drift/sync status |
 | "sync contracts" | Update all YAML files from changed MDs |
 | "contract for [module]" | Show or create contract for specific module |
@@ -283,7 +284,7 @@ These phrases trigger specific behaviors:
 For automated CI/CD integration, use the validation script:
 
 ```powershell
-# .agent/skills/contracts/scripts/validate-contracts.ps1
+# .github/skills/contracts/scripts/validate-contracts.ps1
 # Checks all contracts for drift and validation errors
 ```
 
@@ -293,6 +294,7 @@ For automated CI/CD integration, use the validation script:
 
 - `references/initialization.md` — AI-assisted initialization workflow
 - `references/assistant-hooks/init-contracts.md` — Implementation guide for AI assistants
+- `references/assistant-hooks/contract-preflight.md` — Preflight guide: read relevant contracts before work
 - `references/cheatsheet.md` — Quick reference
 - `references/templates/` — Templates for different module types
 - `ai/init-agent/analyzer.js` — Semantic analysis engine

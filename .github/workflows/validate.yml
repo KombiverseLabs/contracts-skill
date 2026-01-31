@@ -5,9 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_call: {}
 
 jobs:
-  validate:
+  validate-linux:
     runs-on: ubuntu-latest
     
     steps:
@@ -25,13 +26,76 @@ jobs:
         run: |
           ./skill/scripts/validate-contracts.ps1 -Path "./examples/sample-project" -OutputFormat github-actions
           
-      - name: Test Installation Script
+      - name: Check PowerShell script syntax
         shell: pwsh
         run: |
-          # Dry run of install script parsing
-          $content = Get-Content ./install.ps1 -Raw
-          [scriptblock]::Create($content) | Out-Null
-          Write-Host "✅ install.ps1 syntax valid"
+          $paths = @(
+            './setup.ps1',
+            './installers/install.ps1'
+          )
+          foreach ($p in $paths) {
+            $content = Get-Content $p -Raw
+            [scriptblock]::Create($content) | Out-Null
+            Write-Host "✅ $p syntax valid"
+          }
+
+      - name: Check minimal-ui JavaScript syntax
+        shell: bash
+        run: |
+          node -e "const fs=require('fs');const h=fs.readFileSync('skill/ui/minimal-ui/index.html','utf8');const m=h.match(/<script>([\\s\\S]*?)<\\/script>/i); if(!m) throw new Error('No <script> found'); new Function(m[1]); console.log('✅ minimal-ui JS syntax valid');"
+
+  validate-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Example Contracts
+        shell: pwsh
+        run: |
+          ./skill/scripts/validate-contracts.ps1 -Path "./examples/sample-project" -OutputFormat github-actions
+
+      - name: Check PowerShell script syntax
+        shell: pwsh
+        run: |
+          $paths = @(
+            './setup.ps1',
+            './installers/install.ps1'
+          )
+          foreach ($p in $paths) {
+            $content = Get-Content $p -Raw
+            [scriptblock]::Create($content) | Out-Null
+            Write-Host "✅ $p syntax valid"
+          }
+
+  lint-powershell:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+
+      - name: PSScriptAnalyzer (installers + setup)
+        shell: pwsh
+        run: |
+          Import-Module PSScriptAnalyzer
+          $paths = @(
+            './setup.ps1',
+            './installers/install.ps1'
+          )
+          $issues = Invoke-ScriptAnalyzer -Path $paths -Severity Warning,Error
+          if ($issues) {
+            $issues | Select-Object RuleName,Severity,ScriptName,Line,Message | Format-Table -AutoSize
+            throw "PSScriptAnalyzer found $($issues.Count) issue(s)."
+          }
+          Write-Host '✅ PSScriptAnalyzer clean'
           
   test-bash-install:
     runs-on: ubuntu-latest
@@ -42,5 +106,30 @@ jobs:
         
       - name: Test Bash Install Script Syntax
         run: |
-          bash -n ./install.sh
-          echo "✅ install.sh syntax valid"
+          bash -n ./setup.sh
+          bash -n ./installers/install.sh
+          echo "✅ bash script syntax valid"
+
+  ui-visual-regression:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install npm deps
+        run: |
+          npm ci
+
+      - name: Install Playwright (Chromium)
+        run: |
+          npx playwright install chromium
+
+      - name: Run UI visual regression tests
+        run: |
+          npm run test:ui

@@ -19,7 +19,26 @@
 #>
 
 param(
-    [switch]$Auto
+    [switch]$Auto,
+
+    [ValidateSet('minimal-ui','php-ui','none')]
+    [string]$UI = $null,
+
+    [switch]$InstallUI,
+
+    [switch]$SkipUI,
+
+    [string]$UIDir = 'contracts-ui',
+
+    [switch]$ForceUI,
+
+    [switch]$UpdateInstructions,
+
+    [switch]$SkipInstructions,
+
+    [switch]$UpdateAgentMd,
+
+    [switch]$SkipAgentMd
 )
 
 $ErrorActionPreference = "Stop"
@@ -49,7 +68,7 @@ function Write-Header {
 $AgentConfigs = @(
     @{
         Name = "GitHub Copilot (VS Code)"
-        Icon = "🤖"
+        Icon = "[COP]"
         Paths = @(
             (Join-Path $env:USERPROFILE ".copilot\skills\$SkillName"),
             (Join-Path $env:USERPROFILE ".github\copilot\skills\$SkillName")
@@ -65,11 +84,12 @@ $AgentConfigs = @(
 Before modifying any module, check for CONTRACT.md files.
 Consult the ``contracts`` skill for spec-driven development workflow.
 Never edit CONTRACT.md files directly - they are user-owned specifications.
+When creating a new module, ask whether to create a new CONTRACT.md/CONTRACT.yaml for it (see init-agent --module).
 "@
     },
     @{
         Name = "Claude Code"
-        Icon = "🧠"
+        Icon = "[CLD]"
         Paths = @(
             (Join-Path $env:USERPROFILE ".claude\skills\$SkillName")
         )
@@ -85,11 +105,12 @@ Before any code changes, check for CONTRACT.md in the target directory.
 Use the contracts skill for spec-driven development.
 CONTRACT.md files are user-owned - never edit them directly.
 See ``.claude/skills/contracts/SKILL.md`` for full workflow.
+When creating a new module, propose generating a matching contract via init-agent (use --module).
 "@
     },
     @{
         Name = "Cursor"
-        Icon = "⚡"
+        Icon = "[CUR]"
         Paths = @(
             (Join-Path $env:USERPROFILE ".cursor\skills\$SkillName")
         )
@@ -104,11 +125,12 @@ See ``.claude/skills/contracts/SKILL.md`` for full workflow.
 Always check for CONTRACT.md before modifying code in any module.
 CONTRACT.md files are user-owned specifications - never edit them.
 When CONTRACT.md changes, sync the corresponding CONTRACT.yaml.
+When creating a new module, propose creating a new CONTRACT.md/CONTRACT.yaml for it.
 "@
     },
     @{
         Name = "Windsurf (Codeium)"
-        Icon = "🏄"
+        Icon = "[WND]"
         Paths = @(
             (Join-Path $env:USERPROFILE ".windsurf\skills\$SkillName"),
             (Join-Path $env:USERPROFILE ".codeium\skills\$SkillName")
@@ -124,11 +146,12 @@ When CONTRACT.md changes, sync the corresponding CONTRACT.yaml.
 # Contracts System
 Check for CONTRACT.md before modifying any module.
 CONTRACT.md = user-owned specs (never edit), CONTRACT.yaml = AI-maintained.
+When creating a new module, propose creating a matching contract for it.
 "@
     },
     @{
         Name = "Aider"
-        Icon = "🔧"
+        Icon = "[AID]"
         Paths = @(
             (Join-Path $env:USERPROFILE ".aider\skills\$SkillName")
         )
@@ -141,7 +164,7 @@ CONTRACT.md = user-owned specs (never edit), CONTRACT.yaml = AI-maintained.
     },
     @{
         Name = "Cline (VS Code)"
-        Icon = "📟"
+        Icon = "[CLN]"
         Paths = @(
             (Join-Path $env:USERPROFILE ".cline\skills\$SkillName")
         )
@@ -155,11 +178,12 @@ CONTRACT.md = user-owned specs (never edit), CONTRACT.yaml = AI-maintained.
 # Contracts System
 Before code changes, check for CONTRACT.md files.
 CONTRACT.md = user specs (read-only), CONTRACT.yaml = sync when MD changes.
+When creating a new module, propose creating a matching contract for it.
 "@
     },
     @{
         Name = "OpenCode"
-        Icon = "🔓"
+        Icon = "[OPN]"
         Paths = @(
             (Join-Path $env:USERPROFILE ".opencode\skills\$SkillName")
         )
@@ -173,11 +197,21 @@ CONTRACT.md = user specs (read-only), CONTRACT.yaml = sync when MD changes.
 # Contracts System
 Before modifying any module, check for CONTRACT.md files.
 CONTRACT.md = user-owned specs (never edit), CONTRACT.yaml = AI-maintained.
+When creating a new module, propose creating a matching contract for it.
 "@
     },
     @{
+        Name = "Custom Target Path"
+        Icon = "[CUS]"
+        Paths = @()
+        DetectPaths = @()
+        InstructionFile = $null
+        InstructionSnippet = $null
+        AlwaysOffer = $true
+    },
+    @{
         Name = "Project Local (.agent)"
-        Icon = "📁"
+        Icon = "[LOC]"
         Paths = @(
             (Join-Path (Get-Location) ".agent\skills\$SkillName")
         )
@@ -227,6 +261,178 @@ function Get-PreferredInstallPath {
     return $Agent.Paths[0]
 }
 
+function Test-HostInteractive {
+    try {
+        if (-not $Host -or -not $Host.UI -or -not $Host.UI.RawUI) { return $false }
+        return $true
+    } catch { return $false }
+}
+
+function Select-AgentsCheckbox {
+    param(
+        [array]$AllAgents,
+        [hashtable]$DetectedByName,
+        [hashtable]$InstalledByName
+    )
+
+    if (-not (Test-HostInteractive)) {
+        Write-Color 'Interactive checkbox UI not available in this host.' Yellow
+        Write-Color 'Enter selection as comma-separated names (e.g., "Claude Code,Project Local (.agent)") or "all":' Gray
+        $raw = Read-Host 'Agents'
+        if ($raw -match '^(all|a)$') { return $AllAgents }
+        $names = $raw -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+        return @($AllAgents | Where-Object { $names -contains $_.Name })
+    }
+
+    $selected = @{}
+    foreach ($agent in $AllAgents) {
+        $selected[$agent.Name] = ($DetectedByName.ContainsKey($agent.Name) -and $DetectedByName[$agent.Name])
+    }
+
+    $cursor = 0
+    $startTop = [Console]::CursorTop
+
+    function Render {
+        [Console]::SetCursorPosition(0, $startTop)
+        Write-Host ''
+        Write-Color 'Select agents to install to (Space=toggle, Enter=confirm, Q=quit):' White
+        Write-Color 'Detected agents are preselected; you can also pick non-detected.' Gray
+        Write-Host ''
+
+        for ($i = 0; $i -lt $AllAgents.Count; $i++) {
+            $agent = $AllAgents[$i]
+            $isOn = $selected[$agent.Name]
+            $box = if ($isOn) { '[*]' } else { '[ ]' }
+
+            $status = if ($InstalledByName.ContainsKey($agent.Name) -and $InstalledByName[$agent.Name]) {
+                'INSTALLED'
+            } elseif ($DetectedByName.ContainsKey($agent.Name) -and $DetectedByName[$agent.Name]) {
+                'DETECTED'
+            } else {
+                'NOT FOUND'
+            }
+
+            $prefix = if ($i -eq $cursor) { '>' } else { ' ' }
+            $hint = if ($agent.Name -eq 'Custom Target Path') {
+                ' -> prompts for target path'
+            } else {
+                try {
+                    $p = Get-PreferredInstallPath -Agent $agent
+                    " -> $p"
+                } catch { '' }
+            }
+
+            $line = " $prefix $box $($agent.Icon) $($agent.Name) [$status]$hint"
+            $color = if ($i -eq $cursor) { 'Cyan' } elseif ($status -eq 'DETECTED') { 'Yellow' } elseif ($status -eq 'INSTALLED') { 'Green' } else { 'Gray' }
+            Write-Color $line $color
+        }
+        Write-Host ''
+        Write-Color 'Tips: A=toggle all, D=toggle detected only, I=toggle installed only' Gray
+    }
+
+    Render
+
+    while ($true) {
+        $key = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+        switch ($key.VirtualKeyCode) {
+            38 { if ($cursor -gt 0) { $cursor-- } Render } # Up
+            40 { if ($cursor -lt ($AllAgents.Count - 1)) { $cursor++ } Render } # Down
+            32 {
+                $agent = $AllAgents[$cursor]
+                $selected[$agent.Name] = -not $selected[$agent.Name]
+                Render
+            }
+            65 {
+                $anyOff = $false
+                foreach ($agent in $AllAgents) {
+                    if (-not $selected[$agent.Name]) { $anyOff = $true; break }
+                }
+                foreach ($agent in $AllAgents) { $selected[$agent.Name] = $anyOff }
+                Render
+            }
+            68 {
+                foreach ($agent in $AllAgents) {
+                    if ($DetectedByName.ContainsKey($agent.Name) -and $DetectedByName[$agent.Name]) {
+                        $selected[$agent.Name] = -not $selected[$agent.Name]
+                    }
+                }
+                Render
+            }
+            73 {
+                foreach ($agent in $AllAgents) {
+                    if ($InstalledByName.ContainsKey($agent.Name) -and $InstalledByName[$agent.Name]) {
+                        $selected[$agent.Name] = -not $selected[$agent.Name]
+                    }
+                }
+                Render
+            }
+            13 { break } # Enter
+            81 { return @() } # Q
+        }
+    }
+
+    return @($AllAgents | Where-Object { $selected[$_.Name] })
+}
+
+function Add-InstructionHook {
+    param(
+        [hashtable]$Agent,
+        [string]$ProjectPath
+    )
+
+    if (-not $Agent.InstructionFile -or -not $Agent.InstructionSnippet) {
+        return
+    }
+
+    $instructionPath = Join-Path $ProjectPath $Agent.InstructionFile
+
+    if (Test-Path $instructionPath) {
+        $content = Get-Content $instructionPath -Raw
+        if ($content -notmatch 'Contracts System') {
+            Add-Content -Path $instructionPath -Value $Agent.InstructionSnippet
+            Write-Color "    -> Added hook to $($Agent.InstructionFile)" Gray
+            return
+        }
+
+        if ($content -notmatch 'When (creating|adding) a new module') {
+            $lines = $Agent.InstructionSnippet -split "`r?`n" | Where-Object { $_ -match 'When (creating|adding) a new module' }
+            if ($lines -and $lines.Count -gt 0) {
+                Add-Content -Path $instructionPath -Value ("`n" + ($lines -join "`n") + "`n")
+                Write-Color "    -> Updated $($Agent.InstructionFile)" Gray
+            }
+        }
+    } else {
+        $dir = Split-Path $instructionPath -Parent
+        if (-not (Test-Path $dir)) {
+            New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        }
+        Set-Content -Path $instructionPath -Value $Agent.InstructionSnippet.Trim()
+        Write-Color "    -> Created $($Agent.InstructionFile)" Gray
+    }
+}
+
+function Update-AgentMarkdown {
+    param([string]$ProjectPath)
+
+    $agentMdPath = Join-Path $ProjectPath 'agent.md'
+    $snippet = @"
+
+## Contracts System
+When creating a new module, ask whether to create a matching CONTRACT.md/CONTRACT.yaml using the contracts init tool (e.g., `node .github/skills/contracts/ai/init-agent/index.js --module ./path/to/module --yes`).
+"@
+
+    if (Test-Path $agentMdPath) {
+        $content = Get-Content $agentMdPath -Raw
+        if ($content -notmatch '##\s+Contracts System') {
+            Add-Content -Path $agentMdPath -Value $snippet
+            Write-Color '    -> Updated agent.md' Gray
+        }
+    } else {
+        Set-Content -Path $agentMdPath -Value ($snippet.Trim())
+        Write-Color '    -> Created agent.md' Gray
+    }
+}
+
 function Install-SkillToAgent {
     param(
         [string]$TargetPath,
@@ -246,7 +452,7 @@ function Install-SkillToAgent {
     return (Test-Path (Join-Path $TargetPath "SKILL.md"))
 }
 
-function Download-Skill {
+function Get-SkillSource {
     param([string]$TempDir)
     
     Write-Color "Downloading skill from GitHub..." Yellow
@@ -254,7 +460,7 @@ function Download-Skill {
     # Try git clone first
     if (Get-Command git -ErrorAction SilentlyContinue) {
         try {
-            $gitOutput = git clone --quiet --depth 1 --branch $Branch "https://github.com/$RepoOwner/$RepoName.git" $TempDir 2>&1
+            git clone --quiet --depth 1 --branch $Branch "https://github.com/$RepoOwner/$RepoName.git" $TempDir 2>&1 | Out-Null
             
             if ($LASTEXITCODE -eq 0 -and (Test-Path $TempDir)) {
                 Write-Color "Downloaded via git" Green
@@ -289,6 +495,137 @@ function Download-Skill {
     }
 }
 
+function Test-IsContractsSkillRepo {
+    param([string]$Path)
+    return (Test-Path (Join-Path $Path 'skill\SKILL.md')) -and (Test-Path (Join-Path $Path 'installers\install.ps1')) -and (Test-Path (Join-Path $Path 'setup.ps1'))
+}
+
+function Install-ContractsUI {
+    param(
+        [Parameter(Mandatory = $true)][string]$SkillSource,
+        [Parameter(Mandatory = $true)][ValidateSet('minimal-ui','php-ui')][string]$UiType,
+        [string]$TargetDir = 'contracts-ui',
+        [switch]$Force
+    )
+
+    $uiSource = if ($UiType -eq 'php-ui') {
+        Join-Path $SkillSource 'ui\contracts-ui'
+    } else {
+        Join-Path $SkillSource 'ui\minimal-ui'
+    }
+
+    if (-not (Test-Path $uiSource)) {
+        Write-Color "Contracts UI not found in downloaded skill: $uiSource" Yellow
+        return $false
+    }
+
+    $dest = Join-Path (Get-Location) $TargetDir
+
+    if ((Test-IsContractsSkillRepo -Path (Get-Location)) -and ($TargetDir -eq 'contracts-ui') -and -not $Force) {
+        Write-Color "Refusing to install Contracts UI into the contracts-skill repository itself." Yellow
+        Write-Color "Tip: use -UIDir test-installation-project\contracts-ui (or pass -ForceUI to override)." Gray
+        return $false
+    }
+
+    if ((Test-Path $dest) -and -not $Force) {
+        Write-Color "Contracts UI already exists at .\$TargetDir (use -ForceUI to overwrite)." Yellow
+        return $false
+    }
+
+    if (Test-Path $dest) {
+        Remove-Item -Recurse -Force $dest
+    }
+    Copy-Item -Path $uiSource -Destination $dest -Recurse -Force
+
+    function Write-ContractsBundle {
+        param(
+            [string]$ProjectRoot,
+            [string]$UiDir
+        )
+
+        function Get-Sha256Text([string]$Text) {
+            $sha = [System.Security.Cryptography.SHA256]::Create()
+            try {
+                $bytes = [System.Text.Encoding]::UTF8.GetBytes([string]$Text)
+                $hash = $sha.ComputeHash($bytes)
+                return -join ($hash | ForEach-Object { $_.ToString('x2') })
+            }
+            finally {
+                $sha.Dispose()
+            }
+        }
+
+        function Get-RelPath([string]$Base, [string]$Full) {
+            $b = (Resolve-Path $Base).Path
+            $f = (Resolve-Path $Full).Path
+            if ($f.Length -le $b.Length) { return '' }
+            return ($f.Substring($b.Length).TrimStart('\\','/') -replace '\\','/')
+        }
+
+        function Get-YamlSourceHash([string]$YamlText) {
+            $m = [regex]::Match($YamlText, '^\s*source_hash\s*:\s*("?)([^"\r\n#]+)\1\s*(?:#.*)?$', 'IgnoreCase,Multiline')
+            if ($m.Success) { return $m.Groups[2].Value.Trim() }
+            return $null
+        }
+
+        $root = (Resolve-Path $ProjectRoot).Path
+        $ignore = @('.git','node_modules','vendor','.idea','.vscode','.agent','dist','build','out','.next','coverage','contracts-ui')
+
+        $mdFiles = Get-ChildItem -Path $root -Recurse -Filter 'CONTRACT.md' -File -ErrorAction SilentlyContinue |
+            Where-Object { $ignore -notcontains $_.Directory.Name }
+        $yamlFiles = Get-ChildItem -Path $root -Recurse -Filter 'CONTRACT.yaml' -File -ErrorAction SilentlyContinue |
+            Where-Object { $ignore -notcontains $_.Directory.Name }
+
+        $map = @{}
+        foreach ($f in $mdFiles) {
+            $dir = Get-RelPath $root $f.Directory.FullName
+            if ($dir -eq '') { $dir = '.' }
+            if (-not $map.ContainsKey($dir)) { $map[$dir] = @{ dir = $dir } }
+            $map[$dir].md_path = Get-RelPath $root $f.FullName
+            $map[$dir].md_text = Get-Content $f.FullName -Raw
+            $map[$dir].md_hash = (Get-Sha256Text $map[$dir].md_text)
+        }
+        foreach ($f in $yamlFiles) {
+            $dir = Get-RelPath $root $f.Directory.FullName
+            if ($dir -eq '') { $dir = '.' }
+            if (-not $map.ContainsKey($dir)) { $map[$dir] = @{ dir = $dir } }
+            $map[$dir].yaml_path = Get-RelPath $root $f.FullName
+            $map[$dir].yaml_text = Get-Content $f.FullName -Raw
+            $map[$dir].yaml_source_hash = Get-YamlSourceHash $map[$dir].yaml_text
+        }
+
+        $contracts = @($map.Values | Sort-Object dir)
+        $bundle = [ordered]@{
+            generated_at = (Get-Date).ToUniversalTime().ToString('o')
+            project_root  = '.'
+            contracts     = $contracts
+        }
+        $json = $bundle | ConvertTo-Json -Depth 6
+        $js = "window.__CONTRACTS_BUNDLE__ = $json;"
+        Set-Content -Path (Join-Path $UiDir 'contracts-bundle.js') -Value $js -Encoding UTF8
+    }
+
+    if ($UiType -eq 'php-ui') {
+        if (Test-Path (Join-Path $dest 'index.php')) {
+            Write-Color "Installed Contracts UI (php-ui) -> .\$TargetDir" Green
+            Write-Color "Run: php -S localhost:8080 -t $TargetDir" Gray
+            return $true
+        }
+        Write-Color "UI install failed: missing index.php" Red
+        return $false
+    }
+
+    if (Test-Path (Join-Path $dest 'index.html')) {
+        try { Write-ContractsBundle -ProjectRoot (Get-Location) -UiDir $dest } catch { Write-Color "Warning: failed to generate contracts-bundle.js ($_)" Yellow }
+        Write-Color "Installed Contracts UI (minimal-ui) -> .\$TargetDir" Green
+        Write-Color "Open: $TargetDir\index.html (auto-loads this project)" Gray
+        return $true
+    }
+
+    Write-Color "UI install failed: missing index.html" Red
+    return $false
+}
+
 # Main installation flow
 Write-Header
 
@@ -299,15 +636,26 @@ Write-Host ""
 $detectedAgents = @()
 $installedAgents = @()
 
+$detectedByName = @{}
+$installedByName = @{}
+$allOfferAgents = @($AgentConfigs)
+
 foreach ($agent in $AgentConfigs) {
     $isInstalled = Test-AgentInstalled -Agent $agent
     $existingPath = Test-SkillInstalled -Agent $agent
+
+    if ($agent.Name -eq 'Custom Target Path') {
+        Write-Color "  $($agent.Icon) $($agent.Name): [OPTION]" 'Gray'
+        continue
+    }
     
     $status = if ($existingPath) {
         $installedAgents += @{ Agent = $agent; Path = $existingPath }
+        $installedByName[$agent.Name] = $true
         "[INSTALLED]"
     } elseif ($isInstalled -or $agent.AlwaysOffer) {
         $detectedAgents += $agent
+        $detectedByName[$agent.Name] = $true
         "[DETECTED]"
     } else {
         "[NOT FOUND]"
@@ -333,61 +681,33 @@ if ($installedAgents.Count -gt 0) {
     Write-Host ""
 }
 
-# Nothing to install
-if ($detectedAgents.Count -eq 0) {
-    Write-Color "No new agents to install to." Yellow
-    Write-Host ""
-    Write-Color "Tip: Run this in a project directory to install locally to .agent/skills/" Cyan
-    exit 0
-}
-
-# Interactive selection
-Write-Color "Select agents to install to:" White
-Write-Host ""
 
 $selectedAgents = @()
-$index = 1
 
-foreach ($agent in $detectedAgents) {
-    $installPath = Get-PreferredInstallPath -Agent $agent
-    
-    if ($Auto) {
-        $selectedAgents += @{ Agent = $agent; Path = $installPath }
-        Write-Color "  [$index] $($agent.Icon) $($agent.Name)" Green
-        Write-Color "      -> $installPath" Gray
-    } else {
-        Write-Host "  [$index] $($agent.Icon) $($agent.Name)" -NoNewline
-        Write-Host " -> " -NoNewline -ForegroundColor Gray
-        Write-Host $installPath -ForegroundColor Gray
-    }
-    $index++
-}
-
-if (-not $Auto) {
-    Write-Host ""
-    Write-Host "  [A] Install to ALL detected agents"
-    Write-Host "  [Q] Quit"
-    Write-Host ""
-    
-    $selection = Read-Host "Enter selection (e.g., '1,2' or 'A')"
-    
-    if ($selection -eq 'Q' -or $selection -eq 'q') {
-        Write-Color "Installation cancelled." Yellow
+if ($Auto) {
+    if ($detectedAgents.Count -eq 0) {
+        Write-Color "No detected agents found." Yellow
+        Write-Host ""
+        Write-Color "Tip: Run this in a project directory to install locally to .agent/skills/" Cyan
         exit 0
     }
-    
-    if ($selection -eq 'A' -or $selection -eq 'a') {
-        foreach ($agent in $detectedAgents) {
+    foreach ($agent in $detectedAgents) {
+        $selectedAgents += @{ Agent = $agent; Path = (Get-PreferredInstallPath -Agent $agent) }
+    }
+} else {
+    $chosenAgents = Select-AgentsCheckbox -AllAgents $allOfferAgents -DetectedByName $detectedByName -InstalledByName $installedByName
+    if ($chosenAgents.Count -eq 0) {
+        Write-Color "No agents selected." Yellow
+        exit 0
+    }
+
+    foreach ($agent in $chosenAgents) {
+        if ($agent.Name -eq 'Custom Target Path') {
+            $raw = Read-Host 'Enter custom target directory for the skill (e.g., C:\\path\\to\\skills\\contracts)'
+            if (-not $raw) { continue }
+            $selectedAgents += @{ Agent = $agent; Path = $raw.Trim() }
+        } else {
             $selectedAgents += @{ Agent = $agent; Path = (Get-PreferredInstallPath -Agent $agent) }
-        }
-    } else {
-        $indices = $selection -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^\d+$' }
-        foreach ($i in $indices) {
-            $idx = [int]$i - 1
-            if ($idx -ge 0 -and $idx -lt $detectedAgents.Count) {
-                $agent = $detectedAgents[$idx]
-                $selectedAgents += @{ Agent = $agent; Path = (Get-PreferredInstallPath -Agent $agent) }
-            }
         }
     }
 }
@@ -404,7 +724,7 @@ Write-Color "Installing to $($selectedAgents.Count) agent(s)..." Cyan
 $tempDir = Join-Path $env:TEMP "contracts-skill-$(Get-Date -Format 'yyyyMMddHHmmss')"
 
 try {
-    $skillSource = Download-Skill -TempDir $tempDir
+    $skillSource = Get-SkillSource -TempDir $tempDir
     
     if (-not (Test-Path $skillSource)) {
         throw "Skill source not found at: $skillSource"
@@ -414,6 +734,17 @@ try {
     
     # Install to each selected agent
     $successCount = 0
+
+    $projectPath = Get-Location
+
+    # Ask once whether to update project instruction hooks
+    $shouldUpdateInstructions = $UpdateInstructions
+    if (-not $UpdateInstructions -and -not $SkipInstructions) {
+        try {
+            $resp = Read-Host 'Update project instruction files (CLAUDE.md, .github/copilot-instructions.md, etc.)? (y/N)'
+            if ($resp -match '^(y|yes)$') { $shouldUpdateInstructions = $true }
+        } catch { }
+    }
     
     foreach ($item in $selectedAgents) {
         $agent = $item.Agent
@@ -427,18 +758,9 @@ try {
             if ($success) {
                 Write-Color " v" Green
                 $successCount++
-                
-                # Add instruction snippet if applicable
-                if ($agent.InstructionFile -and $agent.InstructionSnippet) {
-                    $projectInstructionFile = Join-Path (Get-Location) $agent.InstructionFile
-                    
-                    if (Test-Path $projectInstructionFile) {
-                        $content = Get-Content $projectInstructionFile -Raw
-                        if ($content -notmatch "Contracts System") {
-                            Add-Content -Path $projectInstructionFile -Value $agent.InstructionSnippet
-                            Write-Color "    -> Added hook to $($agent.InstructionFile)" Gray
-                        }
-                    }
+
+                if ($shouldUpdateInstructions) {
+                    Add-InstructionHook -Agent $agent -ProjectPath $projectPath
                 }
             } else {
                 Write-Color " x Failed" Red
@@ -460,6 +782,46 @@ try {
     Write-Host "  2. Or ask your AI: " -NoNewline
     Write-Color '"Initialize contracts for this project"' Cyan
     Write-Host ""
+
+    # Optional: install the web UI into the current project
+    $uiType = $null
+    if ($UI) { $uiType = $UI }
+    elseif ($InstallUI) { $uiType = 'minimal-ui' }
+
+    if (-not $uiType -and -not $SkipUI -and (Test-IsContractsSkillRepo -Path (Get-Location))) {
+        Write-Color "Note: running inside the contracts-skill repo; skipping UI install prompt." Gray
+        $uiType = 'none'
+    }
+
+    if (-not $uiType -and -not $SkipUI -and -not $Auto) {
+        Write-Host "Install Contracts Web UI into this project?"
+        Write-Host "  [1] minimal-ui (browser-only)"
+        Write-Host "  [2] php-ui     (PHP)"
+        Write-Host "  [3] none"
+        $uiAnswer = Read-Host "Selection (default: 3)"
+        $uiType = switch ($uiAnswer) {
+            '1' { 'minimal-ui' }
+            '2' { 'php-ui' }
+            default { 'none' }
+        }
+    }
+
+    if ($uiType -and $uiType -ne 'none') {
+        Install-ContractsUI -SkillSource $skillSource -UiType $uiType -TargetDir $UIDir -Force:$ForceUI | Out-Null
+        Write-Host ""
+    }
+
+    # Optional: update agent.md with a short usage note
+    $shouldUpdateAgentMd = $UpdateAgentMd
+    if (-not $UpdateAgentMd -and -not $SkipAgentMd -and -not $Auto) {
+        try {
+            $resp = Read-Host 'Create/update agent.md in this project with a contracts usage note? (y/N)'
+            if ($resp -match '^(y|yes)$') { $shouldUpdateAgentMd = $true }
+        } catch { }
+    }
+    if ($shouldUpdateAgentMd) {
+        Update-AgentMarkdown -ProjectPath $projectPath
+    }
     
 } finally {
     # Cleanup

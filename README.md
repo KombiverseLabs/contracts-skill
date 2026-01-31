@@ -42,6 +42,31 @@ irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/instal
 curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.sh | bash
 ```
 
+**Optional: Install the Contracts Web UI**
+
+You can copy a tiny UI into your project at `./contracts-ui/` so you can browse/edit contracts without hunting for files.
+
+Choices:
+- `minimal-ui` (browser-only, no runtime)
+- `php-ui` (PHP)
+- `none`
+
+```powershell
+# PowerShell (minimal-ui)
+irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1 | iex -UI minimal-ui
+
+# PowerShell (php-ui)
+irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1 | iex -UI php-ui
+```
+
+```bash
+# Bash (minimal-ui)
+curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.sh | bash -s -- --ui minimal-ui
+
+# Bash (php-ui)
+curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.sh | bash -s -- --ui php-ui
+```
+
 **Option C: Specific Agents**  
 Install to specific agents only:
 
@@ -72,22 +97,42 @@ Or use the CLI directly:
 
 ```bash
 # Analyze and see recommendations
-node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --analyze
+node .github/skills/contracts/ai/init-agent/index.js --path . --analyze
 
 # Preview what would be created
-node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --dry-run
+node .github/skills/contracts/ai/init-agent/index.js --path . --dry-run
 
 # Apply after review
-node .agent/skills/contracts/skill/ai/init-agent/index.js --path . --apply --yes
+node .github/skills/contracts/ai/init-agent/index.js --path . --apply --yes
+```
+
+Or use the wrapper scripts (adds optional Contracts UI auto-start):
+
+```powershell
+pwsh .github/skills/contracts/scripts/init-contracts.ps1 -Path .
+```
+
+```bash
+./.github/skills/contracts/scripts/init-contracts.sh --path .
 ```
 
 ### 3. Validate
 
 ```powershell
-pwsh .agent/skills/contracts/scripts/validate-contracts.ps1 -Path .
+pwsh .github/skills/contracts/scripts/validate-contracts.ps1 -Path .
 ```
 
 Or ask: **"Check contracts"**
+
+### 4. Preflight (Before Changes)
+
+Before implementing a change, have your assistant run a contract preflight for the current diff and summarize relevant MUST / MUST NOT constraints (≤ 5 sentences):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .github/skills/contracts/scripts/contract-preflight.ps1 -Path . -Changed
+```
+
+Or ask: **"Contract preflight"**
 
 ---
 
@@ -163,6 +208,12 @@ irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/instal
 
 # With initialization
 irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1 | iex -Init
+
+# With minimal Contracts Web UI (copies to ./contracts-ui)
+irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1 | iex -UI minimal-ui
+
+# Overwrite existing ./contracts-ui
+irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1 | iex -UI minimal-ui -ForceUI
 ```
 
 ```bash
@@ -177,6 +228,50 @@ curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main
 
 # With initialization
 curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.sh | bash -s -- --init
+
+# With minimal Contracts Web UI (copies to ./contracts-ui)
+curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.sh | bash -s -- --ui minimal-ui
+
+# Overwrite existing ./contracts-ui
+curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.sh | bash -s -- --ui minimal-ui --ui-force
+```
+
+### Contracts Web UI (optional)
+
+After installing the UI into your project, run:
+
+Start commands:
+
+- minimal-ui (live, read/write): `./contracts-ui/start.ps1` (or `./contracts-ui/start.sh`)
+- minimal-ui (snapshot, read-only): open `contracts-ui/index.html`
+- php-ui: `php -S localhost:8080 -t contracts-ui` then open http://localhost:8080
+
+---
+
+## CI & Releases
+
+This repo ships via GitHub Actions:
+
+- PRs + pushes to `main` run validation and linting (contracts validation, installer script syntax, PowerShell linting).
+- Pushing a version tag creates a GitHub Release **only if validation passes**.
+
+### Create a release
+
+1. Update docs/changelog as needed.
+2. Create and push a version tag:
+
+```bash
+git tag -a v2.0.1 -m "v2.0.1"
+git push origin v2.0.1
+```
+
+3. GitHub Actions will run the validation pipeline and then publish a Release with auto-generated notes.
+
+Tip: If you prefer lightweight tags:
+
+```bash
+git tag v2.0.1
+git push origin v2.0.1
 ```
 
 ### Manual Installation
@@ -184,14 +279,14 @@ curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main
 ```bash
 # Clone to your project
 git clone https://github.com/KombiverseLabs/contracts-skill.git .contracts-skill-temp
-cp -r .contracts-skill-temp/skill/ .agent/skills/contracts/
+cp -r .contracts-skill-temp/skill/ .github/skills/contracts/
 rm -rf .contracts-skill-temp
 ```
 
 ```powershell
 # Windows PowerShell
 git clone https://github.com/KombiverseLabs/contracts-skill.git .contracts-skill-temp
-Copy-Item -Path ".\.contracts-skill-temp\skill\*" -Destination ".agent\skills\contracts" -Recurse -Force
+Copy-Item -Path ".\.contracts-skill-temp\skill\*" -Destination ".github\skills\contracts" -Recurse -Force
 Remove-Item -Path ".\.contracts-skill-temp" -Recurse -Force
 ```
 
@@ -373,9 +468,35 @@ Check for CONTRACT.md before any code changes. Never edit CONTRACT.md files dire
 
 ### Cursor
 
-Add to `.cursorrules`:
+Prefer Project Rules in `.cursor/rules/` (Cursor notes that `.cursorrules` is legacy and will be deprecated):
 ```
-Always check for CONTRACT.md before modifying code. Never edit CONTRACT.md files.
+# Contracts System
+- Before starting work, locate and read the nearest CONTRACT.md and CONTRACT.yaml for the module(s) you will change.
+- Check drift: compare CONTRACT.yaml meta.source_hash to the current CONTRACT.md hash; if mismatch, sync YAML first.
+- Before editing, summarize MUST / MUST NOT constraints (max 5 sentences).
+- Never edit CONTRACT.md directly.
+```
+
+### Windsurf (Codeium)
+
+Add a workspace rule file under `.windsurf/rules/`:
+```
+# Contracts System
+- Before starting work, locate and read the nearest CONTRACT.md and CONTRACT.yaml for the module(s) you will change.
+- Check drift: compare CONTRACT.yaml meta.source_hash to the current CONTRACT.md hash; if mismatch, sync YAML first.
+- Before editing, summarize MUST / MUST NOT constraints (max 5 sentences).
+- Never edit CONTRACT.md directly.
+```
+
+### Cline (VS Code)
+
+Add a workspace rule file under `.clinerules/`:
+```
+# Contracts System
+- Before starting work, locate and read the nearest CONTRACT.md and CONTRACT.yaml for the module(s) you will change.
+- Check drift: compare CONTRACT.yaml meta.source_hash to the current CONTRACT.md hash; if mismatch, sync YAML first.
+- Before editing, summarize MUST / MUST NOT constraints (max 5 sentences).
+- Never edit CONTRACT.md directly.
 ```
 
 ---
@@ -389,14 +510,14 @@ Add contract validation to your pipeline:
 ```yaml
 - name: Validate Contracts
   run: |
-    pwsh .agent/skills/contracts/scripts/validate-contracts.ps1 -OutputFormat github-actions
+    pwsh .github/skills/contracts/scripts/validate-contracts.ps1 -OutputFormat github-actions
 ```
 
 ### Pre-commit Hook
 
 ```bash
 #!/bin/bash
-pwsh .agent/skills/contracts/scripts/validate-contracts.ps1
+pwsh .github/skills/contracts/scripts/validate-contracts.ps1
 ```
 
 ---

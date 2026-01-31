@@ -1,0 +1,342 @@
+<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
+<title>Contracts UI (minimal)</title>
+<style>
+  body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:18px;background:#0b1020;color:#e7ecff}
+  a{color:#87a7ff;text-decoration:none} a:hover{text-decoration:underline}
+  .card{background:#111936;border:1px solid #24305a;border-radius:12px;padding:14px}
+  .top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px}
+  .muted{color:#9aa4bf;font-size:12px}
+  table{width:100%;border-collapse:collapse} th,td{padding:8px;border-bottom:1px solid rgba(36,48,90,.6);vertical-align:top}
+  th{color:#9aa4bf;font-size:12px;text-transform:uppercase;letter-spacing:.06em;text-align:left}
+  .badge{padding:2px 8px;border-radius:999px;border:1px solid #24305a;font-size:12px;display:inline-block}
+  .ok{color:#26d07c;border-color:rgba(38,208,124,.35)} .bad{color:#ff5d5d;border-color:rgba(255,93,93,.35)} .warn{color:#ffd166;border-color:rgba(255,209,102,.35)}
+  input[type=text]{background:#0a0f22;border:1px solid #24305a;color:#e7ecff;border-radius:10px;padding:7px 10px;min-width:240px}
+  label{font-size:12px;color:#9aa4bf}
+  button,.btn{background:#0a1436;border:1px solid #24305a;color:#e7ecff;border-radius:10px;padding:7px 10px;cursor:pointer}
+  button:hover,.btn:hover{background:#0c1a44}
+  textarea{width:100%;min-height:55vh;background:#0a0f22;border:1px solid #24305a;color:#e7ecff;border-radius:12px;padding:12px;font-family:ui-monospace,Consolas,monospace;font-size:13px;line-height:1.45}
+  code{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:8px}
+  dialog{border:1px solid #24305a;border-radius:12px;background:#0b1020;color:#e7ecff;max-width:min(1000px,96vw)}
+</style>
+
+<div class=top>
+  <div>
+    <div style="font-weight:700">Contracts UI (minimal)</div>
+    <div class=muted>Browser-only. Lokal nutzen — nicht öffentlich hosten.</div>
+  </div>
+  <div class=muted id=mode></div>
+</div>
+
+<div class=card>
+  <div class=top id=chooser>
+    <div>
+      <div class=muted>Projekt wählen</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id=pickDir>Pick folder (read/write)</button>
+        <label class=btn style="display:inline-flex;align-items:center;gap:8px">
+          <input id=pickFiles type=file webkitdirectory multiple style="display:none">
+          Pick folder (read-only)
+        </label>
+      </div>
+    </div>
+    <div class=muted id=root></div>
+  </div>
+
+  <div class=top style="margin-top:8px">
+    <div>
+      <div class=muted>Filter Pfad</div>
+      <input id=q type=text placeholder="z.B. src/core">
+    </div>
+    <div style="align-self:flex-end"><label><input id=drift type=checkbox> nur Drift</label></div>
+    <div style="align-self:flex-end"><button id=refresh disabled>Refresh</button></div>
+  </div>
+
+  <div class=muted style="margin:10px 0" id=stats>Kein Projekt ausgewählt.</div>
+  <div style="overflow:auto"><table id=tbl hidden>
+    <thead><tr><th>Pfad</th><th>Beschreibung</th><th>MD</th><th>YAML</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+</div>
+
+<dialog id=dlg>
+  <form method=dialog style="margin:0">
+    <div class=top>
+      <div><div class=muted id=dlgLabel></div><div><code id=dlgPath></code></div></div>
+      <div style="display:flex;gap:8px"><button id=saveBtn value="ok">Save</button><button value="cancel">Close</button></div>
+    </div>
+    <textarea id=ta spellcheck=false></textarea>
+    <div class=muted id=hint style="margin-top:8px"></div>
+  </form>
+</dialog>
+
+<script src="contracts-bundle.js"></script>
+
+<script>
+const $=s=>document.querySelector(s);
+const state={mode:'',root:'',rows:[],handles:new Map(),writable:false,live:false};
+const enc=new TextEncoder();
+
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
+function hex(buf){return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');}
+async function sha256(txt){
+  if(!(globalThis.crypto&&crypto.subtle&&crypto.subtle.digest)) return null;
+  return hex(await crypto.subtle.digest('SHA-256',enc.encode(txt)));
+}
+function yamlSourceHash(y){const m=String(y).match(/^\s*source_hash\s*:\s*("?)([^"\r\n#]+)\1\s*(?:#.*)?$/mi);return m?m[2].trim():null;}
+function yamlSetMeta(y,k,v){const ls=String(y).split(/\r\n|\r|\n/);const nl=`  ${k}: "${String(v).replace(/"/g,'\\"')}"`;let m=ls.findIndex(l=>l.trim()==='meta:');
+  if(m===-1) return `meta:\n${nl}\n\n`+ls.join('\n')+'\n';
+  for(let i=m+1;i<ls.length;i++){if(ls[i]&&/^\S/.test(ls[i])) break; if(new RegExp(`^\\s*${k.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')}\\s*:`).test(ls[i])){ls[i]=nl;return ls.join('\n')+'\n';}}
+  ls.splice(m+1,0,nl);return ls.join('\n')+'\n';
+}
+function isDrift(r){const partial=(r.md&&!r.yaml)||(!r.md&&r.yaml);const mismatch=(r.md&&r.yaml&&r.match===false);return partial||mismatch;}
+
+function extractSummary(mdText){
+  const t=String(mdText||'').replace(/\r\n/g,'\n');
+  const lines=t.split('\n');
+  let title=null;
+  for(const line of lines){
+    const s=line.trim();
+    if(!s) continue;
+    if(s.startsWith('# ')){ title=s.slice(2).trim(); break; }
+  }
+  const paras=t.split(/\n\s*\n/g).map(p=>p.trim()).filter(Boolean).map(p=>p.replace(/\s+/g,' '));
+  const summary=paras.find(p=>!p.startsWith('#'))||null;
+  return {title,summary};
+}
+
+async function saveViaApi(relPath, text){
+  const r=await fetch('/api/file',{
+    method:'PUT',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({path:relPath,text})
+  });
+  if(!r.ok){
+    let msg=`HTTP ${r.status}`;
+    try{ const j=await r.json(); if(j&&j.error) msg=j.error; } catch {}
+    throw new Error(msg);
+  }
+  return r.json();
+}
+
+function loadFromBundle(b){
+  const list = b && Array.isArray(b.contracts) ? b.contracts : null;
+  if(!list) return false;
+  state.rows=[]; state.handles.clear();
+  state.writable=false;
+  state.mode='Auto (project bundle)';
+  state.root=String(b.project_root||'(project)');
+  $('#mode').innerHTML=`Mode: <code>${esc(state.mode)}</code>`;
+  $('#root').innerHTML=`Root: <code>${esc(state.root)}</code>`;
+  for(const it of list){
+    const dir=String(it.dir||'.');
+    const r={dir,title:String(it.title||''),summary:String(it.summary||''),md:null,yaml:null,mdText:'',yamlText:'',mdHash:null,yamlHash:null,match:null};
+    if(it.md_path){r.md=String(it.md_path);r.mdText=String(it.md_text||'');r.mdHash=String(it.md_hash||'')||null;}
+    if(it.yaml_path){r.yaml=String(it.yaml_path);r.yamlText=String(it.yaml_text||'');r.yamlHash=yamlSourceHash(r.yamlText)||String(it.yaml_source_hash||'')||null;}
+    if(!r.summary){const s=extractSummary(r.mdText);r.title=s.title||r.title||'';r.summary=s.summary||'';}
+    if(r.mdHash) r.mdHash=r.mdHash.replace(/^sha256:/i,'');
+    if(r.mdHash&&r.yamlHash) r.match=(('sha256:'+r.mdHash).toLowerCase()===String(r.yamlHash).trim().toLowerCase());
+    state.rows.push(r);
+  }
+  state.rows.sort((a,b)=>a.dir.localeCompare(b.dir));
+  $('#refresh').disabled=false;
+  $('#stats').textContent='Auto-Mode: Projekt-Bundle geladen (kein Folder-Picker nötig).';
+  render();
+  return true;
+}
+
+async function loadFromApi(){
+  const u = new URL(location.href);
+  if(!(u.protocol==='http:'||u.protocol==='https:')) return false;
+  if(!(u.hostname==='localhost'||u.hostname==='127.0.0.1')) return false;
+
+  let data;
+  try {
+    const r = await fetch('/api/contracts', { cache:'no-store' });
+    if(!r.ok) return false;
+    data = await r.json();
+  } catch { return false; }
+
+  const list = data && Array.isArray(data.contracts) ? data.contracts : null;
+  if(!list) return false;
+
+  state.rows=[]; state.handles.clear();
+  state.writable=true;
+  state.live=true;
+  state.mode='Live (localhost)';
+  state.root=String(data.project_root||'.');
+  $('#mode').innerHTML=`Mode: <code>${esc(state.mode)}</code>`;
+  $('#root').innerHTML=`Root: <code>${esc(state.root)}</code>`;
+  if($('#chooser')) $('#chooser').style.display='none';
+
+  for(const it of list){
+    const dir=String(it.dir||'.');
+    const r={dir,title:String(it.title||''),summary:String(it.summary||''),md:null,yaml:null,mdText:'',yamlText:'',mdHash:null,yamlHash:null,match:null};
+    if(it.md_path){r.md=String(it.md_path);r.mdText=String(it.md_text||'');r.mdHash=String(it.md_hash||'')||null;}
+    if(it.yaml_path){r.yaml=String(it.yaml_path);r.yamlText=String(it.yaml_text||'');r.yamlHash=yamlSourceHash(r.yamlText)||String(it.yaml_source_hash||'')||null;}
+    if(!r.summary){const s=extractSummary(r.mdText);r.title=s.title||r.title||'';r.summary=s.summary||'';}
+    if(r.mdHash) r.mdHash=r.mdHash.replace(/^sha256:/i,'');
+    if(r.mdHash&&r.yamlHash) r.match=(('sha256:'+r.mdHash).toLowerCase()===String(r.yamlHash).trim().toLowerCase());
+    state.rows.push(r);
+  }
+  state.rows.sort((a,b)=>a.dir.localeCompare(b.dir));
+  $('#refresh').disabled=false;
+  $('#stats').textContent='Live-Mode: aktuelle Dateien wurden vom lokalen Server geladen.';
+  render();
+  return true;
+}
+
+function setMode(){
+  const canPicker=!!window.showDirectoryPicker && (location.protocol==='http:'||location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1');
+  $('#pickDir').disabled=!canPicker;
+  state.writable=canPicker;
+  state.mode=canPicker?'Read/Write (Directory Picker)':'Read-only (File Picker)';
+  $('#mode').innerHTML=`Mode: <code>${esc(state.mode)}</code>`;
+  if(!(globalThis.crypto&&crypto.subtle&&crypto.subtle.digest)) {
+    $('#stats').textContent='Hinweis: WebCrypto (SHA-256) ist hier nicht verfügbar. Drift-Erkennung ist deaktiviert. Öffne die UI über http://localhost/... für volle Funktionalität.';
+  }
+}
+
+async function* walkDir(handle, prefix=''){
+  for await (const [name, ent] of handle.entries()){
+    if(ent.kind==='directory') yield* walkDir(ent, prefix?`${prefix}/${name}`:name);
+    else yield {name, ent, rel: prefix?`${prefix}/${name}`:name};
+  }
+}
+
+async function loadFromPicker(){
+  state.rows=[]; state.handles.clear();
+  const root=await showDirectoryPicker();
+  state.root='(picked folder)';
+  const map=new Map();
+  for await (const it of walkDir(root)){
+    if(it.name!=='CONTRACT.md'&&it.name!=='CONTRACT.yaml') continue;
+    const dir=(it.rel.split('/').slice(0,-1).join('/'))||'.';
+    const r=map.get(dir)||{dir,title:'',summary:'',md:null,yaml:null,mdText:'',yamlText:'',mdHash:null,yamlHash:null,match:null};
+    const f=await it.ent.getFile(); const txt=await f.text();
+    if(it.name==='CONTRACT.md'){r.md=`${dir==='.'?'':dir+'/'}CONTRACT.md`;r.mdText=txt;r.mdHash=await sha256(txt);const s=extractSummary(txt);r.title=s.title||r.title;r.summary=s.summary||r.summary;} 
+    else {r.yaml=`${dir==='.'?'':dir+'/'}CONTRACT.yaml`;r.yamlText=txt;r.yamlHash=yamlSourceHash(txt);} 
+    state.handles.set(it.rel,it.ent); map.set(dir,r);
+  }
+  state.rows=[...map.values()].sort((a,b)=>a.dir.localeCompare(b.dir));
+  for(const r of state.rows) if(r.mdHash&&r.yamlHash) r.match=(('sha256:'+r.mdHash).toLowerCase()===String(r.yamlHash).trim().toLowerCase());
+  $('#root').innerHTML=`Root: <code>${esc(state.root)}</code>`; $('#refresh').disabled=false;
+  render();
+}
+
+async function loadFromFiles(files){
+  state.rows=[]; state.handles.clear(); state.root='(selected files)';
+  const map=new Map();
+  for(const f of files){
+    const name=f.name; if(name!=='CONTRACT.md'&&name!=='CONTRACT.yaml') continue;
+    const rel=(f.webkitRelativePath||name).replace(/\\/g,'/');
+    const dir=(rel.split('/').slice(0,-1).join('/'))||'.';
+    const r=map.get(dir)||{dir,title:'',summary:'',md:null,yaml:null,mdText:'',yamlText:'',mdHash:null,yamlHash:null,match:null};
+    const txt=await f.text();
+    if(name==='CONTRACT.md'){r.md=`${dir==='.'?'':dir+'/'}CONTRACT.md`;r.mdText=txt;r.mdHash=await sha256(txt);const s=extractSummary(txt);r.title=s.title||r.title;r.summary=s.summary||r.summary;} 
+    else {r.yaml=`${dir==='.'?'':dir+'/'}CONTRACT.yaml`;r.yamlText=txt;r.yamlHash=yamlSourceHash(txt);} 
+    map.set(dir,r);
+  }
+  state.rows=[...map.values()].sort((a,b)=>a.dir.localeCompare(b.dir));
+  for(const r of state.rows) if(r.mdHash&&r.yamlHash) r.match=(('sha256:'+r.mdHash).toLowerCase()===String(r.yamlHash).trim().toLowerCase());
+  $('#root').innerHTML=`Root: <code>${esc(state.root)}</code>`; $('#refresh').disabled=false;
+  render();
+}
+
+function download(name, text){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));
+  a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+
+async function openEditor(kind, row){
+  const isMd=kind==='md';
+  $('#dlgLabel').textContent=isMd?'Bearbeite':'Bearbeite';
+  const rel=isMd?row.md:row.yaml; const txt=isMd?row.mdText:row.yamlText;
+  $('#dlgPath').textContent=rel||'(missing)'; $('#ta').value=txt||'';
+  $('#saveBtn').textContent=state.live?'Apply':(state.writable?'Save':'Download');
+  $('#hint').textContent=state.live?"Schreibt direkt zurück in die Projektdatei (localhost Server).":(state.writable?"Schreibt direkt zurück in die Datei." : "Read-only Modus: Datei wird als Download ausgegeben.");
+  $('#dlg').showModal();
+  $('#saveBtn').onclick=async (ev)=>{
+    ev.preventDefault();
+    const newTxt=$('#ta').value;
+    if(!rel){alert('Missing file');return;}
+    if(state.live){
+      try{ await saveViaApi(rel, newTxt); }
+      catch(e){ alert(e.message||String(e)); return; }
+    } else if(state.writable){
+      const handle=state.handles.get(rel.replace(/^\.?\/?/,''));
+      if(!handle){alert('No handle');return;}
+      const w=await handle.createWritable(); await w.write(newTxt); await w.close();
+    } else {
+      download(rel.split('/').pop(), newTxt);
+    }
+    if(isMd){row.mdText=newTxt; row.mdHash=await sha256(newTxt);} else {row.yamlText=newTxt; row.yamlHash=yamlSourceHash(newTxt);} 
+    if(row.mdHash&&row.yamlHash) row.match=(('sha256:'+row.mdHash).toLowerCase()===String(row.yamlHash).trim().toLowerCase());
+    $('#dlg').close(); render();
+  };
+}
+
+async function syncYaml(row){
+  if(!row.md||!row.yaml) return;
+  if(!row.mdHash){alert('SHA-256 not available in this context. Open via http://localhost to enable drift sync.');return;}
+  let y=row.yamlText||'';
+  y=yamlSetMeta(y,'source_hash','sha256:'+row.mdHash);
+  y=yamlSetMeta(y,'last_sync',new Date().toISOString());
+  if(state.live){
+    try{ await saveViaApi(row.yaml, y); }
+    catch(e){ alert(e.message||String(e)); return; }
+  } else if(state.writable){
+    const rel=row.yaml.replace(/^\.?\/?/,''), h=state.handles.get(rel);
+    if(!h){alert('No handle');return;}
+    const w=await h.createWritable(); await w.write(y); await w.close();
+  } else {
+    download('CONTRACT.yaml', y);
+  }
+  row.yamlText=y; row.yamlHash=yamlSourceHash(y);
+  row.match=(('sha256:'+row.mdHash).toLowerCase()===String(row.yamlHash||'').trim().toLowerCase());
+  render();
+}
+
+function render(){
+  const q=$('#q').value.trim().toLowerCase(); const drift=$('#drift').checked;
+  const rows=state.rows.filter(r=>{
+    if(q && !r.dir.toLowerCase().includes(q)) return false;
+    if(drift && !isDrift(r)) return false;
+    return true;
+  });
+  $('#stats').innerHTML=`Gefundene Contract-Ordner: <b>${rows.length}</b> (gesamt: ${state.rows.length})`;
+  const tb=$('#tbl tbody'); tb.innerHTML='';
+  for(const r of rows){
+    const st=(r.md&&r.yaml)?(r.match===true?'<span class="badge ok">ok</span>':(r.match===false?'<span class="badge bad">drift</span>':'<span class="badge warn">unknown</span>')):'<span class="badge warn">partial</span>';
+    const tr=document.createElement('tr');
+    const mdCell=r.md?`<span class=muted>${esc(r.md)}</span>`:'<span class=muted>no</span>';
+    const yamlCell=r.yaml?`<span class=muted>${esc(r.yaml)}</span>`:'<span class=muted>no</span>';
+    tr.innerHTML=`<td><code>${esc(r.dir)}</code></td><td>${esc(r.summary||r.title||'')}</td><td>${mdCell}</td><td>${yamlCell}</td><td>${st}</td><td></td>`;
+    const td=tr.querySelector('td:last-child');
+    const mk=(label,fn,disabled=false)=>{const b=document.createElement('button');b.textContent=label;b.disabled=!!disabled;b.onclick=fn;return b;};
+    td.append(mk(r.md?'Open MD':'MD missing',()=>openEditor('md',r),!r.md)); td.append(' ');
+    td.append(mk(r.yaml?'Open YAML':'YAML missing',()=>openEditor('yaml',r),!r.yaml));
+    if(r.md&&r.yaml){ td.append(document.createElement('br')); td.append(mk('Sync YAML meta',()=>syncYaml(r))); }
+    tb.append(tr);
+  }
+  $('#tbl').hidden = state.rows.length===0;
+}
+
+$('#pickDir').onclick=()=>loadFromPicker().catch(e=>alert(e.message||e));
+$('#pickFiles').onchange=(e)=>loadFromFiles(e.target.files).catch(err=>alert(err.message||err));
+$('#q').oninput=render; $('#drift').onchange=render;
+$('#refresh').onclick=()=>{
+  if(state.live) loadFromApi().catch(()=>location.reload());
+  else location.reload();
+};
+
+// Startup order:
+// 1) Live mode via local server (true "current files" without pickers)
+// 2) Optional bundle snapshot (works via file://)
+// 3) Manual picker fallback
+(async ()=>{
+  if(await loadFromApi()) return;
+  if(loadFromBundle(globalThis.__CONTRACTS_BUNDLE__)) return;
+  setMode();
+})();
+</script>
