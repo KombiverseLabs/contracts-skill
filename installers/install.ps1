@@ -305,9 +305,27 @@ alwaysApply: true
 
 function Test-HostInteractive {
     try {
+        # Multiple checks for interactive capability
         if (-not $Host -or -not $Host.UI -or -not $Host.UI.RawUI) { return $false }
+        
+        # Check if stdin is redirected (piped input)
+        $stdin = [Console]::OpenStandardInput()
+        if ($null -eq $stdin) { return $false }
+        
+        # Try to check if keyboard is available
+        try {
+            $null = [Console]::KeyAvailable
+        } catch {
+            return $false
+        }
+        
+        # Check if we're in an actual interactive terminal
+        if ($Host.Name -match 'ServerRemoteHost') { return $false }
+        
         return $true
-    } catch { return $false }
+    } catch { 
+        return $false 
+    }
 }
 
 function Select-AgentsCheckbox {
@@ -378,8 +396,41 @@ function Select-AgentsCheckbox {
 
     Render
 
+    $timeout = 300 # 5 minutes
+    $timer = [Diagnostics.Stopwatch]::StartNew()
+    
     while ($true) {
-        $key = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+        # Check for timeout
+        if ($timer.Elapsed.TotalSeconds -gt $timeout) {
+            Write-Color "`nTimeout waiting for input. Falling back to text mode." 'Yellow'
+            Write-Color 'Enter selection as comma-separated ids (e.g., copilot,claude,local) or "all":' 'Gray'
+            $raw = Read-Host 'Agents'
+            if ($raw -match '^(all|a)$') {
+                return $AllAgents
+            }
+            $ids = $raw -split ',' | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $_ }
+            return @($AllAgents | Where-Object { $ids -contains $_.Id })
+        }
+
+        # Try to read a key with timeout
+        try {
+            if (-not $Host.UI.RawUI.KeyAvailable) {
+                Start-Sleep -Milliseconds 100
+                continue
+            }
+            $key = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+        } catch {
+            # If ReadKey fails, fall back to text mode
+            Write-Color "`nInteractive mode failed. Using text mode." 'Yellow'
+            Write-Color 'Enter selection as comma-separated ids (e.g., copilot,claude,local) or "all":' 'Gray'
+            $raw = Read-Host 'Agents'
+            if ($raw -match '^(all|a)$') {
+                return $AllAgents
+            }
+            $ids = $raw -split ',' | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $_ }
+            return @($AllAgents | Where-Object { $ids -contains $_.Id })
+        }
+        
         switch ($key.VirtualKeyCode) {
             38 { if ($cursor -gt 0) { $cursor-- } Render } # Up
             40 { if ($cursor -lt ($AllAgents.Count - 1)) { $cursor++ } Render } # Down

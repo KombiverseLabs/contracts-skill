@@ -619,7 +619,7 @@ function Install-ContractsUI {
     }
 
     if (Test-Path (Join-Path $dest 'index.html')) {
-        try { Write-ContractsBundle -ProjectRoot (Get-Location) -UiDir $dest } catch { Write-Color "Warning: failed to generate contracts-bundle.js ($_ )" Yellow }
+        try { Write-ContractsBundle -ProjectRoot (Get-Location) -UiDir $dest } catch { Write-Color "Warning: failed to generate contracts-bundle.js ($_)" Yellow }
         Write-Color "Installed Contracts UI (minimal-ui) -> .\$TargetDir" Green
         Write-Color "Open: $TargetDir\index.html (auto-loads this project)" Gray
         return $true
