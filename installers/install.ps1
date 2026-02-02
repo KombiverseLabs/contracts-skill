@@ -118,6 +118,68 @@ function Write-Header {
     Write-Host ''
 }
 
+# Beads integration detection and setup
+function Test-BeadsInstalled {
+    param([string]$ProjectPath = '.')
+    
+    # Check for .beads directory (beads is initialized in project)
+    $beadsDir = Join-Path $ProjectPath '.beads'
+    if (Test-Path $beadsDir) {
+        return @{ Installed = $true; Path = $beadsDir; HasCli = $null -ne (Get-Command bd -ErrorAction SilentlyContinue) }
+    }
+    
+    # Check if bd CLI is available globally
+    $bdCmd = Get-Command bd -ErrorAction SilentlyContinue
+    if ($bdCmd) {
+        return @{ Installed = $false; Path = $null; HasCli = $true }
+    }
+    
+    return @{ Installed = $false; Path = $null; HasCli = $false }
+}
+
+function Initialize-BeadsContractsIntegration {
+    param([string]$ProjectPath = '.')
+    
+    $bdCmd = Get-Command bd -ErrorAction SilentlyContinue
+    if (-not $bdCmd) {
+        Write-Color '    Beads CLI (bd) not found in PATH - skipping task creation' 'Yellow'
+        return $false
+    }
+    
+    try {
+        # Check if preflight task already exists
+        $existingTasks = & bd list --json 2>$null | ConvertFrom-Json
+        $hasPreflight = $existingTasks | Where-Object { $_.title -match 'CONTRACT|contract preflight' }
+        
+        if ($hasPreflight) {
+            Write-Color '    Beads contract preflight task already exists' 'Gray'
+            return $true
+        }
+        
+        # Create the preflight task template
+        Write-Color '    Creating Beads contract preflight task...' 'Cyan'
+        $taskId = & bd create "PREFLIGHT: Check CONTRACT.md before code changes" -p 0 --json 2>$null | ConvertFrom-Json | Select-Object -ExpandProperty id
+        
+        if ($taskId) {
+            & bd update $taskId --design "Before implementing ANY feature or fix:
+1. Identify affected module(s) by path
+2. Read MODULE/CONTRACT.md (user-owned spec)
+3. Read MODULE/CONTRACT.yaml and verify source_hash matches
+4. Summarize MUST/MUST NOT constraints (max 5 sentences)
+5. If drift detected, sync YAML before proceeding
+
+This task should be a dependency for all feature work." 2>$null | Out-Null
+            
+            Write-Color "    Created preflight task: $taskId" 'Green'
+            return $true
+        }
+    } catch {
+        Write-Color "    Warning: Could not create Beads task ($_)" 'Yellow'
+    }
+    
+    return $false
+}
+
 # Agent configurations
 $AgentConfigs = @(
     @{
@@ -140,12 +202,18 @@ $AgentConfigs = @(
         InstructionFile = '.github\copilot-instructions.md'
         InstructionSnippet = @"
 
-## Contracts System
-    Before starting any task that changes code, determine the target module(s) (by path) and locate the nearest CONTRACT.md.
-    Read CONTRACT.md + CONTRACT.yaml for those module(s) and check for drift (source_hash vs current CONTRACT.md hash).
-    If drift exists, stop and sync CONTRACT.yaml first.
-    Before editing files, summarize the relevant MUST / MUST NOT constraints to the user in max 5 sentences.
-    Never edit CONTRACT.md directly (user-owned spec). If a new module is created, ask whether to create a CONTRACT.md/CONTRACT.yaml (see init-agent --module).
+## Contracts System (MANDATORY)
+**STOP before any code changes.** This is not optional.
+
+1. LOCATE: Find CONTRACT.md in the target module directory (walk up if needed)
+2. READ: Load CONTRACT.md (spec) + CONTRACT.yaml (metadata)
+3. VERIFY: Check source_hash in YAML matches current CONTRACT.md hash
+   - If mismatch → STOP → Sync YAML first → Then continue
+4. SUMMARIZE: Tell user the MUST / MUST NOT constraints (max 5 sentences)
+5. PROCEED: Only after steps 1-4 are done, begin implementation
+
+CONTRACT.md is USER-OWNED. Never edit it directly.
+For new modules: ask user if they want a contract, then use init-agent --module.
 "@
     },
     @{
@@ -184,15 +252,20 @@ $AgentConfigs = @(
         InstructionFile = '.cursor\rules\contracts-system.mdc'
         InstructionSnippet = @"
 ---
-description: "Contracts System preflight"
+description: "Contracts System preflight - MANDATORY before code changes"
 alwaysApply: true
 ---
 
-# Contracts System
-- Before starting work, locate and read the nearest CONTRACT.md and CONTRACT.yaml for the module(s) you will change.
-- Check drift: compare CONTRACT.yaml meta.source_hash to the current CONTRACT.md hash; if mismatch, sync YAML first.
-- Before editing, summarize MUST / MUST NOT constraints (max 5 sentences).
-- Never edit CONTRACT.md directly.
+# Contracts System (MANDATORY)
+**STOP before any code changes.** This is not optional.
+
+1. LOCATE: Find CONTRACT.md in target module (walk up directories if needed)
+2. READ: Load CONTRACT.md + CONTRACT.yaml
+3. VERIFY: source_hash must match → if mismatch, sync YAML first
+4. SUMMARIZE: Tell user MUST / MUST NOT constraints (max 5 sentences)
+5. PROCEED: Only then begin implementation
+
+CONTRACT.md is USER-OWNED → never edit directly.
 "@
     },
     @{
@@ -211,11 +284,16 @@ alwaysApply: true
         InstructionFile = '.windsurf\rules\01-contracts-system.md'
         InstructionSnippet = @"
 
-# Contracts System
-- Before starting work, locate and read the nearest CONTRACT.md and CONTRACT.yaml for the module(s) you will change.
-- Check drift: compare CONTRACT.yaml meta.source_hash to the current CONTRACT.md hash; if mismatch, sync YAML first.
-- Before editing, summarize MUST / MUST NOT constraints (max 5 sentences).
-- CONTRACT.md is user-owned (never edit directly).
+# Contracts System (MANDATORY)
+**STOP before any code changes.** This is not optional.
+
+1. LOCATE: Find CONTRACT.md in target module (walk up directories if needed)
+2. READ: Load CONTRACT.md + CONTRACT.yaml
+3. VERIFY: source_hash must match → if mismatch, sync YAML first
+4. SUMMARIZE: Tell user MUST / MUST NOT constraints (max 5 sentences)
+5. PROCEED: Only then begin implementation
+
+CONTRACT.md is USER-OWNED → never edit directly.
 "@
     },
     @{
@@ -246,11 +324,16 @@ alwaysApply: true
         InstructionFile = '.clinerules\01-contracts-system.md'
         InstructionSnippet = @"
 
-# Contracts System
-- Before starting work, locate and read the nearest CONTRACT.md and CONTRACT.yaml for the module(s) you will change.
-- Check drift: compare CONTRACT.yaml meta.source_hash to the current CONTRACT.md hash; if mismatch, sync YAML first.
-- Before editing, summarize MUST / MUST NOT constraints (max 5 sentences).
-- CONTRACT.md is user-owned (never edit directly).
+# Contracts System (MANDATORY)
+**STOP before any code changes.** This is not optional.
+
+1. LOCATE: Find CONTRACT.md in target module (walk up directories if needed)
+2. READ: Load CONTRACT.md + CONTRACT.yaml
+3. VERIFY: source_hash must match → if mismatch, sync YAML first
+4. SUMMARIZE: Tell user MUST / MUST NOT constraints (max 5 sentences)
+5. PROCEED: Only then begin implementation
+
+CONTRACT.md is USER-OWNED → never edit directly.
 "@
     },
     @{
@@ -267,12 +350,16 @@ alwaysApply: true
         InstructionFile = '.opencodesettings'
         InstructionSnippet = @"
 
-# Contracts System
-    Before work, locate and read the relevant CONTRACT.md/CONTRACT.yaml for the module(s) you will change.
-    Check drift (source_hash mismatch) and sync YAML before implementing.
-    Summarize MUST/MUST NOT constraints to the user (max 5 sentences) before editing.
-    CONTRACT.md = user-owned (never edit), CONTRACT.yaml = AI-maintained.
-    When creating a new module, propose creating a matching contract.
+# Contracts System (MANDATORY)
+**STOP before any code changes.** This is not optional.
+
+1. LOCATE: Find CONTRACT.md in target module (walk up directories if needed)
+2. READ: Load CONTRACT.md + CONTRACT.yaml
+3. VERIFY: source_hash must match → if mismatch, sync YAML first
+4. SUMMARIZE: Tell user MUST / MUST NOT constraints (max 5 sentences)
+5. PROCEED: Only then begin implementation
+
+CONTRACT.md is USER-OWNED → never edit directly.
 "@
     },
     @{
@@ -959,6 +1046,32 @@ try {
     Write-Color ('=' * 65) 'Cyan'
     Write-Color " Installation Complete: $successCount/$($selectedAgents.Count) agents" $(if ($successCount -eq $selectedAgents.Count) { 'Green' } else { 'Yellow' })
     Write-Color ('=' * 65) 'Cyan'
+    
+    # Beads Integration Check
+    Write-Host ''
+    $beadsStatus = Test-BeadsInstalled -ProjectPath $projectPath
+    
+    if ($beadsStatus.Installed) {
+        Write-Color 'Beads detected in project!' 'Green'
+        Write-Color '  Beads + Contracts = stronger enforcement via dependency blocking.' 'Gray'
+        
+        try {
+            $resp = Read-Host '  Create Beads preflight task for contract checks? (Y/n)'
+            if ($resp -notmatch '^(n|no)$') {
+                Initialize-BeadsContractsIntegration -ProjectPath $projectPath
+            }
+        } catch {
+            Initialize-BeadsContractsIntegration -ProjectPath $projectPath
+        }
+    } elseif ($beadsStatus.HasCli) {
+        Write-Color 'Beads CLI found but not initialized in this project.' 'Yellow'
+        Write-Color '  Tip: Run "bd init" to enable persistent task memory + contract enforcement.' 'Gray'
+        Write-Color '  Learn more: https://github.com/steveyegge/beads' 'Gray'
+    } else {
+        Write-Color 'Tip: Install Beads for stronger contract enforcement via dependency blocking.' 'Gray'
+        Write-Color '  npm install -g @beads/bd && bd init' 'Gray'
+        Write-Color '  Learn more: https://github.com/steveyegge/beads' 'Gray'
+    }
     
     Write-Host ''
     Write-Color 'Next steps:' 'Yellow'

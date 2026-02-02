@@ -1,4 +1,4 @@
-# Contracts Skill
+﻿# Contracts Skill
 
 > **Spec-driven development with living contracts for AI-assisted coding.**
 
@@ -10,28 +10,15 @@
 
 Keep your AI coding assistant aligned with your specifications. Never let implementations drift from requirements again.
 
-**What's New in v2.0:** AI-assisted initialization that understands your codebase semantically — no more rigid patterns, just intelligent analysis.
-
 ---
 
 ## Quick Start
 
 ### 1. Install
 
-Choose your preferred method:
-
-Recommended (most robust one-liner; downloads installer then runs it, while keeping interactive agent + UI selection prompts):
-
 ```powershell
-# PowerShell
+# PowerShell (Windows/macOS/Linux)
 irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/bootstrap-install.ps1 | iex
-```
-
-Recommended (interactive multi-agent installer):
-
-```powershell
-# PowerShell
-irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/setup.ps1 | iex
 ```
 
 ```bash
@@ -39,83 +26,57 @@ irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/setup.
 curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/setup.sh | bash
 ```
 
-Install into just the current project:
+The installer will:
+- Detect your AI assistants (Copilot, Claude, Cursor, etc.)
+- Let you choose which to configure
+- Optionally add the Contracts UI
+- **Detect [Beads](https://github.com/steveyegge/beads)** and offer enhanced enforcement
 
-```powershell
-# PowerShell
-irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1 | iex
-```
+### 2. Initialize contracts
 
-```bash
-# Bash
-curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.sh | bash
-```
+Ask your AI assistant:
+> "Initialize contracts for this project"
 
-Optional: add the Contracts UI into your repo (copies to `./contracts-ui/`):
-
-```powershell
-$script = irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1
-& ([scriptblock]::Create($script)) -UI minimal-ui
-```
-
-Optional: choose agents explicitly (still works with UI choice):
-
-```powershell
-$script = irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1
-& ([scriptblock]::Create($script)) -Agents "copilot,claude" -UI minimal-ui
-```
-
-Optional: same, but using the bootstrap installer while passing args through:
-
-```powershell
-$boot = irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/bootstrap-install.ps1
-& ([scriptblock]::Create($boot)) -InstallerArgs @('-Agents','copilot,claude','-UI','minimal-ui')
-```
-
-### 2) Initialize contracts (AI-assisted)
-
-In your assistant: “Initialize contracts for this project”.
-
-Or run the initializer directly:
-
+Or run directly:
 ```bash
 node .github/skills/contracts/ai/init-agent/index.js --path . --analyze
-node .github/skills/contracts/ai/init-agent/index.js --path . --dry-run
-node .github/skills/contracts/ai/init-agent/index.js --path . --apply --yes
 ```
 
-Wrapper scripts:
+### 3. Use contracts
 
-```powershell
-pwsh .github/skills/contracts/scripts/init-contracts.ps1 -Path .
-```
+Each module gets:
+- `CONTRACT.md` — Human-owned specification (you write this)
+- `CONTRACT.yaml` — AI-maintained metadata (drift detection)
+
+Your AI will now **check contracts before making changes** and summarize constraints.
+
+---
+
+## Recommended: Use with Beads
+
+For **stronger enforcement**, combine with [Beads](https://github.com/steveyegge/beads) — a persistent task memory for AI agents:
 
 ```bash
-./.github/skills/contracts/scripts/init-contracts.sh --path .
+# Install Beads (one-time)
+npm install -g @beads/bd
+
+# Initialize in your project
+bd init
 ```
 
-### 3) Validate
+**Why Beads + Contracts?**
 
-```powershell
-pwsh .github/skills/contracts/scripts/validate-contracts.ps1 -Path .
-```
+| Without Beads | With Beads |
+|--------------|------------|
+| Instructions can be ignored | Tasks create **dependency blocking** |
+| No enforcement mechanism | Agent cannot proceed until preflight done |
+| Hope-based compliance | Audit trail of contract checks |
 
-### 4) Preflight (before implementing changes)
-
-Summarizes relevant MUST / MUST NOT constraints for your current diff:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .github/skills/contracts/scripts/contract-preflight.ps1 -Path . -Changed
-```
+The installer auto-detects Beads and creates a preflight task that blocks feature work until contracts are checked.
 
 ---
 
 ## What gets created
-
-Each module typically contains:
-
-- `CONTRACT.md` (human-owned requirements; source of truth)
-- `CONTRACT.yaml` (AI-maintained mirror/spec + drift metadata)
 
 Example structure:
 
@@ -126,8 +87,8 @@ your-project/
 └── src/
     └── core/
         └── auth/
-            ├── CONTRACT.md
-            ├── CONTRACT.yaml
+            ├── CONTRACT.md      # Human-owned spec
+            ├── CONTRACT.yaml    # AI-maintained metadata
             └── ...
 ```
 
@@ -137,15 +98,49 @@ your-project/
 
 If installed into `./contracts-ui/`:
 
-- minimal-ui (server mode, read/write): `./contracts-ui/start.ps1` or `./contracts-ui/start.sh`
-- minimal-ui (static snapshot, read-only): open `contracts-ui/index.html`
-- php-ui: `php -S localhost:8080 -t contracts-ui` then open http://localhost:8080
+```bash
+# Start the UI server
+./contracts-ui/start.ps1   # or start.sh
+
+# Or open static snapshot (read-only)
+open contracts-ui/index.html
+```
+
+---
+
+## Advanced Installation Options
+
+<details>
+<summary>Click to expand</summary>
+
+**With specific agents:**
+```powershell
+$script = irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1
+& ([scriptblock]::Create($script)) -Agents "copilot,claude" -UI minimal-ui
+```
+
+**Project-local only:**
+```powershell
+irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1 | iex
+```
+
+**Validate contracts:**
+```powershell
+pwsh .github/skills/contracts/scripts/validate-contracts.ps1 -Path .
+```
+
+**Preflight check (before implementing):**
+```powershell
+pwsh .github/skills/contracts/scripts/contract-preflight.ps1 -Path . -Changed
+```
+
+</details>
 
 ---
 
 ## CI / Automation
 
-GitHub Actions step example:
+GitHub Actions example:
 
 ```yaml
 - name: Validate Contracts
@@ -154,19 +149,18 @@ GitHub Actions step example:
 
 ---
 
+## References
+
+- [SKILL.md](skill/SKILL.md) — Detailed skill specification
+- [Contract Templates](skill/references/templates/) — MODULE.md templates
+- [Preflight Hook](skill/references/assistant-hooks/contract-preflight.md) — How preflight works
+- [Beads](https://github.com/steveyegge/beads) — Persistent task memory for agents
+
+---
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-Install local git hooks:
-
-```bash
-sh ./scripts/install-git-hooks.sh
-```
-
-```powershell
-./scripts/install-git-hooks.ps1
-```
 
 ---
 
