@@ -1,6 +1,6 @@
 # Contracts UI (php-ui)
 
-Mini Web-UI (PHP) um `CONTRACT.md` / `CONTRACT.yaml` im Projekt zu finden und zu bearbeiten.
+Mini Web-UI (PHP) to find and edit `CONTRACT.md` / `CONTRACT.yaml` files in the project.
 
 ## Start
 
@@ -14,25 +14,25 @@ Dann öffnen: http://localhost:8080
 
 ## Features
 
-- Übersicht aller `CONTRACT.md` / `CONTRACT.yaml`
-- Filter nach Pfad (Suchfeld)
-- Toggle: "nur Drift" (zeigt Drift/Partial)
-- Direkt editieren + speichern
-- Fehlende Dateien anlegen (Create MD / Create YAML)
-- Button: "Sync YAML meta" (setzt `meta.source_hash` + `meta.last_sync`)
+- Overview of all `CONTRACT.md` / `CONTRACT.yaml` files
+- Filter by path (search field)
+- Toggle: "drift only" (shows Drift/Partial)
+- Direct editing + save
+- Create missing files (Create MD / Create YAML)
+- Button: "Sync YAML meta" (sets `meta.source_hash` + `meta.last_sync`)
 
-## Hinweis
+## Note
 
-- Dieses Tool ist für lokale Entwicklung gedacht.
-- Nicht öffentlich ins Internet hängen (kann Dateien schreiben).
+- This tool is intended for local development.
+- Do not expose publicly (can write files).
 
-## Root anpassen (optional)
+## Adjust Root (optional)
 
-Standardmäßig nimmt die UI als Projekt-Root den Parent-Ordner von `contracts-ui/`.
+By default, the UI uses the parent directory of `contracts-ui/` as the project root.
 
 Alternative:
-- `CONTRACTS_UI_ROOT` Environment-Variable setzen, oder
-- `contracts-ui/config.local.php` erstellen:
+- Set `CONTRACTS_UI_ROOT` environment variable, or
+- Create `contracts-ui/config.local.php`:
 
 ```php
 <?php

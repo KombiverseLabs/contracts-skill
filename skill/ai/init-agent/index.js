@@ -132,6 +132,55 @@ function findExistingContracts(root) {
   return contracts;
 }
 
+function suggestMetaContracts(root, analysis) {
+  const suggestions = [];
+  
+  // Testing meta-contract
+  const hasTests = fs.readdirSync(root).some(f => {
+    const lower = f.toLowerCase();
+    return lower === 'tests' || lower === 'test' || lower.includes('test');
+  });
+  
+  if (!hasTests && !fs.existsSync(path.join(root, '.contracts', 'testing.md'))) {
+    suggestions.push({
+      name: 'Testing Standards',
+      path: '.contracts/testing',
+      type: 'meta',
+      reasoning: 'Define testing standards (TDD, visual regression, coverage targets)',
+      tier: 'meta'
+    });
+  }
+  
+  // Deployment meta-contract
+  const hasDeployment = fs.readdirSync(root).some(f => {
+    const lower = f.toLowerCase();
+    return lower === 'makefile' || lower === '.mise.toml' || lower === 'dockerfile' || lower.includes('deploy');
+  });
+  
+  if (!hasDeployment && !fs.existsSync(path.join(root, '.contracts', 'deployment.md'))) {
+    suggestions.push({
+      name: 'Deployment Standards',
+      path: '.contracts/deployment',
+      type: 'meta',
+      reasoning: 'Define deployment process (mise-en-place or makefile best practices)',
+      tier: 'meta'
+    });
+  }
+  
+  // Development meta-contract
+  if (!fs.existsSync(path.join(root, '.contracts', 'development.md'))) {
+    suggestions.push({
+      name: 'Development Standards',
+      path: '.contracts/development',
+      type: 'meta',
+      reasoning: 'Define development workflow and environment setup',
+      tier: 'meta'
+    });
+  }
+  
+  return suggestions;
+}
+
 async function analyzeMode(root) {
   log('🔍 AI-Assisted Project Analysis', 'cyan');
   log('================================\n');
@@ -160,6 +209,20 @@ async function analyzeMode(root) {
     }
     log('');
   });
+  
+  // Show meta-contracts suggestions
+  const metaSuggestions = suggestMetaContracts(root, analysis);
+  if (metaSuggestions.length > 0) {
+    log('\n🔧 Suggested Meta-Contracts (Project Standards):', 'cyan');
+    log('=================================================\n');
+    
+    metaSuggestions.forEach((sug, i) => {
+      log(`${i + 1}. ${sug.name}`, 'yellow');
+      log(`   Purpose: ${sug.reasoning}`);
+      log(`   Path: ${sug.path}`);
+      log('');
+    });
+  }
   
   // Show recommendations
   if (analysis.recommendations.length > 0) {

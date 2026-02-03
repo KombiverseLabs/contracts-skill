@@ -203,17 +203,7 @@ $AgentConfigs = @(
         InstructionSnippet = @"
 
 ## Contracts System (MANDATORY)
-**STOP before any code changes.** This is not optional.
-
-1. LOCATE: Find CONTRACT.md in the target module directory (walk up if needed)
-2. READ: Load CONTRACT.md (spec) + CONTRACT.yaml (metadata)
-3. VERIFY: Check source_hash in YAML matches current CONTRACT.md hash
-   - If mismatch → STOP → Sync YAML first → Then continue
-4. SUMMARIZE: Tell user the MUST / MUST NOT constraints (max 5 sentences)
-5. PROCEED: Only after steps 1-4 are done, begin implementation
-
-CONTRACT.md is USER-OWNED. Never edit it directly.
-For new modules: ask user if they want a contract, then use init-agent --module.
+Before any code changes: locate CONTRACT.md in target module, read spec + metadata, verify source_hash, summarize constraints briefly, then proceed.
 "@
     },
     @{
@@ -257,15 +247,7 @@ alwaysApply: true
 ---
 
 # Contracts System (MANDATORY)
-**STOP before any code changes.** This is not optional.
-
-1. LOCATE: Find CONTRACT.md in target module (walk up directories if needed)
-2. READ: Load CONTRACT.md + CONTRACT.yaml
-3. VERIFY: source_hash must match → if mismatch, sync YAML first
-4. SUMMARIZE: Tell user MUST / MUST NOT constraints (max 5 sentences)
-5. PROCEED: Only then begin implementation
-
-CONTRACT.md is USER-OWNED → never edit directly.
+Before code changes: locate CONTRACT.md in target module, read spec + metadata, verify source_hash, summarize constraints briefly.
 "@
     },
     @{
@@ -285,15 +267,7 @@ CONTRACT.md is USER-OWNED → never edit directly.
         InstructionSnippet = @"
 
 # Contracts System (MANDATORY)
-**STOP before any code changes.** This is not optional.
-
-1. LOCATE: Find CONTRACT.md in target module (walk up directories if needed)
-2. READ: Load CONTRACT.md + CONTRACT.yaml
-3. VERIFY: source_hash must match → if mismatch, sync YAML first
-4. SUMMARIZE: Tell user MUST / MUST NOT constraints (max 5 sentences)
-5. PROCEED: Only then begin implementation
-
-CONTRACT.md is USER-OWNED → never edit directly.
+Before code changes: locate CONTRACT.md in target module, read spec + metadata, verify source_hash, summarize constraints briefly.
 "@
     },
     @{
@@ -325,15 +299,7 @@ CONTRACT.md is USER-OWNED → never edit directly.
         InstructionSnippet = @"
 
 # Contracts System (MANDATORY)
-**STOP before any code changes.** This is not optional.
-
-1. LOCATE: Find CONTRACT.md in target module (walk up directories if needed)
-2. READ: Load CONTRACT.md + CONTRACT.yaml
-3. VERIFY: source_hash must match → if mismatch, sync YAML first
-4. SUMMARIZE: Tell user MUST / MUST NOT constraints (max 5 sentences)
-5. PROCEED: Only then begin implementation
-
-CONTRACT.md is USER-OWNED → never edit directly.
+Before code changes: locate CONTRACT.md in target module, read spec + metadata, verify source_hash, summarize constraints briefly.
 "@
     },
     @{
@@ -351,15 +317,7 @@ CONTRACT.md is USER-OWNED → never edit directly.
         InstructionSnippet = @"
 
 # Contracts System (MANDATORY)
-**STOP before any code changes.** This is not optional.
-
-1. LOCATE: Find CONTRACT.md in target module (walk up directories if needed)
-2. READ: Load CONTRACT.md + CONTRACT.yaml
-3. VERIFY: source_hash must match → if mismatch, sync YAML first
-4. SUMMARIZE: Tell user MUST / MUST NOT constraints (max 5 sentences)
-5. PROCEED: Only then begin implementation
-
-CONTRACT.md is USER-OWNED → never edit directly.
+Before code changes: locate CONTRACT.md in target module, read spec + metadata, verify source_hash, summarize constraints briefly.
 "@
     },
     @{
@@ -597,7 +555,7 @@ function Update-AgentMarkdown {
     $snippet = @"
 
 ## Contracts System
-When creating a new module, ask whether to create a matching CONTRACT.md/CONTRACT.yaml using the contracts init tool (e.g., `node .github/skills/contracts/ai/init-agent/index.js --module ./path/to/module --yes`).
+Before code changes: read CONTRACT.md in target module, verify hash, summarize constraints.
 "@
 
     if (Test-Path $agentMdPath) {

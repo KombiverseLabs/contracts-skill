@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Meta-Contracts Suggestions** - Init agent now suggests project-level contracts
+  - Testing standards (TDD, visual regression, coverage targets)
+  - Deployment standards (mise-en-place, makefile best practices)
+  - Development standards (workflow, environment setup)
+  - Only suggests if no predefined defaults exist
+
+### Changed
+
+- **UI Improvements**
+  - Popup dialog now 40% wider (1400px max-width)
+  - MD and YAML cells are clickable (opens editor directly)
+  - Dialog closes when clicking outside (backdrop click)
+  - All German text replaced with English
+
+### Fixed
+
+- **Interactive Installer** - Enter key confirmation loop fixed
+  - Added 7 failsafe layers (loop counter, try-catch, double break, text fallback)
+  - Bulletproof against terminal edge cases
+
+- **Agent Instructions** - Reduced from 5-13 lines to 1 line each
+  - More concise and focused
+  - Maintains essential workflow guidance
+
 ## [2.0.0] - 2026-01-29
 
 ### Added

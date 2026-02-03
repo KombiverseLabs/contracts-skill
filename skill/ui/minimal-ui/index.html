@@ -16,13 +16,14 @@
   button:hover,.btn:hover{background:#0c1a44}
   textarea{width:100%;min-height:55vh;background:#0a0f22;border:1px solid #24305a;color:#e7ecff;border-radius:12px;padding:12px;font-family:ui-monospace,Consolas,monospace;font-size:13px;line-height:1.45}
   code{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:8px}
-  dialog{border:1px solid #24305a;border-radius:12px;background:#0b1020;color:#e7ecff;max-width:min(1000px,96vw)}
+  dialog{border:1px solid #24305a;border-radius:12px;background:#0b1020;color:#e7ecff;max-width:min(1400px,96vw);width:90vw}
+  dialog::backdrop{background:rgba(0,0,0,0.6);cursor:pointer}
 </style>
 
 <div class=top>
   <div>
     <div style="font-weight:700">Contracts UI (minimal)</div>
-    <div class=muted>Browser-only. Lokal nutzen — nicht öffentlich hosten.</div>
+    <div class=muted>Browser-only. Use locally — do not expose publicly.</div>
   </div>
   <div class=muted id=mode></div>
 </div>
@@ -30,7 +31,7 @@
 <div class=card>
   <div class=top id=chooser>
     <div>
-      <div class=muted>Projekt wählen</div>
+      <div class=muted>Select project</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button id=pickDir>Pick folder (read/write)</button>
         <label class=btn style="display:inline-flex;align-items:center;gap:8px">
@@ -44,16 +45,16 @@
 
   <div class=top style="margin-top:8px">
     <div>
-      <div class=muted>Filter Pfad</div>
-      <input id=q type=text placeholder="z.B. src/core">
+      <div class=muted>Filter path</div>
+      <input id=q type=text placeholder="e.g. src/core">
     </div>
     <div style="align-self:flex-end"><label><input id=drift type=checkbox> nur Drift</label></div>
     <div style="align-self:flex-end"><button id=refresh disabled>Refresh</button></div>
   </div>
 
-  <div class=muted style="margin:10px 0" id=stats>Kein Projekt ausgewählt.</div>
+  <div class=muted style="margin:10px 0" id=stats>No project selected.</div>
   <div style="overflow:auto"><table id=tbl hidden>
-    <thead><tr><th>Pfad</th><th>Beschreibung</th><th>MD</th><th>YAML</th><th>Status</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Path</th><th>Description</th><th>MD</th><th>YAML</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody></tbody>
   </table></div>
 </div>
@@ -139,7 +140,7 @@ function loadFromBundle(b){
   }
   state.rows.sort((a,b)=>a.dir.localeCompare(b.dir));
   $('#refresh').disabled=false;
-  $('#stats').textContent='Auto-Mode: Projekt-Bundle geladen (kein Folder-Picker nötig).';
+  $('#stats').textContent='Auto-Mode: Project bundle loaded (no folder picker needed).';
   render();
   return true;
 }
@@ -180,7 +181,7 @@ async function loadFromApi(){
   }
   state.rows.sort((a,b)=>a.dir.localeCompare(b.dir));
   $('#refresh').disabled=false;
-  $('#stats').textContent='Live-Mode: aktuelle Dateien wurden vom lokalen Server geladen.';
+  $('#stats').textContent='Live-Mode: current files loaded from local server.';
   render();
   return true;
 }
@@ -192,9 +193,14 @@ function setMode(){
   state.mode=canPicker?'Read/Write (Directory Picker)':'Read-only (File Picker)';
   $('#mode').innerHTML=`Mode: <code>${esc(state.mode)}</code>`;
   if(!(globalThis.crypto&&crypto.subtle&&crypto.subtle.digest)) {
-    $('#stats').textContent='Hinweis: WebCrypto (SHA-256) ist hier nicht verfügbar. Drift-Erkennung ist deaktiviert. Öffne die UI über http://localhost/... für volle Funktionalität.';
+    $('#stats').textContent='Note: WebCrypto (SHA-256) not available. Drift detection disabled. Open via http://localhost/... for full functionality.';
   }
 }
+
+// Close dialog when clicking backdrop
+$('#dlg').addEventListener('click', (e) => {
+  if (e.target === $('#dlg')) $('#dlg').close();
+});
 
 async function* walkDir(handle, prefix=''){
   for await (const [name, ent] of handle.entries()){
@@ -250,11 +256,11 @@ function download(name, text){
 
 async function openEditor(kind, row){
   const isMd=kind==='md';
-  $('#dlgLabel').textContent=isMd?'Bearbeite':'Bearbeite';
+  $('#dlgLabel').textContent=isMd?'Edit CONTRACT.md':'Edit CONTRACT.yaml';
   const rel=isMd?row.md:row.yaml; const txt=isMd?row.mdText:row.yamlText;
   $('#dlgPath').textContent=rel||'(missing)'; $('#ta').value=txt||'';
   $('#saveBtn').textContent=state.live?'Apply':(state.writable?'Save':'Download');
-  $('#hint').textContent=state.live?"Schreibt direkt zurück in die Projektdatei (localhost Server).":(state.writable?"Schreibt direkt zurück in die Datei." : "Read-only Modus: Datei wird als Download ausgegeben.");
+  $('#hint').textContent=state.live?"Writes directly back to project file (localhost server).":(state.writable?"Writes directly back to file." : "Read-only mode: file will be downloaded.");
   $('#dlg').showModal();
   $('#saveBtn').onclick=async (ev)=>{
     ev.preventDefault();
@@ -304,14 +310,21 @@ function render(){
     if(drift && !isDrift(r)) return false;
     return true;
   });
-  $('#stats').innerHTML=`Gefundene Contract-Ordner: <b>${rows.length}</b> (gesamt: ${state.rows.length})`;
+  $('#stats').innerHTML=`Found contract folders: <b>${rows.length}</b> (total: ${state.rows.length})`;
   const tb=$('#tbl tbody'); tb.innerHTML='';
   for(const r of rows){
     const st=(r.md&&r.yaml)?(r.match===true?'<span class="badge ok">ok</span>':(r.match===false?'<span class="badge bad">drift</span>':'<span class="badge warn">unknown</span>')):'<span class="badge warn">partial</span>';
     const tr=document.createElement('tr');
-    const mdCell=r.md?`<span class=muted>${esc(r.md)}</span>`:'<span class=muted>no</span>';
-    const yamlCell=r.yaml?`<span class=muted>${esc(r.yaml)}</span>`:'<span class=muted>no</span>';
+    const mdCell=r.md?`<span class=muted style="cursor:pointer" title="Click to open">${esc(r.md)}</span>`:'<span class=muted>no</span>';
+    const yamlCell=r.yaml?`<span class=muted style="cursor:pointer" title="Click to open">${esc(r.yaml)}</span>`:'<span class=muted>no</span>';
     tr.innerHTML=`<td><code>${esc(r.dir)}</code></td><td>${esc(r.summary||r.title||'')}</td><td>${mdCell}</td><td>${yamlCell}</td><td>${st}</td><td></td>`;
+    
+    // Make MD and YAML cells clickable
+    const mdTd=tr.querySelector('td:nth-child(3)');
+    if(r.md) mdTd.onclick=(e)=>{if(e.target.tagName!=='BUTTON')openEditor('md',r);};
+    const yamlTd=tr.querySelector('td:nth-child(4)');
+    if(r.yaml) yamlTd.onclick=(e)=>{if(e.target.tagName!=='BUTTON')openEditor('yaml',r);};
+    
     const td=tr.querySelector('td:last-child');
     const mk=(label,fn,disabled=false)=>{const b=document.createElement('button');b.textContent=label;b.disabled=!!disabled;b.onclick=fn;return b;};
     td.append(mk(r.md?'Open MD':'MD missing',()=>openEditor('md',r),!r.md)); td.append(' ');

@@ -23,11 +23,11 @@ Bash:
 
 This starts a local server and opens `http://127.0.0.1:<port>/`.
 
-Hinweis (Windows/PowerShell): Wenn der gewünschte Port belegt ist, wählt `start.ps1` automatisch den nächsten freien Port und gibt eine Warnung aus. Für ein hartes Fail-Fast-Verhalten nutze `-StrictPort`.
+Note (Windows/PowerShell): If the desired port is occupied, `start.ps1` automatically selects the next free port and displays a warning. For strict fail-fast behavior, use `-StrictPort`.
 
-`start.ps1` macht im Background-Modus außerdem standardmäßig einen kurzen Health-Check auf `/api/contracts`. Falls der Server nicht hochkommt, endet das Script mit Exit-Code 1 und schreibt Logs nach `contracts-ui/.logs/`.
+In background mode, `start.ps1` performs a health check on `/api/contracts`. If the server fails to start, the script exits with code 1 and writes logs to `contracts-ui/.logs/`.
 
-Beispiel:
+Example:
 
 ```powershell
 ./contracts-ui/start.ps1 -Port 8787 -StrictPort
