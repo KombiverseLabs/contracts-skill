@@ -486,8 +486,12 @@ function Select-AgentsCheckbox {
     $timeout = 300 # 5 minutes
     $timer = [Diagnostics.Stopwatch]::StartNew()
     $confirmed = $false
+    $loopCount = 0
+    $maxIterations = 10000 # Failsafe: prevent infinite loop
     
-    while (-not $confirmed) {
+    while ((-not $confirmed) -and ($loopCount -lt $maxIterations)) {
+        $loopCount++
+        
         # Check for timeout
         if ($timer.Elapsed.TotalSeconds -gt $timeout) {
             Write-Color "`nTimeout waiting for input. Falling back to text mode." 'Yellow'
@@ -520,12 +524,12 @@ function Select-AgentsCheckbox {
         }
         
         switch ($key.VirtualKeyCode) {
-            38 { if ($cursor -gt 0) { $cursor-- } Render } # Up
-            40 { if ($cursor -lt ($AllAgents.Count - 1)) { $cursor++ } Render } # Down
+            38 { if ($cursor -gt 0) { $cursor-- } try { Render } catch { } } # Up
+            40 { if ($cursor -lt ($AllAgents.Count - 1)) { $cursor++ } try { Render } catch { } } # Down
             32 {
                 $agent = $AllAgents[$cursor]
                 $selected[$agent.Id] = -not $selected[$agent.Id]
-                Render
+                try { Render } catch { }
             }
             65 {
                 # A
@@ -534,7 +538,7 @@ function Select-AgentsCheckbox {
                     if (-not $selected[$agent.Id]) { $anyOff = $true; break }
                 }
                 foreach ($agent in $AllAgents) { $selected[$agent.Id] = $anyOff }
-                Render
+                try { Render } catch { }
             }
             68 {
                 # D
@@ -543,7 +547,7 @@ function Select-AgentsCheckbox {
                         $selected[$agent.Id] = -not $selected[$agent.Id]
                     }
                 }
-                Render
+                try { Render } catch { }
             }
             73 {
                 # I
@@ -552,17 +556,33 @@ function Select-AgentsCheckbox {
                         $selected[$agent.Id] = -not $selected[$agent.Id]
                     }
                 }
-                Render
+                try { Render } catch { }
             }
             13 {
-                # Enter
+                # Enter - force exit
                 $confirmed = $true
+                break
             }
             81 {
-                # Q
+                # Q - quit immediately
                 return @()
             }
         }
+        
+        # Safety: force break if confirmed somehow
+        if ($confirmed) { break }
+    }
+    
+    # Failsafe: if max iterations hit, fall back to text mode
+    if ($loopCount -ge $maxIterations) {
+        Write-Color "`nInteractive mode stalled. Using text mode." 'Yellow'
+        Write-Color 'Enter selection as comma-separated ids (e.g., copilot,claude,local) or "all":' 'Gray'
+        $raw = Read-Host 'Agents'
+        if ($raw -match '^(all|a)$') {
+            return $AllAgents
+        }
+        $ids = $raw -split ',' | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $_ }
+        return @($AllAgents | Where-Object { $ids -contains $_.Id })
     }
 
     return @($AllAgents | Where-Object { $selected[$_.Id] })

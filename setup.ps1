@@ -336,15 +336,31 @@ function Select-AgentsCheckbox {
     Render
 
     $confirmed = $false
-    while (-not $confirmed) {
-        $key = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+    $loopCount = 0
+    $maxIterations = 10000 # Failsafe
+    
+    while ((-not $confirmed) -and ($loopCount -lt $maxIterations)) {
+        $loopCount++
+        
+        try {
+            $key = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+        } catch {
+            # Fallback if ReadKey fails
+            Write-Color "`nInteractive mode failed. Using text mode." Yellow
+            Write-Color 'Enter selection as comma-separated names or "all":' Gray
+            $raw = Read-Host 'Agents'
+            if ($raw -match '^(all|a)$') { return $AllAgents }
+            $names = $raw -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+            return @($AllAgents | Where-Object { $names -contains $_.Name })
+        }
+        
         switch ($key.VirtualKeyCode) {
-            38 { if ($cursor -gt 0) { $cursor-- } Render } # Up
-            40 { if ($cursor -lt ($AllAgents.Count - 1)) { $cursor++ } Render } # Down
+            38 { if ($cursor -gt 0) { $cursor-- } try { Render } catch { } } # Up
+            40 { if ($cursor -lt ($AllAgents.Count - 1)) { $cursor++ } try { Render } catch { } } # Down
             32 {
                 $agent = $AllAgents[$cursor]
                 $selected[$agent.Name] = -not $selected[$agent.Name]
-                Render
+                try { Render } catch { }
             }
             65 {
                 $anyOff = $false
@@ -352,7 +368,7 @@ function Select-AgentsCheckbox {
                     if (-not $selected[$agent.Name]) { $anyOff = $true; break }
                 }
                 foreach ($agent in $AllAgents) { $selected[$agent.Name] = $anyOff }
-                Render
+                try { Render } catch { }
             }
             68 {
                 foreach ($agent in $AllAgents) {
@@ -360,7 +376,7 @@ function Select-AgentsCheckbox {
                         $selected[$agent.Name] = -not $selected[$agent.Name]
                     }
                 }
-                Render
+                try { Render } catch { }
             }
             73 {
                 foreach ($agent in $AllAgents) {
@@ -368,11 +384,23 @@ function Select-AgentsCheckbox {
                         $selected[$agent.Name] = -not $selected[$agent.Name]
                     }
                 }
-                Render
+                try { Render } catch { }
             }
-            13 { $confirmed = $true } # Enter
+            13 { $confirmed = $true; break } # Enter
             81 { return @() } # Q
         }
+        
+        if ($confirmed) { break }
+    }
+    
+    # Failsafe fallback
+    if ($loopCount -ge $maxIterations) {
+        Write-Color "`nInteractive mode stalled. Using text mode." Yellow
+        Write-Color 'Enter selection as comma-separated names or "all":' Gray
+        $raw = Read-Host 'Agents'
+        if ($raw -match '^(all|a)$') { return $AllAgents }
+        $names = $raw -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+        return @($AllAgents | Where-Object { $names -contains $_.Name })
     }
 
     return @($AllAgents | Where-Object { $selected[$_.Name] })
