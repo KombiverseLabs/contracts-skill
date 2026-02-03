@@ -335,7 +335,8 @@ function Select-AgentsCheckbox {
 
     Render
 
-    while ($true) {
+    $confirmed = $false
+    while (-not $confirmed) {
         $key = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
         switch ($key.VirtualKeyCode) {
             38 { if ($cursor -gt 0) { $cursor-- } Render } # Up
@@ -369,7 +370,7 @@ function Select-AgentsCheckbox {
                 }
                 Render
             }
-            13 { break } # Enter
+            13 { $confirmed = $true } # Enter
             81 { return @() } # Q
         }
     }

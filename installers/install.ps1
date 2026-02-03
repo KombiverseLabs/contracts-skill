@@ -485,8 +485,9 @@ function Select-AgentsCheckbox {
 
     $timeout = 300 # 5 minutes
     $timer = [Diagnostics.Stopwatch]::StartNew()
+    $confirmed = $false
     
-    while ($true) {
+    while (-not $confirmed) {
         # Check for timeout
         if ($timer.Elapsed.TotalSeconds -gt $timeout) {
             Write-Color "`nTimeout waiting for input. Falling back to text mode." 'Yellow'
@@ -555,7 +556,7 @@ function Select-AgentsCheckbox {
             }
             13 {
                 # Enter
-                break
+                $confirmed = $true
             }
             81 {
                 # Q
