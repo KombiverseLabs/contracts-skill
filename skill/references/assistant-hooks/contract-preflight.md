@@ -1,51 +1,53 @@
 # Assistant Hook: Contract Preflight (Before Work)
 
-**Trigger phrases (recommended):**
-- "contract preflight"
-- "before you start"
-- "implement"
-- "fix"
-- "refactor"
-- "add feature"
+**Trigger phrases:** "contract preflight", "before you start", "implement", "fix", "refactor", "add feature"
 
 ---
 
 ## Purpose
 
-Ensure every implementation stays aligned with the relevant module contracts.
-The assistant must perform a short preflight **before** planning or editing code.
+Ensure every implementation stays aligned with module contracts.
+The assistant MUST perform this preflight **before** planning or editing code.
 
 ---
 
-## Mandatory Preflight Behavior (Assistant)
+## Mandatory Preflight Steps
 
-1. **Identify impacted scope**
-   - From the user request, infer which folders/files/modules will be changed.
-   - If unclear, ask **one** clarifying question to narrow the target module(s).
+### 1. Identify Impacted Scope
+From the user request, infer which modules will be changed.
+If unclear, ask **one** clarifying question.
 
-2. **Locate contracts for each impacted module**
-   - For each target path, walk up parent directories until you find `CONTRACT.md`.
-   - If no contract exists for a target module, say so and offer to create one.
+### 2. Locate Contracts
+For each target path, walk up parent directories until `CONTRACT.md` is found.
+If no contract exists, say so and offer to create one.
 
-3. **Read + validate**
-   - Read `CONTRACT.md` (spec) and `CONTRACT.yaml` (mapping).
-   - Check drift: compare `CONTRACT.yaml.meta.source_hash` to the current SHA256 of `CONTRACT.md`.
-   - If drift exists, **stop** and sync YAML first (don’t implement features yet).
+### 3. Read and Validate
+- Read `CONTRACT.md` (spec) and `CONTRACT.yaml` (mapping)
+- Compare `meta.source_hash` to current SHA256 of CONTRACT.md
+- If drift → **STOP** and sync YAML first
 
-4. **Return a user-facing “Contract Notes” summary (max 5 sentences)**
-   - Summarize the **MUST** and **MUST NOT** constraints that affect the requested change.
-   - If multiple modules are involved, prioritize the ones you will edit first.
-   - Keep it short: **≤ 5 sentences total**.
+### 4. Test Coverage Check
+- Do features being changed have corresponding test files?
+- If a feature status is `implemented` but no tests exist → **warn the user**
+- If adding a new feature → ask where tests should go
+
+### 5. Dependency Impact Check
+- Check `registry.yaml` for modules that depend on the one being changed
+- If dependents exist → note which contracts may be affected
+- If changes could break dependent contracts → warn before proceeding
+
+### 6. Return Contract Notes (max 5 sentences)
+Summarize:
+- MUST and MUST NOT constraints affecting the requested change
+- Test coverage status for impacted features
+- Dependent modules that may be affected
 
 ---
 
-## Recommended Helper Command
+## Helper Command
 
-If the contracts skill is installed in a project, use the helper to gather relevant contracts:
-
-PowerShell:
 ```powershell
-pwsh .github/skills/contracts/scripts/contract-preflight.ps1 -Path . -Changed -OutputFormat json
+pwsh .github/skills/contracts/scripts/validate-contracts.ps1 -Path . -OutputFormat json
 ```
 
-Then present a short summary to the user (≤ 5 sentences), and proceed with implementation.
+Then present a short summary (max 5 sentences) and proceed with implementation.

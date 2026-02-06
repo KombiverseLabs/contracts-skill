@@ -1,23 +1,20 @@
 # [Integration Name]
 
 ## Purpose
-[1-3 sentences: What external system does this integrate with? What capability does it provide?]
-
-Example: "Connects to the Payment Gateway API to process transactions. Handles authentication, request formatting, error handling, and response parsing."
+<!-- What external system? What capability does it provide to the application? -->
+[1-3 sentences: the external system and the value of integrating with it]
 
 ## Core Features
-- [ ] Connection management (establish, maintain, retry)
-- [ ] Authentication/authorization handling
-- [ ] Request formatting and validation
-- [ ] Response parsing and error handling
-- [ ] Rate limiting compliance
-- [ ] Logging and monitoring hooks
+- [ ] Connection management (establish, maintain, retry) → Test: [file or "TODO"]
+- [ ] Authentication/authorization handling → Test: [file or "TODO"]
+- [ ] Request formatting and validation → Test: [file or "TODO"]
+- [ ] Response parsing and error handling → Test: [file or "TODO"]
+- [ ] Rate limiting compliance → Test: [file or "TODO"]
 
 ## Constraints
 - MUST: Handle all API error codes gracefully
 - MUST: Implement exponential backoff for retries
 - MUST: Validate all inputs before sending to external system
-- MUST: Log all requests for audit purposes
 - MUST NOT: Expose API keys in logs or error messages
 - MUST NOT: Block the main thread during network operations
 
@@ -27,16 +24,14 @@ Example: "Connects to the Payment Gateway API to process transactions. Handles a
 | API_KEY | Authentication key | Yes |
 | BASE_URL | API endpoint | Yes |
 | TIMEOUT | Request timeout (ms) | No (default: 30000) |
-| RETRY_COUNT | Max retry attempts | No (default: 3) |
 
 ## Success Criteria
-- [ ] Successfully authenticates with external system
-- [ ] Handles all documented error scenarios
-- [ ] Response time < 500ms for 95% of requests
-- [ ] Zero data loss for successful transactions
-- [ ] Graceful degradation when service is unavailable
+<!-- Each criterion should reference a test -->
+- [ ] Given valid credentials, when connecting, then auth succeeds → Test: [file]
+- [ ] Given API timeout, when requesting, then retries with backoff → Test: [file]
+- [ ] Given rate limit hit, when requesting, then queues and retries → Test: [file]
+- [ ] Given service unavailable, when requesting, then degrades gracefully → Test: [file]
 
 ## Notes
 - [Link to API documentation]
-- [Contact info for API support]
 - [Testing environment details]

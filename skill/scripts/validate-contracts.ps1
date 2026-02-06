@@ -8,7 +8,8 @@
     - Missing YAML files
     - Invalid YAML structure
     - Feature status consistency
-    
+    - Test coverage for implemented features
+
 .PARAMETER Path
     Root path to scan for contracts. Defaults to current directory.
 
@@ -67,6 +68,61 @@ function Test-YamlStructure {
     }
     
     return $missing
+}
+
+function Test-FeatureCoverage {
+    param([string]$YamlPath)
+
+    $content = Get-Content $YamlPath -Raw
+    $dir = Split-Path $YamlPath -Parent
+    $warnings = @()
+
+    # Find features with status implemented or in-progress
+    $implementedFeatures = [regex]::Matches($content, 'status:\s*(implemented|in-progress)')
+
+    if ($implementedFeatures.Count -eq 0) {
+        return $warnings
+    }
+
+    # Get test pattern from YAML
+    $testPattern = "*.test.*"
+    if ($content -match 'test_pattern:\s*"([^"]*)"') {
+        $testPattern = $matches[1]
+    }
+
+    # Check if test files exist
+    $testFiles = Get-ChildItem -Path $dir -Filter $testPattern -Recurse -ErrorAction SilentlyContinue
+
+    if ($testFiles.Count -eq 0) {
+        $warnings += "$($implementedFeatures.Count) feature(s) marked implemented/in-progress but no test files found (pattern: $testPattern)"
+    }
+
+    return $warnings
+}
+
+function Test-DependencyImpact {
+    param(
+        [string]$ModulePath,
+        [string]$RootPath
+    )
+
+    $registryPath = Join-Path (Join-Path $RootPath ".contracts") "registry.yaml"
+    if (-not (Test-Path $registryPath)) {
+        return @()
+    }
+
+    $content = Get-Content $registryPath -Raw
+    $resolvedRoot = (Resolve-Path $RootPath).Path
+    $relativePath = $ModulePath.Replace($resolvedRoot, "").TrimStart('\', '/').Replace('\', '/')
+    $dirPath = Split-Path $relativePath -Parent
+
+    $dependents = @()
+    $escaped = [regex]::Escape($dirPath)
+    if ($content -match "depends_on:.*$escaped") {
+        $dependents += "Module has dependents - changes may require updating their contracts"
+    }
+
+    return $dependents
 }
 
 function Write-Result {
@@ -172,6 +228,26 @@ foreach ($mdFile in $contractFiles) {
             message = "Could not parse source_hash from YAML"
         }
         Write-Result -Type "warn" -Path $relativePath -Message "Could not parse source_hash"
+    }
+
+    # Check 4: Test coverage for implemented features
+    $coverageWarnings = Test-FeatureCoverage -YamlPath $yamlPath
+    foreach ($cw in $coverageWarnings) {
+        $results.warnings += @{
+            path = $relativePath
+            message = $cw
+        }
+        Write-Result -Type "warn" -Path $relativePath -Message $cw
+    }
+
+    # Check 5: Dependency impact
+    $depWarnings = Test-DependencyImpact -ModulePath $mdFile.FullName -RootPath $Path
+    foreach ($dw in $depWarnings) {
+        $results.warnings += @{
+            path = $relativePath
+            message = $dw
+        }
+        Write-Result -Type "warn" -Path $relativePath -Message $dw
     }
 }
 

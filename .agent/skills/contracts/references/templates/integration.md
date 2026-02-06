@@ -1,26 +1,37 @@
 # [Integration Name]
 
 ## Purpose
-[2-3 sentences: What systems does this connect? Why is this integration needed?]
+<!-- What external system? What capability does it provide to the application? -->
+[1-3 sentences: the external system and the value of integrating with it]
 
 ## Core Features
-- [ ] Feature 1: Primary integration capability
-- [ ] Feature 2: Data transformation or mapping
-- [ ] Feature 3: Error handling and recovery
-- [ ] Feature 4: Monitoring and observability
-
-## Interfaces
-- **Inbound**: [What calls this module?]
-- **Outbound**: [What does this module call?]
+- [ ] Connection management (establish, maintain, retry) → Test: [file or "TODO"]
+- [ ] Authentication/authorization handling → Test: [file or "TODO"]
+- [ ] Request formatting and validation → Test: [file or "TODO"]
+- [ ] Response parsing and error handling → Test: [file or "TODO"]
+- [ ] Rate limiting compliance → Test: [file or "TODO"]
 
 ## Constraints
-- MUST: [Reliability requirement]
-- MUST: [Data integrity requirement]
-- MUST: [Security requirement]
-- MUST NOT: [Anti-pattern to avoid]
+- MUST: Handle all API error codes gracefully
+- MUST: Implement exponential backoff for retries
+- MUST: Validate all inputs before sending to external system
+- MUST NOT: Expose API keys in logs or error messages
+- MUST NOT: Block the main thread during network operations
+
+## Configuration
+| Setting | Description | Required |
+|---------|-------------|----------|
+| API_KEY | Authentication key | Yes |
+| BASE_URL | API endpoint | Yes |
+| TIMEOUT | Request timeout (ms) | No (default: 30000) |
 
 ## Success Criteria
-[Availability, latency, error rates, data consistency]
+<!-- Each criterion should reference a test -->
+- [ ] Given valid credentials, when connecting, then auth succeeds → Test: [file]
+- [ ] Given API timeout, when requesting, then retries with backoff → Test: [file]
+- [ ] Given rate limit hit, when requesting, then queues and retries → Test: [file]
+- [ ] Given service unavailable, when requesting, then degrades gracefully → Test: [file]
 
-## Failure Modes
-[What happens when dependencies fail?]
+## Notes
+- [Link to API documentation]
+- [Testing environment details]

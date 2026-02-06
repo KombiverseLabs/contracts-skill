@@ -570,41 +570,44 @@ function generateContractDraft(moduleInfo, projectInfo) {
     .split('-')
     .map(w => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
-  
-  // Infer purpose from exports and type
-  let purpose = '';
-  if (moduleInfo.exports.length > 0) {
-    const mainExports = moduleInfo.exports.slice(0, 3).join(', ');
-    purpose = `Provides ${moduleInfo.exports.length > 3 ? 'functions including ' : ''}${mainExports}.`;
+
+  // Purpose: prompt user to describe the problem, not list exports
+  let purpose = `<!-- What user problem does ${name} solve? Don't just list exports. -->\n`;
+  if (moduleInfo.type === 'core') {
+    purpose += `Handles [describe responsibility] for ${projectInfo.name || 'the project'}.`;
+  } else if (moduleInfo.type === 'integration') {
+    purpose += `Connects to [external system] to provide [capability] for ${projectInfo.name || 'the project'}.`;
   } else {
-    purpose = `${name} module functionality for the ${projectInfo.name || 'project'}.`;
+    purpose += `Enables [describe user-facing value] in ${projectInfo.name || 'the project'}.`;
   }
-  
-  // Generate features from exports
+
+  // Features: map each export to a test file
+  const testPattern = moduleInfo.hasTests ? moduleInfo.name + '.test.*' : 'TODO';
   const features = moduleInfo.exports
     .slice(0, 5)
-    .map(exp => `- [ ] ${exp}: Implementation pending`);
-  
+    .map(exp => `- [ ] ${exp}: [describe behavior] → Test: ${testPattern}`);
+
   if (features.length === 0) {
-    features.push('- [ ] Core functionality');
-    features.push('- [ ] Integration with other modules');
+    features.push(`- [ ] [Core capability]: [describe behavior] → Test: ${testPattern}`);
   }
-  
-  // Generate constraints based on module type
+
+  // Constraints: type-specific, testable
   const constraints = [];
   if (moduleInfo.type === 'core') {
-    constraints.push('- MUST: Maintain backward compatibility for public API');
-    constraints.push('- MUST: Have comprehensive test coverage');
+    constraints.push('- MUST: Maintain backward compatibility for public API exports');
+    constraints.push('- MUST NOT: Introduce breaking changes without version bump');
+  } else if (moduleInfo.type === 'integration') {
+    constraints.push('- MUST: Handle API errors and timeouts gracefully');
+    constraints.push('- MUST NOT: Expose credentials in logs or error messages');
+  } else {
+    constraints.push('- MUST: [define testable requirement]');
+    constraints.push('- MUST NOT: [define anti-pattern to prevent]');
   }
-  constraints.push('- MUST: Follow project coding standards');
-  constraints.push('- MUST NOT: Introduce circular dependencies');
-  
-  // Generate success criteria
-  const successCriteria = moduleInfo.hasTests
-    ? 'All tests pass and module integrates correctly with dependent modules.'
-    : 'Module functions as expected and integrates with the rest of the application.';
-  
-  const mdContent = `<!-- DRAFT: Please review and modify, then remove this line -->
+
+  // Success criteria: testable Given/When/Then format
+  const successCriteria = generateTestableSuccessCriteria(moduleInfo);
+
+  const mdContent = `<!-- DRAFT: Review and modify, then remove this line -->
 # ${name}
 
 ## Purpose
@@ -619,11 +622,39 @@ ${constraints.join('\n')}
 ## Success Criteria
 ${successCriteria}
 `;
-  
+
   return {
     markdown: mdContent,
     moduleInfo: moduleInfo
   };
+}
+
+/**
+ * Generate testable success criteria based on module analysis
+ * @param {object} moduleInfo - Module information
+ * @returns {string} - Success criteria text
+ */
+function generateTestableSuccessCriteria(moduleInfo) {
+  const criteria = [];
+
+  if (moduleInfo.exports.length > 0) {
+    const mainExport = moduleInfo.exports[0];
+    criteria.push(`- [ ] Given valid input, when ${mainExport}() is called, then [expected outcome]`);
+    criteria.push(`- [ ] Given invalid input, when ${mainExport}() is called, then [expected error handling]`);
+  }
+
+  if (moduleInfo.type === 'integration') {
+    criteria.push('- [ ] Given API timeout, when requesting, then retries with backoff');
+    criteria.push('- [ ] Given service unavailable, then degrades gracefully');
+  }
+
+  if (criteria.length === 0) {
+    criteria.push('- [ ] Given [context], when [action], then [expected outcome]');
+  }
+
+  criteria.push('<!-- Define: what would a failing test look like for each criterion? -->');
+
+  return criteria.join('\n');
 }
 
 // Export for use in other modules
