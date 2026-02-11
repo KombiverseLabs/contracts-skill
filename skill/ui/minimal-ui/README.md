@@ -45,9 +45,9 @@ After installation to `./contracts-ui/`:
 
 - Open `contracts-ui/index.html` in the browser.
 
-Empfehlung: Chrome/Edge (bestes Feature-Set).
+Recommended: Chrome/Edge (best feature support).
 
-## Modus
+## Modes
 
 - **Read-only (file picker):** works everywhere; changes are downloaded.
 - **Read/Write (directory picker):** works in supporting browsers (usually Chrome/Edge) and typically requires `http://localhost`.

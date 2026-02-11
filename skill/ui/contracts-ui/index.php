@@ -154,7 +154,7 @@ function page(string $title, string $body, ?array $flash, string $root): void {
         $cls = in_array(($flash['type'] ?? ''), ['ok','warn','err'], true) ? $flash['type'] : 'ok';
         $f = '<div class="flash ' . h($cls) . '">' . h((string)($flash['msg'] ?? '')) . '</div>';
     }
-    echo "<!doctype html><html lang=de><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>";
+    echo "<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>";
     echo '<title>' . h($title) . '</title>';
     echo "<style>
 body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:18px;background:#0b1020;color:#e7ecff}
@@ -174,7 +174,7 @@ button:hover,.btn:hover{background:#0c1a44}
 textarea{width:100%;min-height:65vh;background:#0a0f22;border:1px solid #24305a;color:#e7ecff;border-radius:12px;padding:12px;font-family:ui-monospace,Consolas,monospace;font-size:13px;line-height:1.45}
 code{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:8px}
 </style></head><body>";
-    echo '<div class=top><div><div style="font-weight:700">Contracts UI</div><div class=muted>Lokales Dev-Tool — nicht öffentlich hosten</div></div>';
+    echo '<div class=top><div><div style="font-weight:700">Contracts UI</div><div class=muted>Local dev tool — do not expose publicly</div></div>';
     echo '<div class=muted>Root: <code>' . h($root) . '</code></div></div>';
     echo $f . '<div class=card>' . $body . '</div></body></html>';
 }
@@ -191,12 +191,12 @@ try {
         $abs = resolve_contract_file($root, $fileRel);
         $txt = file_get_contents($abs);
         if ($txt === false) throw new RuntimeException('Could not read file.');
-        $body = '<div class=top><div><div class=muted>Bearbeite</div><div><code>' . h($fileRel) . '</code></div></div><a class=btn href="?">Zurück</a></div>';
+        $body = '<div class=top><div><div class=muted>Editing</div><div><code>' . h($fileRel) . '</code></div></div><a class=btn href="?">Back</a></div>';
         $body .= '<form method=post action="?action=save">'
             . '<input type=hidden name=csrf value="' . h($csrf) . '">' 
             . '<input type=hidden name=file value="' . h($fileRel) . '">' 
             . '<textarea name=content spellcheck=false>' . h($txt) . '</textarea>'
-            . '<div class=top style="margin-top:10px"><div class=muted>Speichern schreibt direkt in die Datei.</div><button type=submit>Speichern</button></div>'
+            . '<div class=top style="margin-top:10px"><div class=muted>Save writes directly to the file.</div><button type=submit>Save</button></div>'
             . '</form>';
         page('Edit ' . $fileRel, $body, $flash, $root);
         exit;
@@ -286,20 +286,20 @@ try {
     }
 
     $body = '<form method=get class=top>'
-        . '<div><div class=muted>Filter Pfad</div><input type=text name=q value="' . h($q) . '" placeholder="z.B. src/core"></div>'
-        . '<div style="align-self:flex-end"><label><input type=checkbox name=drift value=1 ' . ($driftOnly ? 'checked' : '') . '> nur Drift</label></div>'
+        . '<div><div class=muted>Filter path</div><input type=text name=q value="' . h($q) . '" placeholder="e.g. src/core"></div>'
+        . '<div style="align-self:flex-end"><label><input type=checkbox name=drift value=1 ' . ($driftOnly ? 'checked' : '') . '> drift only</label></div>'
         . '<div style="align-self:flex-end"><button type=submit>Apply</button> <a class=btn href="?">Reset</a></div>'
         . '</form>';
 
-    $body .= '<div class=muted style="margin:10px 0">Gefundene Contract-Ordner: <b>' . count($filtered) . '</b> (gesamt: ' . count($rows) . ')</div>';
+    $body .= '<div class=muted style="margin:10px 0">Contract directories found: <b>' . count($filtered) . '</b> (total: ' . count($rows) . ')</div>';
 
     if (count($filtered) === 0) {
-        $body .= '<div class=muted>Keine Treffer.</div>';
+        $body .= '<div class=muted>No matches.</div>';
         page('Contracts UI', $body, $flash, $root);
         exit;
     }
 
-    $body .= '<div style="overflow:auto"><table><thead><tr><th>Pfad</th><th>MD</th><th>YAML</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+    $body .= '<div style="overflow:auto"><table><thead><tr><th>Path</th><th>MD</th><th>YAML</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
     foreach ($filtered as $r) {
         $dir = (string)$r['dir'];
         $md = $r['md']; $y = $r['yaml'];
@@ -344,5 +344,5 @@ try {
     $body .= '</tbody></table></div>';
     page('Contracts UI', $body, $flash, $root);
 } catch (Throwable $e) {
-    page('Error', '<div class="flash err">' . h($e->getMessage()) . '</div><p><a class=btn href="?">Zurück</a></p>', null, $root ?? root_dir());
+    page('Error', '<div class="flash err">' . h($e->getMessage()) . '</div><p><a class=btn href="?">Back</a></p>', null, $root ?? root_dir());
 }

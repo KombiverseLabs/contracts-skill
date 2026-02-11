@@ -7,31 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-02-11
+
 ### Added
 
-- **Meta-Contracts Suggestions** - Init agent now suggests project-level contracts
-  - Testing standards (TDD, visual regression, coverage targets)
-  - Deployment standards (mise-en-place, makefile best practices)
-  - Development standards (workflow, environment setup)
-  - Only suggests if no predefined defaults exist
+- **Two-Variant Architecture** — Base and Beads-enforced skills from the same repo
+  - `skill/` — Base variant with instruction-based (advisory) enforcement
+  - `skill-beads/` — Beads-enforced variant with dependency-blocking preflight tasks
+  - Shared scripts, templates, AI analyzer, and UI between variants
+
+- **Beads-Enforced Variant** (`skill-beads/`)
+  - `SKILL.md` with Beads prerequisites and enforced preflight workflow
+  - `contract-preflight.md` with Beads task lifecycle (`bd create`, `bd close`)
+  - `init-contracts.md` with Beads setup and standing preflight task creation
+
+- **Hash Recovery** — New section in both SKILL.md variants for recovering from corrupted `source_hash`
+
+- **Meta-Contracts Suggestions** — Init agent now suggests project-level contracts
 
 ### Changed
 
-- **UI Improvements**
-  - Popup dialog now 40% wider (1400px max-width)
-  - MD and YAML cells are clickable (opens editor directly)
-  - Dialog closes when clicking outside (backdrop click)
-  - All German text replaced with English
+- **All UI text translated to English** — Replaced German strings in `index.php`, `minimal-ui/README.md`, `contracts-ui/README.md`
+- **YAML parsing improved** — Line-anchored regex for key detection, multi-quote support for hash extraction in `validate-contracts.ps1` and `contract-preflight.ps1`
+- **UI startup logic simplified** — `Start-UiIfAvailable` in `init-contracts.ps1` reduced from ~87 to ~40 lines
+- **README.md rewritten** — Documents both variants with comparison tables
+- **skill/README.md updated** — Reflects current structure and cross-references Beads variant
+- **CONTRIBUTING.md updated** — Current project structure and automated test instructions
 
 ### Fixed
 
-- **Interactive Installer** - Enter key confirmation loop fixed
-  - Added 7 failsafe layers (loop counter, try-catch, double break, text fallback)
-  - Bulletproof against terminal edge cases
-
-- **Agent Instructions** - Reduced from 5-13 lines to 1 line each
-  - More concise and focused
-  - Maintains essential workflow guidance
+- **Interactive Installer** — Enter key confirmation loop fixed
+- **Agent Instructions** — Reduced from 5-13 lines to 1 line each
 
 ## [2.0.0] - 2026-01-29
 

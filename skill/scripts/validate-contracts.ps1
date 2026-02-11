@@ -53,20 +53,21 @@ function Get-FileHash256 {
 
 function Test-YamlStructure {
     param([string]$YamlPath)
-    
-    # Basic structure validation (PowerShell doesn't have native YAML)
-    # This checks for required keys as text patterns
+
+    # Structure validation via top-level key detection.
+    # Matches keys at column 0 followed by colon (YAML mapping keys).
+    # PowerShell has no native YAML parser, so we use line-anchored regex.
     $content = Get-Content $YamlPath -Raw
-    
-    $requiredKeys = @("meta:", "module:", "features:", "constraints:", "changelog:")
+
+    $requiredKeys = @("meta", "module", "features", "constraints", "changelog")
     $missing = @()
-    
+
     foreach ($key in $requiredKeys) {
-        if ($content -notmatch $key) {
-            $missing += $key.TrimEnd(':')
+        if ($content -notmatch "(?m)^${key}\s*:") {
+            $missing += $key
         }
     }
-    
+
     return $missing
 }
 

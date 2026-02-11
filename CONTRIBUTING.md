@@ -62,18 +62,23 @@ chore: update dependencies
 ```
 contracts-skill/
 ├── README.md              # Main documentation
-├── install.ps1            # PowerShell installer
-├── install.sh             # Bash installer
-├── LICENSE                # MIT license
 ├── CONTRIBUTING.md        # This file
+├── LICENSE                # MIT license
 │
-├── skill/                 # The actual skill (copy this to .agent/skills/)
-│   ├── SKILL.md          # Main skill definition
-│   ├── README.md         # Skill documentation
-│   ├── references/       # Templates and guides
-│   └── scripts/          # PowerShell utilities
+├── skill/                 # Base variant (advisory enforcement)
+│   ├── SKILL.md          # Skill definition
+│   ├── references/       # Templates and assistant hooks
+│   ├── scripts/          # PowerShell & Bash validation tools
+│   ├── ai/init-agent/    # Semantic project analyzer (Node.js)
+│   └── ui/               # Minimal UI & PHP UI
 │
-└── examples/              # Example projects with contracts
+├── skill-beads/           # Beads-enforced variant
+│   ├── SKILL.md          # Skill definition with Beads integration
+│   └── references/       # Preflight & init hooks with Beads lifecycle
+│
+├── installers/            # One-liner installers (PS1, Bash)
+├── examples/              # Sample project with contracts
+└── tests/                 # Playwright-based test suite
 ```
 
 ## Testing
@@ -85,14 +90,21 @@ contracts-skill/
 3. Create/modify contracts
 4. Verify sync behavior with your AI assistant
 
+### Automated Testing
+
+```bash
+npm install
+npm test
+```
+
 ### Script Testing
 
 ```powershell
 # Validate contract structure
-.\skill\scripts\validate-contracts.ps1 -Path "examples/sample-project"
+pwsh skill/scripts/validate-contracts.ps1 -Path "examples/sample-project"
 
-# Test hash computation
-.\skill\scripts\compute-hash.ps1 -FilePath "examples/sample-project/src/auth/CONTRACT.md"
+# Preflight check
+pwsh skill/scripts/contract-preflight.ps1 -Path "examples/sample-project" -Changed
 ```
 
 ## Code of Conduct
@@ -101,6 +113,6 @@ contracts-skill/
 - Focus on constructive feedback
 - Help others learn
 
-## 🙏 Thank You!
+## Thank You
 
 Your contributions make this project better for everyone.

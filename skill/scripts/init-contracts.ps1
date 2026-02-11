@@ -108,81 +108,49 @@ function Start-UiIfAvailable([string]$ProjectPath) {
     if (-not (Test-Path $startPs1) -and -not (Test-Path $serverJs)) { return }
 
     $cfg = Read-UiConfig $uiDir
-    $autoStart = $false
-    $openBrowser = $true
-    $port = $UIPort
+    $port = if ($cfg -and $cfg.port) { [int]$cfg.port } else { $UIPort }
+    $openBrowser = if ($cfg -and $cfg.openBrowser -eq $false) { $false } else { $true }
 
-    if ($cfg) {
-        if ($cfg.autoStart -eq $true) { $autoStart = $true }
-        if ($cfg.openBrowser -eq $false) { $openBrowser = $false }
-        if ($cfg.port) {
-            try { $port = [int]$cfg.port } catch {}
-        }
-    }
-
+    # Determine mode
     $mode = $UI
     if ($mode -eq 'ask') {
-        if ($cfg -and ($cfg.autoStart -eq $true -or $cfg.autoStart -eq $false)) {
-            # Respect existing config without prompting
-            $mode = if ($cfg.autoStart -eq $true) { 'on' } else { 'off' }
-        } else {
-            try {
-                Write-Host ''
-                Write-Host 'Contracts UI starten?' -ForegroundColor White
-                Write-Host '  [1] Nein (diesmal nicht)' -ForegroundColor Gray
-                Write-Host '  [2] Jetzt starten (einmalig)'
-                Write-Host '  [3] Jetzt starten und zukünftig automatisch'
-                $resp = Read-Host 'Selection (default: 1)'
-                $mode = switch ($resp.Trim()) {
-                    '2' { 'once' }
-                    '3' { 'on' }
-                    default { 'off' }
-                }
-            } catch {
-                $mode = 'off'
+        if ($cfg -and ($cfg.autoStart -eq $true)) { $mode = 'on' }
+        elseif ($cfg -and ($cfg.autoStart -eq $false)) { $mode = 'off' }
+        else {
+            Write-Host ''
+            Write-Host 'Start Contracts UI?' -ForegroundColor White
+            Write-Host '  [1] No (skip this time)' -ForegroundColor Gray
+            Write-Host '  [2] Start now (one-time)'
+            Write-Host '  [3] Start now and auto-start in future'
+            $resp = Read-Host 'Selection (default: 1)'
+            $mode = switch ($resp.Trim()) {
+                '2' { 'once' }
+                '3' { 'on' }
+                default { 'off' }
             }
         }
     }
 
-    if ($mode -eq 'off') {
-        if (-not $cfg) {
-            try { Write-UiConfig -UiDir $uiDir -AutoStart:$false -Port:$port -OpenBrowser:$openBrowser } catch {}
-        }
-        return
-    }
-
+    if ($mode -eq 'off') { return }
     if ($mode -eq 'on') {
-        $autoStart = $true
-        try { Write-UiConfig -UiDir $uiDir -AutoStart:$true -Port:$port -OpenBrowser:$openBrowser } catch {}
+        Write-UiConfig -UiDir $uiDir -AutoStart:$true -Port:$port -OpenBrowser:$openBrowser
     }
 
-    if ($mode -eq 'once') {
-        # Do not persist auto-start
-        if (-not $cfg) {
-            try { Write-UiConfig -UiDir $uiDir -AutoStart:$false -Port:$port -OpenBrowser:$openBrowser } catch {}
-        }
-    }
+    # Start the UI
+    $startArgs = @('-Port', $port, '-ProjectRoot', (Resolve-Path $ProjectPath).Path)
+    if ($UINoOpen -or -not $openBrowser) { $startArgs += '-NoOpen' }
 
     if (Test-Path $startPs1) {
-        $args = @('-Port', $port, '-ProjectRoot', (Resolve-Path $ProjectPath).Path)
-        if ($UINoOpen -or -not $openBrowser) { $args += '-NoOpen' }
-        & $startPs1 @args | Out-Null
-        return
-    }
-
-    # Fallback: direct node start
-    $url = "http://127.0.0.1:$port/"
-    $nodeArgs = @(
-        "\"$serverJs\"",
-        '--port',
-        "$port",
-        '--project-root',
-        "\"$((Resolve-Path $ProjectPath).Path)\""
-    )
-    Start-Process -FilePath 'node' -ArgumentList $nodeArgs -WorkingDirectory $uiDir -WindowStyle Hidden | Out-Null
-    if (-not $UINoOpen -and $openBrowser) {
-        Start-Sleep -Milliseconds 250
-        Start-Process $url | Out-Null
+        & $startPs1 @startArgs | Out-Null
+    } elseif (Test-Path $serverJs) {
+        Start-Process -FilePath 'node' -ArgumentList @(
+            "`"$serverJs`"", '--port', "$port",
+            '--project-root', "`"$((Resolve-Path $ProjectPath).Path)`""
+        ) -WorkingDirectory $uiDir -WindowStyle Hidden | Out-Null
+        if (-not $UINoOpen -and $openBrowser) {
+            Start-Sleep -Milliseconds 250
+            Start-Process "http://127.0.0.1:$port/" | Out-Null
+        }
     }
 }
 

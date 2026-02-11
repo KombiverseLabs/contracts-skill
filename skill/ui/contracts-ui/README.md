@@ -4,13 +4,13 @@ Mini Web-UI (PHP) to find and edit `CONTRACT.md` / `CONTRACT.yaml` files in the 
 
 ## Start
 
-Im Projekt-Root:
+In the project root:
 
 ```bash
 php -S localhost:8080 -t contracts-ui
 ```
 
-Dann öffnen: http://localhost:8080
+Then open: http://localhost:8080
 
 ## Features
 
