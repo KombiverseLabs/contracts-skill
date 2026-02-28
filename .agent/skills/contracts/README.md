@@ -7,7 +7,7 @@
 The Contracts skill maintains alignment between user intent and implementation through a two-file system:
 
 - **CONTRACT.md** — User-owned specification that defines what a module should do
-- **CONTRACT.yaml** — AI-editable technical mapping that tracks implementation status
+- **CONTRACT.yaml** — AI-editable technical mapping that tracks implementation status, verification tests, and attestation
 
 This prevents the common problem of "spec drift" where implementations gradually diverge from original requirements.
 
@@ -17,30 +17,24 @@ Copy the `contracts` folder to your agent skills directory:
 
 ```
 .agent/skills/contracts/
-├── SKILL.md                 # Main skill definition
+├── SKILL.md                       # Main skill definition
 ├── references/
-│   ├── initialization.md    # Full init workflow
-│   ├── cheatsheet.md        # Quick reference
-│   └── templates/           # File templates
-└── scripts/
-    ├── init-contracts.ps1   # Project initialization
-    ├── validate-contracts.ps1  # CI/CD validation
-    └── compute-hash.ps1     # Hash utility
+│   ├── assistant-hooks/
+│   │   ├── contract-preflight.md  # Preflight workflow
+│   │   └── init-contracts.md      # Initialization workflow
+│   └── templates/                 # CONTRACT.md templates per tier
+│       ├── core.md
+│       ├── feature.md
+│       ├── integration.md
+│       └── utility.md
+└── scripts/                       # (optional, from skill/ directory)
 ```
 
 ## Quick Start
 
 ### Initialize a Project
 
-```
-init contracts
-```
-
-Or run the PowerShell script:
-
-```powershell
-.\.agent\skills\contracts\scripts\init-contracts.ps1 -Path "."
-```
+Ask the AI: "Initialize contracts for this project"
 
 ### Create a Contract for a Module
 
@@ -48,11 +42,7 @@ Ask the AI: "Create a contract for src/features/auth"
 
 ### Check for Drift
 
-Ask the AI: "Check contracts" or run:
-
-```powershell
-.\.agent\skills\contracts\scripts\validate-contracts.ps1
-```
+Ask the AI: "Check contracts"
 
 ## How It Works
 
@@ -61,40 +51,48 @@ Ask the AI: "Check contracts" or run:
 1. Define requirements in `CONTRACT.md`
 2. AI generates matching `CONTRACT.yaml`
 3. When requirements change, update `CONTRACT.md`
-4. AI automatically syncs `CONTRACT.yaml`
+4. AI automatically syncs `CONTRACT.yaml` and resets attestation
 
 ### The AI Workflow
 
 1. Before any code change, check for `CONTRACT.md`
-2. Verify planned changes align with constraints
-3. Flag any drift (hash mismatch)
+2. Verify constraints, attestation status, and VT results
+3. Flag any drift (hash mismatch) or stale attestations
 4. Update `CONTRACT.yaml` when specs change
+5. After implementation, update attestation with VT results
 
 ## File Formats
 
-### CONTRACT.md (Max 50 lines)
+### CONTRACT.md (Tier-dependent line limit: 30/50/80)
 
 ```markdown
 # Authentication
 
 ## Purpose
-Handles user login, logout, and session management.
+Handles user authentication to enable secure access across the application.
 
 ## Core Features
-- [ ] Email/password login
-- [ ] Session tokens with refresh
+- [x] Email/password login → Test: login.test.ts
+- [x] Session tokens with refresh → Test: session.test.ts
 - [ ] OAuth2 (Google, GitHub)
 
 ## Constraints
-- MUST: Use bcrypt for password hashing
-- MUST: Expire sessions after 24h
+- MUST: Use bcrypt with cost factor 12 for password hashing
+- MUST: Expire sessions after 24h inactivity
 - MUST NOT: Store passwords in plain text
 
 ## Success Criteria
-Users can log in and maintain sessions across page reloads.
+- Given valid credentials, when login() is called, then returns session token within 200ms
+
+## Verification Tests
+- [x] **VT-1: Full auth round-trip with credential verification**
+  - Scenario: Create user → login → use token to access protected resource
+  - Action: Register with known password, login, extract token, call /api/me
+  - Verify: Response contains correct user email AND token expiry > now
+  - Proves: Hashing, storage, login, token generation, token validation, protected routes
 ```
 
-### CONTRACT.yaml (Max 100 lines)
+### CONTRACT.yaml (Tier-dependent line limit: 60/100/150)
 
 ```yaml
 meta:
@@ -112,21 +110,33 @@ features:
   - id: "email-password-login"
     status: implemented
     entry_point: "./login.ts"
-    
-  - id: "oauth2"
-    status: planned
-    notes: "Waiting for API keys"
+    tests: "./login.test.ts"
 
 constraints:
   must:
-    - "Use bcrypt for password hashing"
-    - "Expire sessions after 24h"
+    - "Use bcrypt with cost factor 12"
   must_not:
     - "Store passwords in plain text"
 
+verification_tests:
+  - id: "VT-1"
+    name: "Full auth round-trip"
+    status: passing
+    test_file: "./auth.vt.test.ts"
+    last_run: "2026-02-15T14:00:00Z"
+    last_result: pass
+
+attestation:
+  contract_version: "1.1"
+  last_verified: "2026-02-15T14:00:00Z"
+  verification_tests_pass: true
+  features_implemented: ["email-password-login", "session-tokens"]
+  confidence: high
+  next_review: "2026-03-17T14:00:00Z"
+
 changelog:
   - date: "2026-01-29"
-    change: "Added OAuth2 requirement"
+    change: "Initial contract"
 ```
 
 ## Integration
@@ -143,16 +153,6 @@ Consult `contracts` skill before modifying any module. Check for CONTRACT.md fil
 ```markdown
 ## Contracts System
 Before code changes, check for CONTRACT.md. See `.agent/skills/contracts/SKILL.md`.
-```
-
-## CI/CD Integration
-
-Add to your pipeline:
-
-```yaml
-- name: Validate Contracts
-  run: |
-    pwsh .agent/skills/contracts/scripts/validate-contracts.ps1 -OutputFormat github-actions
 ```
 
 ## License
