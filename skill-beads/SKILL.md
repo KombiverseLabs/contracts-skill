@@ -51,8 +51,10 @@ Maintain alignment between user intent and implementation through **living contr
 2. **Sync Obligation**: When `.md` changes, `.yaml` MUST be updated in the same session.
 3. **Drift Detection**: Hash-based verification catches silent divergence.
 4. **Test Anchoring**: Every feature maps to tests. Success criteria must be testable.
-5. **Enforced Preflight**: Beads blocks feature work until contract checks pass.
-6. **Minimal Overhead**: Contracts are brief — clarity over completeness.
+5. **Verification Tests**: 1-3 high-coverage tests per contract that prove the module actually works (see Templates).
+6. **Contract Commitment**: Contracts are binding across sessions — attestations track fulfillment.
+7. **Enforced Preflight**: Beads blocks feature work until contract checks pass.
+8. **Minimal Overhead**: Contracts are brief — clarity over completeness.
 
 ---
 
@@ -116,6 +118,20 @@ features:   → list with id, description, status, entry_point, tests
 constraints: → must[], must_not[]
 relationships: → depends_on[], consumed_by[]
 validation: → exports[], test_pattern, custom_script
+verification_tests:
+  - id: "VT-1"
+    name: "descriptive name"
+    status: defined|implemented|passing|failing
+    test_file: "./path.test.ts"
+    last_run: "ISO timestamp"
+    last_result: pass|fail
+attestation:
+  contract_version: "1.0"
+  last_verified: "ISO timestamp"
+  verification_tests_pass: true|false
+  features_implemented: ["id1","id2"]
+  confidence: high|medium|low
+  next_review: "ISO timestamp"
 changelog:  → history of changes
 ```
 
@@ -132,6 +148,9 @@ Feature status values: `planned` | `in-progress` | `implemented` | `deprecated`
 - Ignore hash mismatches — always sync first
 - Delete or overwrite changelog entries
 - Start feature work without closing the Beads preflight task
+- Mark a feature as `implemented` without at least VT-1 existing and passing
+- Skip attestation checks during preflight — always report status
+- Ignore stale attestations (past `next_review` date)
 
 ### ALWAYS
 - Read CONTRACT.md before any module changes
@@ -142,6 +161,10 @@ Feature status values: `planned` | `in-progress` | `implemented` | `deprecated`
 - Suggest contract updates when user requests features not in spec
 - Check if tests exist for features marked as implemented
 - Create and close Beads preflight tasks for every implementation cycle
+- Check verification test status during preflight (defined/implemented/passing/failing)
+- Update attestation after implementing features or fixing VTs
+- Flag contracts with `confidence: low` — prompt user to implement VTs
+- Suggest VTs when creating new contracts (use template guidance)
 
 ---
 

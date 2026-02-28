@@ -41,7 +41,9 @@ Maintain alignment between user intent and implementation through **living contr
 2. **Sync Obligation**: When `.md` changes, `.yaml` MUST be updated in the same session.
 3. **Drift Detection**: Hash-based verification catches silent divergence.
 4. **Test Anchoring**: Every feature maps to tests. Success criteria must be testable.
-5. **Minimal Overhead**: Contracts are brief — clarity over completeness.
+5. **Verification Tests**: 1-3 high-coverage tests per contract that prove the module actually works (see Templates).
+6. **Contract Commitment**: Contracts are binding across sessions — attestations track fulfillment.
+7. **Minimal Overhead**: Contracts are brief — clarity over completeness.
 
 ---
 
@@ -57,16 +59,20 @@ Maintain alignment between user intent and implementation through **living contr
    c. If hashes differ → STOP: "Contract changed. Syncing YAML first."
    d. Verify planned changes align with MUST/MUST NOT constraints
    e. Check: do test files exist for features being changed?
+   f. Check attestation status (current / stale / missing)
+   g. Check verification test status (passing / failing / not implemented)
 3. If not found:
    - New modules: offer to create contracts
    - Existing code: note absence, proceed with caution
+4. Summarize constraints + attestation + VT status (max 7 sentences) and proceed.
 ```
 
 ### When User Modifies CONTRACT.md
 
 1. Acknowledge the change
 2. Update `CONTRACT.yaml`: hash, timestamp, features, constraints, changelog
-3. Summarize: "Contract synced. Here's what changed..."
+3. Reset attestation confidence to `low` (contract evolved past implementation)
+4. Summarize: "Contract synced. Here's what changed..."
 
 ### When Creating New Modules
 
@@ -88,6 +94,7 @@ Max lines: tier-dependent. Edited by user ONLY (except during initialization).
 ## Core Features     → Checkbox list, each mapped to a test file
 ## Constraints       → MUST / MUST NOT (testable, measurable)
 ## Success Criteria  → Given/When/Then format or specific metrics
+## Verification Tests → 1-3 golden-path tests with content assertions (see Templates)
 ```
 
 See `references/templates/` for tier-specific templates.
@@ -101,10 +108,63 @@ features:   → list with id, description, status, entry_point, tests
 constraints: → must[], must_not[]
 relationships: → depends_on[], consumed_by[]
 validation: → exports[], test_pattern, custom_script
+verification_tests:
+  - id: "VT-1"
+    name: "descriptive name"
+    status: defined|implemented|passing|failing
+    test_file: "./path.test.ts"
+    last_run: "ISO timestamp"
+    last_result: pass|fail
+attestation:
+  contract_version: "1.0"
+  last_verified: "ISO timestamp"
+  verification_tests_pass: true|false
+  features_implemented: ["id1","id2"]
+  confidence: high|medium|low
+  next_review: "ISO timestamp"
 changelog:  → history of changes
 ```
 
 Feature status values: `planned` | `in-progress` | `implemented` | `deprecated`
+
+---
+
+## Contract Commitment (Long-Term Binding)
+
+Contracts are not session-scoped suggestions — they are **persistent commitments**.
+
+### How Attestation Works
+
+1. **After Implementation**: Record attestation with contract version, VT results, implemented features.
+2. **On Every Preflight**: If `contract_version` differs from current → stale attestation, re-verify.
+3. **VT Status Tracking**: `defined` → `implemented` → `passing`/`failing`. Only `passing` counts.
+4. **Re-Verification Cadence**: Default 30 days. Past `next_review` triggers preflight warning.
+5. **Confidence**: `high` (all VTs passing, current) / `medium` (some failing or >30 days) / `low` (VTs not implemented or stale)
+
+### Binding Rules
+
+- Feature cannot be `implemented` without VT-1 existing and passing
+- Contract changes reset attestation confidence to `low`
+- Stale attestations trigger preflight warnings
+- AI MUST NOT skip attestation checks
+
+---
+
+## Verification Tests (Contract-Level TDD)
+
+1-3 tests per contract that prove the module works through its golden path.
+
+### Philosophy
+
+One smart test beats ten shallow tests. Assert on **actual output content**, not just status codes. A single VT implicitly validates every component in the chain.
+
+### VT Count by Tier
+
+| Tier | VTs | Focus |
+|------|-----|-------|
+| core | 1 | Round-trip correctness |
+| standard | 1-2 | Golden path + key edge case |
+| complex | 2-3 | Golden path + error resilience + secondary flow |
 
 ---
 
@@ -116,6 +176,9 @@ Feature status values: `planned` | `in-progress` | `implemented` | `deprecated`
 - Create code in a module without checking for contracts first
 - Ignore hash mismatches — always sync first
 - Delete or overwrite changelog entries
+- Mark a feature as `implemented` without at least VT-1 existing and passing
+- Skip attestation checks during preflight — always report status
+- Ignore stale attestations (past `next_review` date)
 
 ### ALWAYS
 - Read CONTRACT.md before any module changes
@@ -125,6 +188,25 @@ Feature status values: `planned` | `in-progress` | `implemented` | `deprecated`
 - Flag when implementation deviates from contract
 - Suggest contract updates when user requests features not in spec
 - Check if tests exist for features marked as implemented
+- Check verification test status during preflight
+- Update attestation after implementing features or fixing VTs
+- Flag contracts with `confidence: low`
+- Suggest VTs when creating new contracts
+
+---
+
+## Hash Recovery
+
+If `meta.source_hash` is corrupted or out of sync and you cannot determine the cause:
+
+```
+1. Recompute hash: pwsh scripts/compute-hash.ps1 -FilePath CONTRACT.md
+2. Update CONTRACT.yaml meta.source_hash with the new value
+3. Update meta.last_sync to current timestamp
+4. Add changelog entry: "Hash recovery - manual resync"
+```
+
+This is a repair operation, not a normal workflow. Always investigate why drift occurred.
 
 ---
 
@@ -143,6 +225,8 @@ Do NOT pre-load all references. Load only what the current task requires.
 
 **Drift detected**: Hash mismatch → stop, show diff, sync YAML before proceeding.
 
-**User adds feature to CONTRACT.md**: AI syncs YAML (new feature entry, updated hash, changelog), then offers to implement.
+**User adds feature to CONTRACT.md**: AI syncs YAML (new feature entry, updated hash, changelog), resets attestation confidence to `low`, then offers to implement.
 
-**New module**: AI generates draft CONTRACT.md from template, user reviews, AI creates matching YAML and registry entry.
+**New module**: AI generates draft CONTRACT.md from template (including VTs), user reviews, AI creates matching YAML and registry entry.
+
+**Stale attestation**: Preflight detects `next_review` past due → warns user, suggests running VTs to re-verify module health.
