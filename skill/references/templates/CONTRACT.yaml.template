@@ -32,6 +32,22 @@ validation:
   test_pattern: "*.test.ts"       # Glob pattern for test files
   custom_script: null             # Optional validation script path
 
+verification_tests:
+  - id: "VT-1"
+    name: ""                      # Descriptive name from CONTRACT.md
+    status: defined               # defined | implemented | passing | failing
+    test_file: ""                 # Path to test file once implemented
+    last_run: null                # ISO timestamp of last execution
+    last_result: null             # pass | fail
+
+attestation:
+  contract_version: "1.0"        # CONTRACT.md version at time of attestation
+  last_verified: null             # ISO timestamp of last full verification
+  verification_tests_pass: false  # Do all VTs pass?
+  features_implemented: []        # Feature IDs confirmed working
+  confidence: low                 # high | medium | low
+  next_review: null               # ISO timestamp for next re-verification
+
 changelog:
   - date: ""                      # ISO date: "2026-01-29"
     version: "1.0"

@@ -66,12 +66,60 @@ Ask: "Generate drafts for all, select specific, add unlisted, or skip?"
 ### Step 5: Generate and Review Drafts
 
 For each approved module:
-1. Use appropriate template (core/feature/integration)
+1. Use appropriate template (core/feature/integration/utility)
 2. Fill Purpose from code analysis (NOT just listing exports — describe the user problem)
 3. Fill Features from detected exports, map to test files
 4. Generate testable Success Criteria (Given/When/Then, not "works correctly")
-5. Mark as `<!-- DRAFT: Review and modify, then remove this line -->`
-6. Present draft to user for approval before creating files
+5. **Generate Verification Tests** (see Step 5b below)
+6. Mark as `<!-- DRAFT: Review and modify, then remove this line -->`
+7. Present draft to user for approval before creating files
+
+### Step 5b: Generate Verification Tests
+
+This is the most critical step. VTs make contracts enforceable long-term.
+
+**The Process:**
+1. **Understand the golden path**: What does a real user DO first with this module?
+2. **Trace the chain**: What features MUST work for that action to succeed?
+3. **Find the content assertion**: What concrete output proves it all worked? Not "no error" — actual text, value, or state.
+4. **Write the VT**: Scenario → Action → Verify → Proves
+
+**The Chain-Verification Principle:**
+A good VT is like pulling a thread — if ANY link breaks, the test fails:
+```
+User action → Feature A → Feature B → Feature C → Observable output
+                 ↓            ↓            ↓            ↓
+              If broken,   If broken,   If broken,   We check THIS
+              test fails   test fails   test fails   specific value
+```
+
+**Decision Framework:**
+
+| Question | Guides |
+|----------|--------|
+| What does a user do FIRST? | → VT-1 scenario |
+| What output proves it WORKED? | → VT-1 verify |
+| Longest feature chain needed? | → VT-1 proves list |
+| Most dangerous failure mode? | → VT-2 scenario |
+| Secondary path power users use? | → VT-3 (complex only) |
+
+**Concrete Examples:**
+
+| Module Type | Verify Assertion | Implicitly Tests |
+|-------------|------------------|------------------|
+| Chat Agent | Response contains factual answer | Auth, session, UI, API, LLM, rendering |
+| Auth Module | Token decodes to correct user ID | Hashing, storage, login, token gen |
+| Payment API | Transaction ID matches `txn_[a-z0-9]+` | Auth, formatting, API call, parsing |
+| Dashboard | Widget shows correct user name | Auth, data fetch, render, state mgmt |
+
+**Quality Gate for VTs:**
+
+| Pass | Fail |
+|------|------|
+| Checks specific text/value/state | Checks "not null" or "status 200" |
+| Proves list includes 3+ features | Only tests one function |
+| Realistic user action | Trivial test data |
+| Exact expected value defined | "Works correctly" |
 
 ### Step 6: Create Files
 
@@ -93,6 +141,7 @@ A good contract draft must pass these checks:
 | **Features** | Each maps to a test file (or "TODO") | No test mapping |
 | **Constraints** | Testable, measurable MUST/MUST NOT | Vague ("handle errors gracefully") |
 | **Success Criteria** | Given/When/Then or specific metric | "Module works correctly" |
+| **Verification Tests** | Content assertion on golden-path output | "No errors", "status 200", or missing |
 
 ### Good vs Bad Examples
 
@@ -117,6 +166,22 @@ A good contract draft must pass these checks:
 **Constraints — BAD:**
 > - MUST: Follow project coding standards
 > - MUST: Have comprehensive test coverage
+
+**Verification Test — GOOD:**
+> **VT-1: Chat produces verified factual response**
+> - Scenario: Authenticated user sends a factual question through chat UI
+> - Action: Login with test creds → open chat → send "What is the capital of France?"
+> - Verify: Response text contains "Paris"
+> - Proves: Auth, session, chat UI, message pipeline, LLM integration, response rendering
+
+**Verification Test — BAD:**
+> **VT-1: Chat works**
+> - Scenario: User sends a message
+> - Action: Send message to chat
+> - Verify: Response is not empty
+> - Proves: Chat feature
+
+*Why it's bad: "Not empty" proves nothing — an error message is also "not empty". No chain coverage.*
 
 ---
 
@@ -169,5 +234,11 @@ This task blocks all feature work until a preflight check is completed. Each new
 
 1. Review each CONTRACT.md — remove `<!-- DRAFT -->` when satisfied
 2. Adjust features, constraints, success criteria
-3. Use "check contracts" to verify sync status
-4. Use "contract preflight" before implementing features (enforced via Beads)
+3. **Review Verification Tests critically** — for each VT ask:
+   - "If this passes, am I confident the module works?" → if not, strengthen assertion
+   - "Does Verify check actual content or just existence?" → content is mandatory
+   - "How many features would break this test?" → aim for 3+ (chain coverage)
+4. Use "check contracts" to verify sync status
+5. Use "contract preflight" before implementing features (enforced via Beads)
+6. **Implement VT-1 for each contract** as the first development step
+7. Attestation initializes automatically after first VT pass

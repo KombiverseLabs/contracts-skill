@@ -1,0 +1,30 @@
+# .contracts/registry.yaml
+# Central index of all contracts in this project
+# Maintained by the contracts skill
+
+project:
+  name: "sample-project"
+  initialized: "2026-01-29T10:00:00Z"
+  initialized_by: "contracts-skill v2.2.0 (AI-assisted)"
+
+settings:
+  default_tier: standard
+  require_tests: true
+  test_pattern: "*.test.ts"
+
+contracts:
+  - path: "src/core/auth"
+    name: "Authentication"
+    tier: core
+    type: core
+    summary: "User login, sessions, and access control"
+    features_count: 4
+    last_modified: "2026-02-28"
+
+  - path: "src/features/dashboard"
+    name: "Dashboard"
+    tier: standard
+    type: feature
+    summary: "Main user interface after login with personalized content"
+    features_count: 4
+    last_modified: "2026-02-28"

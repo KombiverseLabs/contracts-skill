@@ -607,6 +607,9 @@ function generateContractDraft(moduleInfo, projectInfo) {
   // Success criteria: testable Given/When/Then format
   const successCriteria = generateTestableSuccessCriteria(moduleInfo);
 
+  // Verification tests: tier-appropriate golden-path tests
+  const verificationTests = generateVerificationTests(moduleInfo, name);
+
   const mdContent = `<!-- DRAFT: Review and modify, then remove this line -->
 # ${name}
 
@@ -621,6 +624,9 @@ ${constraints.join('\n')}
 
 ## Success Criteria
 ${successCriteria}
+
+## Verification Tests
+${verificationTests}
 `;
 
   return {
@@ -657,10 +663,72 @@ function generateTestableSuccessCriteria(moduleInfo) {
   return criteria.join('\n');
 }
 
+/**
+ * Generate verification test suggestions based on module type and tier
+ * @param {object} moduleInfo - Module information
+ * @param {string} displayName - Human-readable module name
+ * @returns {string} - Verification tests text
+ */
+function generateVerificationTests(moduleInfo, displayName) {
+  const tests = [];
+  const mainExport = moduleInfo.exports.length > 0 ? moduleInfo.exports[0] : '[main function]';
+
+  // VT-1: Golden path (always)
+  if (moduleInfo.type === 'core') {
+    tests.push(`- [ ] **VT-1: ${displayName} round-trip correctness**`);
+    tests.push(`  - Scenario: Feed known input through ${displayName}'s primary responsibility`);
+    tests.push(`  - Action: Call ${mainExport}() with realistic input → capture output`);
+    tests.push(`  - Verify: [Output matches exact expected value — proves correctness, not just execution]`);
+    tests.push(`  - Proves: [List all internal steps that must work for this output to be correct]`);
+  } else if (moduleInfo.type === 'integration') {
+    tests.push(`- [ ] **VT-1: ${displayName} real round-trip**`);
+    tests.push(`  - Scenario: Send minimal valid request to external system`);
+    tests.push(`  - Action: Call ${mainExport}() with test credentials → capture response`);
+    tests.push(`  - Verify: [Response contains domain-specific content — not just status code]`);
+    tests.push(`  - Proves: [Auth, request formatting, API communication, response parsing]`);
+  } else if (moduleInfo.type === 'utility') {
+    tests.push(`- [ ] **VT-1: ${displayName} composite correctness**`);
+    tests.push(`  - Scenario: Process the most complex realistic input this utility handles`);
+    tests.push(`  - Action: Call ${mainExport}() with edge-case input that exercises multiple code paths`);
+    tests.push(`  - Verify: [Exact expected output — literal value comparison]`);
+    tests.push(`  - Proves: [All transformations/steps performed internally]`);
+  } else {
+    // feature type
+    tests.push(`- [ ] **VT-1: ${displayName} golden-path scenario**`);
+    tests.push(`  - Scenario: [What a real user does first with ${displayName}]`);
+    tests.push(`  - Action: [Setup → trigger primary action → observe result]`);
+    tests.push(`  - Verify: [Actual output content — exact text, value, or state to check]`);
+    tests.push(`  - Proves: [All features that must work for this test to pass]`);
+  }
+
+  // VT-2: Edge case (standard and complex tiers)
+  if (moduleInfo.tier !== 'core') {
+    tests.push('');
+    if (moduleInfo.type === 'integration') {
+      tests.push(`- [ ] **VT-2: ${displayName} failure resilience**`);
+      tests.push(`  - Scenario: External system returns error or times out`);
+      tests.push(`  - Action: [Trigger timeout/error condition]`);
+      tests.push(`  - Verify: [Graceful degradation produces specific fallback output]`);
+      tests.push(`  - Proves: [Error handling, retry logic, user-facing error messages]`);
+    } else {
+      tests.push(`- [ ] **VT-2: ${displayName} critical edge case**`);
+      tests.push(`  - Scenario: [Most important failure mode or secondary path]`);
+      tests.push(`  - Action: [Steps to trigger the edge case]`);
+      tests.push(`  - Verify: [What correct handling looks like — specific output]`);
+      tests.push(`  - Proves: [Error handling or secondary features validated]`);
+    }
+  }
+
+  tests.push('<!-- Review: "If VT-1 passes, am I confident this module works?" If not, strengthen the assertion. -->');
+
+  return tests.join('\n');
+}
+
 // Export for use in other modules
 module.exports = {
   analyzeProject,
   generateContractDraft,
+  generateVerificationTests,
   PROJECT_PATTERNS,
   detectProjectType,
   calculateModuleScore

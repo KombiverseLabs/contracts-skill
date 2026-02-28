@@ -9,6 +9,8 @@
     - Invalid YAML structure
     - Feature status consistency
     - Test coverage for implemented features
+    - Verification test status (defined/implemented/passing/failing)
+    - Attestation health (confidence, stale reviews)
 
 .PARAMETER Path
     Root path to scan for contracts. Defaults to current directory.
@@ -69,6 +71,71 @@ function Test-YamlStructure {
     }
 
     return $missing
+}
+
+function Test-VerificationTests {
+    param([string]$YamlPath)
+
+    $content = Get-Content $YamlPath -Raw
+    $warnings = @()
+
+    # Check if verification_tests section exists
+    if ($content -notmatch "(?m)^verification_tests\s*:") {
+        $warnings += "Missing verification_tests section in CONTRACT.yaml"
+        return $warnings
+    }
+
+    # Check for VTs with failing status
+    $failingVTs = [regex]::Matches($content, 'status:\s*failing')
+    if ($failingVTs.Count -gt 0) {
+        $warnings += "$($failingVTs.Count) verification test(s) are failing"
+    }
+
+    # Check if features are implemented but VTs are only defined (not passing)
+    $implementedFeatures = [regex]::Matches($content, 'status:\s*implemented')
+    if ($implementedFeatures.Count -gt 0) {
+        $passingVTs = [regex]::Matches($content, 'status:\s*passing')
+        if ($passingVTs.Count -eq 0) {
+            $warnings += "Features marked as implemented but no verification tests are passing"
+        }
+    }
+
+    return $warnings
+}
+
+function Test-Attestation {
+    param([string]$YamlPath)
+
+    $content = Get-Content $YamlPath -Raw
+    $warnings = @()
+
+    # Check if attestation section exists
+    if ($content -notmatch "(?m)^attestation\s*:") {
+        $warnings += "Missing attestation section in CONTRACT.yaml"
+        return $warnings
+    }
+
+    # Check confidence level
+    if ($content -match 'confidence:\s*low') {
+        $warnings += "Contract attestation confidence is low — verification tests may not be implemented"
+    }
+
+    # Check for stale attestation (next_review in the past)
+    if ($content -match 'next_review:\s*"([^"]+)"') {
+        $reviewDate = $matches[1]
+        if ($reviewDate -ne "null" -and $reviewDate -ne "") {
+            try {
+                $review = [DateTime]::Parse($reviewDate)
+                if ($review -lt [DateTime]::UtcNow) {
+                    $warnings += "Contract re-verification overdue (next_review: $reviewDate)"
+                }
+            } catch {
+                # Could not parse date, skip
+            }
+        }
+    }
+
+    return $warnings
 }
 
 function Test-FeatureCoverage {
@@ -241,7 +308,27 @@ foreach ($mdFile in $contractFiles) {
         Write-Result -Type "warn" -Path $relativePath -Message $cw
     }
 
-    # Check 5: Dependency impact
+    # Check 5: Verification tests
+    $vtWarnings = Test-VerificationTests -YamlPath $yamlPath
+    foreach ($vw in $vtWarnings) {
+        $results.warnings += @{
+            path = $relativePath
+            message = $vw
+        }
+        Write-Result -Type "warn" -Path $relativePath -Message $vw
+    }
+
+    # Check 6: Attestation
+    $attWarnings = Test-Attestation -YamlPath $yamlPath
+    foreach ($aw in $attWarnings) {
+        $results.warnings += @{
+            path = $relativePath
+            message = $aw
+        }
+        Write-Result -Type "warn" -Path $relativePath -Message $aw
+    }
+
+    # Check 7: Dependency impact
     $depWarnings = Test-DependencyImpact -ModulePath $mdFile.FullName -RootPath $Path
     foreach ($dw in $depWarnings) {
         $results.warnings += @{

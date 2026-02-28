@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-02-28
+
+### Added
+
+- **Verification Tests (Contract-Level TDD)** — Each contract now defines 1-3 high-leverage tests
+  - VTs test the golden path through a module with content-level assertions
+  - Chain-Verification Principle: one smart test implicitly validates multiple features
+  - Tier-based VT count: core (1), standard (1-2), complex (2-3)
+  - All 4 templates (core, feature, integration, utility) include `## Verification Tests` with examples
+  - Decision framework and quality gates for choosing effective VTs
+  - VT status tracking in CONTRACT.yaml: `defined` | `implemented` | `passing` | `failing`
+
+- **Contract Commitment & Attestation** — Long-term binding across sessions
+  - Attestation block in CONTRACT.yaml tracks contract version, VT results, and confidence
+  - Confidence scoring: `high` (all VTs passing) / `medium` (some failing) / `low` (not implemented)
+  - Re-verification cadence: stale attestations (>30 days) trigger preflight warnings
+  - Binding rule: features cannot be marked `implemented` without VT-1 passing
+  - Contract changes reset attestation confidence to `low`
+
+### Changed
+
+- **Preflight checks expanded** — Now includes attestation check (Step 4), VT status check (Step 5), and post-implementation attestation update
+- **CONTRACT.yaml schema extended** — New `verification_tests` and `attestation` sections
+- **CONTRACT.yaml.template updated** — Includes VT and attestation fields out of the box
+- **SKILL.md expanded** — All 3 variants now include Contract Commitment and Verification Tests sections
+- **Init-contracts workflow** — Step 5b added for VT generation with chain-verification principle, decision framework, and quality gates
+- **Preflight summary** — Increased from max 5 to max 7 sentences to include attestation and VT status
+- **NEVER/ALWAYS constraints** — Added VT and attestation enforcement rules
+- **Sample project updated** — Example contracts include VT sections and attestation fields
+
 ## [2.1.0] - 2026-02-11
 
 ### Added

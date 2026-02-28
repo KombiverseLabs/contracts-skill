@@ -1,5 +1,6 @@
 {
   "name": "contracts-skill",
+  "version": "2.2.0",
   "private": true,
   "type": "commonjs",
   "scripts": {
