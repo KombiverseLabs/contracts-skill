@@ -1103,10 +1103,10 @@ try {
             if ($mode -eq 'ask') {
                 try {
                     Write-Host ''
-                    Write-Host 'Contracts UI Auto-Start konfigurieren?' -ForegroundColor White
-                    Write-Host '  [1] aus (default)'
-                    Write-Host '  [2] einmalig starten (ohne merken)'
-                    Write-Host '  [3] an (bei init-contracts automatisch starten)'
+                    Write-Host 'Configure Contracts UI Auto-Start?' -ForegroundColor White
+                    Write-Host '  [1] off (default)'
+                    Write-Host '  [2] start once (without saving preference)'
+                    Write-Host '  [3] on (auto-start with init-contracts)'
                     $resp = Read-Host 'Selection (default: 1)'
                     $mode = switch ($resp.Trim()) {
                         '2' { 'once' }

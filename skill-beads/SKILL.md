@@ -75,7 +75,9 @@ Maintain alignment between user intent and implementation through **living contr
 5. If not found:
    - New modules: offer to create contracts
    - Existing code: note absence, proceed with caution
-6. Close preflight task with summary: bd close <id> --design "Checked: [modules]. Constraints: [summary]."
+   f. Check attestation status (current / stale / missing)
+   g. Check verification test status (passing / failing / not implemented)
+6. Close preflight task with summary: bd close <id> --design "Checked: [modules]. Constraints: [summary]. Attestation: [status]. VTs: [status]."
 7. Feature work tasks can now proceed (Beads dependency unblocked).
 ```
 
@@ -83,7 +85,8 @@ Maintain alignment between user intent and implementation through **living contr
 
 1. Acknowledge the change
 2. Update `CONTRACT.yaml`: hash, timestamp, features, constraints, changelog
-3. Summarize: "Contract synced. Here's what changed..."
+3. Reset attestation confidence to `low` (contract evolved past implementation)
+4. Summarize: "Contract synced. Here's what changed..."
 
 ### When Creating New Modules
 
@@ -105,6 +108,7 @@ Max lines: tier-dependent. Edited by user ONLY (except during initialization).
 ## Core Features     → Checkbox list, each mapped to a test file
 ## Constraints       → MUST / MUST NOT (testable, measurable)
 ## Success Criteria  → Given/When/Then format or specific metrics
+## Verification Tests → 1-3 golden-path tests with content assertions (see Templates)
 ```
 
 See `../skill/references/templates/` for tier-specific templates.
@@ -136,6 +140,63 @@ changelog:  → history of changes
 ```
 
 Feature status values: `planned` | `in-progress` | `implemented` | `deprecated`
+
+---
+
+## Contract Commitment (Long-Term Binding)
+
+Contracts are not session-scoped suggestions — they are **persistent commitments**.
+The attestation mechanism ensures contracts remain binding across sessions.
+
+### How Attestation Works
+
+1. **After Implementation**: When features are implemented against a contract, record an attestation in `CONTRACT.yaml` with the contract version, passing VTs, and implemented features.
+2. **On Every Preflight**: Check the attestation. If `contract_version` differs from current CONTRACT.md version → the contract has evolved past the implementation. Flag as **stale attestation** and require re-verification.
+3. **Verification Test Status**: Track whether VTs are `defined`, `implemented`, `passing`, or `failing`. A contract with `defined` but not `implemented` VTs is incomplete — the AI must flag this.
+4. **Re-Verification Cadence**: Attestations include `next_review`. When current date exceeds this, the preflight flags re-verification as needed. Default: 30 days after last verification.
+5. **Confidence Score**: Derived from VT coverage:
+   - `high` — All VTs implemented and passing, attestation current
+   - `medium` — VTs exist but some failing, or attestation older than 30 days
+   - `low` — VTs only defined (not implemented), or attestation stale
+
+### Binding Rules
+
+- A feature cannot be marked `implemented` unless at least VT-1 exists and passes
+- Contract changes (new MUST/MUST NOT, new features) reset attestation confidence to `low`
+- Stale attestations (past `next_review`) trigger a warning during preflight
+- The AI MUST NOT silently skip attestation checks — always report status
+
+---
+
+## Verification Tests (Contract-Level TDD)
+
+Each contract defines 1-3 Verification Tests (VTs) — high-leverage tests that prove the module actually works, not just that it compiles.
+
+### Philosophy
+
+One smart test beats ten shallow tests. A VT tests the **golden path** through the module — the scenario a real user performs first. By asserting on **actual output content** (not just status codes or "no error"), a single VT implicitly validates every component in the chain.
+
+### What Makes a Good VT
+
+| Good VT | Bad VT |
+|---------|--------|
+| Checks actual response text/value | Checks "response is not null" |
+| Tests the full user journey through the module | Tests one isolated function |
+| Fails if ANY core feature breaks | Only fails if one specific thing breaks |
+| Uses realistic input data | Uses trivial/empty test data |
+| Assertion proves correctness | Assertion proves execution |
+
+### VT Count by Tier
+
+| Tier | VTs | Focus |
+|------|-----|-------|
+| core | 1 | Round-trip correctness of primary responsibility |
+| standard | 1-2 | Golden path + most important edge case |
+| complex | 2-3 | Golden path + error resilience + secondary flow |
+
+### VT in Templates
+
+All templates (core, feature, integration, utility) include a `## Verification Tests` section with tier-appropriate guidance and concrete examples. See `../skill/references/templates/`.
 
 ---
 
@@ -198,8 +259,10 @@ Do NOT pre-load all references. Load only what the current task requires.
 
 **Drift detected**: Hash mismatch → stop, show diff, sync YAML before proceeding.
 
-**User adds feature to CONTRACT.md**: AI syncs YAML (new feature entry, updated hash, changelog), then offers to implement.
+**User adds feature to CONTRACT.md**: AI syncs YAML (new feature entry, updated hash, changelog), resets attestation confidence to `low`, then offers to implement.
 
-**New module**: AI generates draft CONTRACT.md from template, user reviews, AI creates matching YAML and registry entry.
+**New module**: AI generates draft CONTRACT.md from template (including VTs), user reviews, AI creates matching YAML and registry entry.
 
-**Beads enforcement**: Feature task created → depends on PREFLIGHT task → agent runs preflight, closes with summary → feature task unblocks → implementation begins.
+**Beads enforcement**: Feature task created → depends on PREFLIGHT task → agent runs preflight (incl. attestation + VT check), closes with summary → feature task unblocks → implementation begins.
+
+**Stale attestation**: Preflight detects `next_review` past due → warns user, suggests running VTs to re-verify module health.

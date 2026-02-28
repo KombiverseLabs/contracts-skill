@@ -5,7 +5,7 @@
 project:
   name: ""                              # Project name
   initialized: ""                       # ISO timestamp
-  initialized_by: "contracts-skill v1.0"
+  initialized_by: "contracts-skill v2.2.0 (AI-assisted)"
 
 # Global settings (optional)
 settings:

@@ -59,17 +59,20 @@ Maintain alignment between user intent and implementation through **living contr
    c. If hashes differ → STOP: "Contract changed. Syncing YAML first."
    d. Verify planned changes align with MUST/MUST NOT constraints
    e. Check: do test files exist for features being changed?
+   f. Check attestation status (current / stale / missing)
+   g. Check verification test status (passing / failing / not implemented)
 3. If not found:
    - New modules: offer to create contracts
    - Existing code: note absence, proceed with caution
-4. Summarize constraints (max 5 sentences) and proceed.
+4. Summarize constraints + attestation + VT status (max 7 sentences) and proceed.
 ```
 
 ### When User Modifies CONTRACT.md
 
 1. Acknowledge the change
 2. Update `CONTRACT.yaml`: hash, timestamp, features, constraints, changelog
-3. Summarize: "Contract synced. Here's what changed..."
+3. Reset attestation confidence to `low` (contract evolved past implementation)
+4. Summarize: "Contract synced. Here's what changed..."
 
 ### When Creating New Modules
 
@@ -91,6 +94,7 @@ Max lines: tier-dependent. Edited by user ONLY (except during initialization).
 ## Core Features     → Checkbox list, each mapped to a test file
 ## Constraints       → MUST / MUST NOT (testable, measurable)
 ## Success Criteria  → Given/When/Then format or specific metrics
+## Verification Tests → 1-3 golden-path tests with content assertions (see Templates)
 ```
 
 See `references/templates/` for tier-specific templates.
@@ -239,6 +243,8 @@ Do NOT pre-load all references. Load only what the current task requires.
 
 **Drift detected**: Hash mismatch → stop, show diff, sync YAML before proceeding.
 
-**User adds feature to CONTRACT.md**: AI syncs YAML (new feature entry, updated hash, changelog), then offers to implement.
+**User adds feature to CONTRACT.md**: AI syncs YAML (new feature entry, updated hash, changelog), resets attestation confidence to `low`, then offers to implement.
 
-**New module**: AI generates draft CONTRACT.md from template, user reviews, AI creates matching YAML and registry entry.
+**New module**: AI generates draft CONTRACT.md from template (including VTs), user reviews, AI creates matching YAML and registry entry.
+
+**Stale attestation**: Preflight detects `next_review` past due → warns user, suggests running VTs to re-verify module health.

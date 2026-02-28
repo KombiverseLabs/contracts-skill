@@ -1,10 +1,10 @@
 # CONTRACT.yaml - Technical specification derived from CONTRACT.md
 
 meta:
-  source_hash: "sha256:879c8e74d6b701bfa771d811dfd57cdba1f3991d46844c96e0c0519073c07515"
-  last_sync: "2026-01-29T10:00:00Z"
+  source_hash: "sha256:8fff976bba97a581cc38d076e466b6e0a291d44386944cf02438215bb26af51d"
+  last_sync: "2026-02-28T12:00:00Z"
   tier: standard
-  version: "1.0"
+  version: "1.1"
 
 module:
   name: "dashboard"
@@ -15,15 +15,15 @@ features:
   - id: "profile-widget"
     description: "User profile summary widget"
     status: planned
-    
+
   - id: "activity-feed"
     description: "Recent activity feed"
     status: planned
-    
+
   - id: "quick-actions"
     description: "Quick action buttons"
     status: planned
-    
+
   - id: "notifications"
     description: "Notification center"
     status: planned
@@ -46,7 +46,34 @@ validation:
   test_pattern: "*.test.tsx"
   custom_script: null
 
+verification_tests:
+  - id: "VT-1"
+    name: "Dashboard shows correct user identity after login"
+    status: defined
+    test_file: ""
+    last_run: null
+    last_result: null
+
+  - id: "VT-2"
+    name: "Dashboard handles missing data gracefully"
+    status: defined
+    test_file: ""
+    last_run: null
+    last_result: null
+
+attestation:
+  contract_version: "1.1"
+  last_verified: null
+  verification_tests_pass: false
+  features_implemented: []
+  confidence: low
+  next_review: null
+
 changelog:
+  - date: "2026-02-28"
+    version: "1.1"
+    change: "Added verification tests and attestation; updated success criteria"
+    author: "system"
   - date: "2026-01-29"
     version: "1.0"
     change: "Initial contract"

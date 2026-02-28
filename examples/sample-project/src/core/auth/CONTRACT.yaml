@@ -2,10 +2,10 @@
 # This file is auto-synced with CONTRACT.md.
 
 meta:
-  source_hash: "sha256:e5d3ead1cc7016dcf2840f7c86ca992021a3b4b60f8d3bb7f695c640dcf42404"
-  last_sync: "2026-01-31T10:11:50.989Z"
+  source_hash: "sha256:a621ae7f9964dec96ac2ab7cf41bf0a6137832ec183ea4789a3433258419168a"
+  last_sync: "2026-02-28T12:00:00Z"
   tier: core
-  version: "1.0"
+  version: "1.1"
 
 module:
   name: "auth"
@@ -18,18 +18,18 @@ features:
     status: implemented
     entry_point: "./login.ts"
     tests: "./login.test.ts"
-    
+
   - id: "session-tokens"
     description: "Session tokens with automatic refresh"
     status: implemented
     entry_point: "./session.ts"
     tests: "./session.test.ts"
-    
+
   - id: "oauth2-integration"
     description: "OAuth2 integration (Google, GitHub)"
     status: planned
     notes: "Waiting for OAuth app credentials"
-    
+
   - id: "password-reset"
     description: "Password reset via email"
     status: planned
@@ -53,10 +53,28 @@ validation:
   test_pattern: "*.test.ts"
   custom_script: null
 
+verification_tests:
+  - id: "VT-1"
+    name: "Full auth round-trip with credential verification"
+    status: passing
+    test_file: "./auth.vt.test.ts"
+    last_run: "2026-02-28T12:00:00Z"
+    last_result: pass
+
+attestation:
+  contract_version: "1.1"
+  last_verified: "2026-02-28T12:00:00Z"
+  verification_tests_pass: true
+  features_implemented: ["email-password-login", "session-tokens"]
+  confidence: high
+  next_review: "2026-03-30T12:00:00Z"
+
 changelog:
+  - date: "2026-02-28"
+    version: "1.1"
+    change: "Added verification tests and attestation; updated success criteria"
+    author: "system"
   - date: "2026-01-29"
     version: "1.0"
     change: "Initial contract"
     author: "system"
-
-

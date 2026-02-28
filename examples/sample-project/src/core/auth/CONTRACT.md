@@ -17,4 +17,12 @@ Handles user authentication including login, logout, and session management for 
 - MUST NOT: Log sensitive authentication data
 
 ## Success Criteria
-Users can register, log in, maintain sessions across page reloads, and log out securely.
+- Given valid credentials, when login() is called, then returns session token within 200ms
+- Given expired session, when validateSession() is called, then returns false and triggers refresh
+
+## Verification Tests
+- [x] **VT-1: Full auth round-trip with credential verification**
+  - Scenario: Create user with known password, login, use token to access protected resource
+  - Action: Register "test@example.com" with password → login → extract token → call /api/me with token
+  - Verify: Response contains "test@example.com" as email AND token expiry is in the future
+  - Proves: Password hashing (bcrypt), user storage, login flow, token generation, token validation, session handling
