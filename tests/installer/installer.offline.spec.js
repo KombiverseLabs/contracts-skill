@@ -48,7 +48,7 @@ function runPowershellFile({ filePath, args = [], cwd, env = {} }) {
   });
 }
 
-test('installer (offline/local source): installs to multiple agents + writes instruction hooks', async () => {
+test('offline install: multi-agent + instruction hooks', async () => {
   const repoRoot = path.resolve(__dirname, '../..');
   const installPs1 = path.join(repoRoot, 'installers', 'install.ps1');
 
@@ -145,7 +145,7 @@ test('installer (offline/local source): installs to multiple agents + writes ins
   }
 });
 
-test('contract-preflight.ps1: finds nearest contract + detects drift', async () => {
+test('preflight: finds nearest contract + detects drift', async () => {
   const repoRoot = path.resolve(__dirname, '../..');
   const preflightPs1 = path.join(repoRoot, 'skill', 'scripts', 'contract-preflight.ps1');
 
