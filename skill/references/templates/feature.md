@@ -31,12 +31,8 @@
   A test that checks "response contains the expected calculated value" proves everything.
 
   EXAMPLE — Chat Agent Module:
-    Scenario: User sends a factual question and receives a correct answer
-    Action:   Login with test credentials → open chat → send "What is 2+2?"
-    Verify:   Response text contains "4"
-    Proves:   Auth works, session is valid, chat UI renders, message is sent,
-              LLM processes request, response is received and displayed,
-              app returns real answers (not error/default page)
+    Do:     Login → open chat → send "What is 2+2?"
+    Assert: Response text contains "4"
   → 1 test, but implicitly validates: login, routing, UI, API, LLM, rendering
 
   HOW TO CHOOSE:
@@ -45,13 +41,9 @@
   - Ask: "If this test passes, can I be confident the module works?" → Yes = good test
 -->
 - [ ] **VT-1: [Golden-path scenario name]**
-  - Scenario: [What the user does — the realistic end-to-end flow]
-  - Action: [Concrete steps: setup → trigger → observe]
-  - Verify: [Content-level assertion — exact text, value, or state to check]
-  - Proves: [Features that MUST work for this test to pass, comma-separated]
+  - Do: [setup → trigger primary action → observe result]
+  - Assert: [exact output content — text, value, or state to check]
 
 - [ ] **VT-2: [Critical-edge scenario name]** *(if standard/complex tier)*
-  - Scenario: [The most important failure mode or secondary path]
-  - Action: [Steps to trigger the edge case]
-  - Verify: [What correct handling looks like — specific output]
-  - Proves: [Error handling, fallback, or secondary features validated]
+  - Do: [trigger most important failure mode]
+  - Assert: [specific expected output for this edge case]

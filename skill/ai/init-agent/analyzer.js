@@ -676,29 +676,21 @@ function generateVerificationTests(moduleInfo, displayName) {
   // VT-1: Golden path (always)
   if (moduleInfo.type === 'core') {
     tests.push(`- [ ] **VT-1: ${displayName} round-trip correctness**`);
-    tests.push(`  - Scenario: Feed known input through ${displayName}'s primary responsibility`);
-    tests.push(`  - Action: Call ${mainExport}() with realistic input → capture output`);
-    tests.push(`  - Verify: [Output matches exact expected value — proves correctness, not just execution]`);
-    tests.push(`  - Proves: [List all internal steps that must work for this output to be correct]`);
+    tests.push(`  - Do: Call ${mainExport}() with known input → capture output`);
+    tests.push(`  - Assert: [exact expected value — proves correctness, not just execution]`);
   } else if (moduleInfo.type === 'integration') {
     tests.push(`- [ ] **VT-1: ${displayName} real round-trip**`);
-    tests.push(`  - Scenario: Send minimal valid request to external system`);
-    tests.push(`  - Action: Call ${mainExport}() with test credentials → capture response`);
-    tests.push(`  - Verify: [Response contains domain-specific content — not just status code]`);
-    tests.push(`  - Proves: [Auth, request formatting, API communication, response parsing]`);
+    tests.push(`  - Do: Call ${mainExport}() with test credentials → capture response`);
+    tests.push(`  - Assert: [response contains domain-specific content — not just status code]`);
   } else if (moduleInfo.type === 'utility') {
     tests.push(`- [ ] **VT-1: ${displayName} composite correctness**`);
-    tests.push(`  - Scenario: Process the most complex realistic input this utility handles`);
-    tests.push(`  - Action: Call ${mainExport}() with edge-case input that exercises multiple code paths`);
-    tests.push(`  - Verify: [Exact expected output — literal value comparison]`);
-    tests.push(`  - Proves: [All transformations/steps performed internally]`);
+    tests.push(`  - Do: Call ${mainExport}() with edge-case input exercising multiple paths`);
+    tests.push(`  - Assert: [exact expected output — literal value comparison]`);
   } else {
     // feature type
     tests.push(`- [ ] **VT-1: ${displayName} golden-path scenario**`);
-    tests.push(`  - Scenario: [What a real user does first with ${displayName}]`);
-    tests.push(`  - Action: [Setup → trigger primary action → observe result]`);
-    tests.push(`  - Verify: [Actual output content — exact text, value, or state to check]`);
-    tests.push(`  - Proves: [All features that must work for this test to pass]`);
+    tests.push(`  - Do: [setup → trigger primary action → observe result]`);
+    tests.push(`  - Assert: [exact output content — text, value, or state to check]`);
   }
 
   // VT-2: Edge case (standard and complex tiers)
@@ -706,16 +698,12 @@ function generateVerificationTests(moduleInfo, displayName) {
     tests.push('');
     if (moduleInfo.type === 'integration') {
       tests.push(`- [ ] **VT-2: ${displayName} failure resilience**`);
-      tests.push(`  - Scenario: External system returns error or times out`);
-      tests.push(`  - Action: [Trigger timeout/error condition]`);
-      tests.push(`  - Verify: [Graceful degradation produces specific fallback output]`);
-      tests.push(`  - Proves: [Error handling, retry logic, user-facing error messages]`);
+      tests.push(`  - Do: [trigger timeout/error condition]`);
+      tests.push(`  - Assert: [specific fallback output — not generic error]`);
     } else {
       tests.push(`- [ ] **VT-2: ${displayName} critical edge case**`);
-      tests.push(`  - Scenario: [Most important failure mode or secondary path]`);
-      tests.push(`  - Action: [Steps to trigger the edge case]`);
-      tests.push(`  - Verify: [What correct handling looks like — specific output]`);
-      tests.push(`  - Proves: [Error handling or secondary features validated]`);
+      tests.push(`  - Do: [trigger most important failure mode]`);
+      tests.push(`  - Assert: [specific expected output for this edge case]`);
     }
   }
 
