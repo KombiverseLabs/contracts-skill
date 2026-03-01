@@ -50,10 +50,8 @@ const result = function1(input);
   null input, and locale-specific formatting in one parameterized assertion.
 
   EXAMPLE — String Utility Module:
-    Scenario: Slug generation handles real-world messy input
-    Action:   slugify("  Héllo Wörld! @#$ 你好  ")
-    Verify:   Returns exactly "hello-world-ni-hao" (trimmed, lowered, transliterated, special chars removed)
-    Proves:   Trimming, lowercasing, unicode transliteration, special char removal, space-to-dash — one call
+    Do:     slugify("  Héllo Wörld! @#$ 你好  ")
+    Assert: Returns exactly "hello-world-ni-hao"
 
   HOW TO CHOOSE:
   - Pick the messiest realistic input your utility should handle
@@ -61,10 +59,8 @@ const result = function1(input);
   - Ask: "If the core algorithm was broken, would this test catch it?" → Yes = good test
 -->
 - [ ] **VT-1: [Composite correctness check name]**
-  - Scenario: [Most complex realistic input this utility handles]
-  - Action: [Call with carefully chosen input that exercises core logic]
-  - Verify: [Exact expected output — literal value comparison]
-  - Proves: [All transformations/steps the utility performs internally]
+  - Do: [call with input that exercises multiple code paths]
+  - Assert: [exact expected output — literal value comparison]
 
 ## Notes
 - Keep this module dependency-free when possible

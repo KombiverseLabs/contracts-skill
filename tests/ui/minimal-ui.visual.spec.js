@@ -63,7 +63,7 @@ function startServer({ port, projectRoot }) {
   };
 }
 
-test('minimal-ui: list + open + apply edit (visual + write)', async ({ page }) => {
+test('UI: list, open, apply edit', async ({ page }) => {
   const repoRoot = path.resolve(__dirname, '../..');
   const sample = path.join(repoRoot, 'examples', 'sample-project');
 

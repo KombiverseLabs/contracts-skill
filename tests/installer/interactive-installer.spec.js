@@ -81,7 +81,7 @@ test.describe('Interactive Installer', () => {
     installPs1 = path.join(repoRoot, 'installers', 'install.ps1');
   });
 
-  test('Enter key confirms selection and exits checkbox UI', async () => {
+  test('Enter confirms and exits', async () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'contracts-installer-test-'));
     const fakeHome = path.join(tmp, 'home');
     const projectRoot = path.join(tmp, 'project');
@@ -122,7 +122,7 @@ test.describe('Interactive Installer', () => {
     }
   });
 
-  test('Space key toggles selection', async () => {
+  test('Space toggles selection', async () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'contracts-installer-test-'));
     const fakeHome = path.join(tmp, 'home');
     const projectRoot = path.join(tmp, 'project');
@@ -158,7 +158,7 @@ test.describe('Interactive Installer', () => {
     }
   });
 
-  test('Q key quits without installation', async () => {
+  test('Q quits without install', async () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'contracts-installer-test-'));
     const fakeHome = path.join(tmp, 'home');
     const projectRoot = path.join(tmp, 'project');
@@ -202,7 +202,7 @@ test.describe('Non-Interactive Mode', () => {
     installPs1 = path.join(repoRoot, 'installers', 'install.ps1');
   });
 
-  test('Auto flag installs to all detected agents without prompting', async () => {
+  test('-Auto installs all detected agents', async () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'contracts-installer-test-'));
     const fakeHome = path.join(tmp, 'home');
     const projectRoot = path.join(tmp, 'project');
@@ -253,7 +253,7 @@ test.describe('Non-Interactive Mode', () => {
     }
   });
 
-  test('Agents parameter installs to specific agents', async () => {
+  test('-Agents installs specified agents only', async () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'contracts-installer-test-'));
     const fakeHome = path.join(tmp, 'home');
     const projectRoot = path.join(tmp, 'project');

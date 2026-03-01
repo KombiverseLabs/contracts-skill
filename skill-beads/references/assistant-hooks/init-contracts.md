@@ -169,17 +169,13 @@ A good contract draft must pass these checks:
 
 **Verification Test — GOOD:**
 > **VT-1: Chat produces verified factual response**
-> - Scenario: Authenticated user sends a factual question through chat UI
-> - Action: Login with test creds → open chat → send "What is the capital of France?"
-> - Verify: Response text contains "Paris"
-> - Proves: Auth, session, chat UI, message pipeline, LLM integration, response rendering
+> - Do: Login → open chat → send "What is the capital of France?"
+> - Assert: Response text contains "Paris"
 
 **Verification Test — BAD:**
 > **VT-1: Chat works**
-> - Scenario: User sends a message
-> - Action: Send message to chat
-> - Verify: Response is not empty
-> - Proves: Chat feature
+> - Do: Send message to chat
+> - Assert: Response is not empty
 
 *Why it's bad: "Not empty" proves nothing — an error message is also "not empty". No chain coverage.*
 

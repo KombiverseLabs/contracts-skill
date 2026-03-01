@@ -61,7 +61,7 @@ function assertInstructionQuality({ text, fileLabel }) {
   expect(text, `${fileLabel}: should be imperative`).toMatch(/Before\s+(starting|any|work)/i);
 }
 
-test('quality gates: installed instruction hooks stay short and contain required preflight semantics', async () => {
+test('quality gates: instruction hooks compact + required semantics', async () => {
   const repoRoot = path.resolve(__dirname, '../..');
   const installPs1 = path.join(repoRoot, 'installers', 'install.ps1');
 

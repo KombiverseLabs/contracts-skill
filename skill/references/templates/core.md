@@ -30,17 +30,13 @@
   Don't test "token is returned" — test "token contains correct user ID and expiry."
 
   EXAMPLE — Auth Core Module:
-    Scenario: Full auth round-trip with credential verification
-    Action:   Create user with known password → login → extract token → validate token
-    Verify:   Decoded token contains correct user ID AND password hash verifies against original
-    Proves:   Hashing, storage, login, token generation, token validation — all in one chain
+    Do:     Create user → login → extract token → validate token
+    Assert: Decoded token contains correct user ID AND password hash verifies
 
   HOW TO CHOOSE:
   - What would break if this module silently returned wrong values?
   - The assertion must verify CORRECTNESS of output, not just presence
 -->
 - [ ] **VT-1: [Round-trip verification name]**
-  - Scenario: [Input → full processing chain → verified output]
-  - Action: [Feed known input, capture final output]
-  - Verify: [Output matches expected value — proves correctness, not just execution]
-  - Proves: [All internal steps that must work for the output to be correct]
+  - Do: [feed known input → capture final output]
+  - Assert: [exact expected value — proves correctness, not just execution]

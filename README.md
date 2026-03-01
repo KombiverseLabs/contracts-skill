@@ -99,10 +99,8 @@ Each contract defines 1-3 **Verification Tests (VTs)** — high-leverage tests t
 ```markdown
 ## Verification Tests
 - [x] **VT-1: Chat produces verified factual response**
-  - Scenario: Authenticated user sends a factual question through chat UI
-  - Action: Login with test creds → open chat → send "What is the capital of France?"
-  - Verify: Response text contains "Paris"
-  - Proves: Auth, session, chat UI, message pipeline, LLM integration, response rendering
+  - Do: Login → open chat → send "What is the capital of France?"
+  - Assert: Response text contains "Paris"
 ```
 
 **The philosophy**: Assert on **actual output content** (not just status codes). A single VT implicitly validates every component in the chain. If ANY core feature breaks, the test fails.

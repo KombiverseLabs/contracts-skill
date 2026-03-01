@@ -21,13 +21,9 @@ Main user interface displayed after successful login. Shows personalized content
 
 ## Verification Tests
 - [ ] **VT-1: Dashboard shows correct user identity after login**
-  - Scenario: Login as test user, navigate to dashboard
-  - Action: Login with "test@example.com" → navigate to /dashboard → read profile widget
-  - Verify: Profile widget displays "test@example.com" AND shows user's actual name
-  - Proves: Auth integration, data fetching, component rendering, state management, personalization
+  - Do: Login "test@example.com" → navigate /dashboard → read profile widget
+  - Assert: Profile widget displays "test@example.com" AND user's actual name
 
 - [ ] **VT-2: Dashboard handles missing data gracefully**
-  - Scenario: Login as new user with no activity history
-  - Action: Login with fresh account → navigate to /dashboard
-  - Verify: Activity feed shows "No recent activity" (not error/spinner/blank)
-  - Proves: Empty state handling, graceful degradation, responsive layout
+  - Do: Login with fresh account (no history) → navigate /dashboard
+  - Assert: Activity feed shows "No recent activity" (not error/spinner/blank)
