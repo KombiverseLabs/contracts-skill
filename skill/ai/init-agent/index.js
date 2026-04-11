@@ -399,7 +399,7 @@ async function updateRegistry(root, drafts) {
     project: {
       name: path.basename(root),
       initialized: new Date().toISOString(),
-      initialized_by: 'contracts-skill v2.0 (AI-assisted)'
+      initialized_by: 'contracts-skill v2.4.0 (AI-assisted)'
     },
     contracts: []
   };

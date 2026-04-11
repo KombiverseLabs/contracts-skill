@@ -128,6 +128,30 @@ SNIPPET
     esac
 }
 
+extract_zip() {
+    local zip_path="$1"
+    local dest_dir="$2"
+
+    if command -v unzip &>/dev/null; then
+        unzip -q "$zip_path" -d "$dest_dir"
+        return 0
+    fi
+
+    if command -v python3 &>/dev/null; then
+        python3 - "$zip_path" "$dest_dir" <<'PY'
+import sys
+import zipfile
+
+with zipfile.ZipFile(sys.argv[1]) as archive:
+    archive.extractall(sys.argv[2])
+PY
+        return 0
+    fi
+
+    echo -e "  ${RED}Need either 'unzip' or 'python3' to extract the downloaded archive.${NC}" >&2
+    return 1
+}
+
 # --- Download Skill ---
 download_skill() {
     local temp_dir="$1"
@@ -143,10 +167,15 @@ download_skill() {
         fi
     fi
 
+    if ! command -v curl &>/dev/null; then
+        echo -e "  ${RED}Need either 'git' or 'curl' to download the skill.${NC}" >&2
+        return 1
+    fi
+
     local zip_url="https://github.com/$REPO_OWNER/$REPO_NAME/archive/refs/heads/$GIT_BRANCH.zip"
     local zip_path="$temp_dir/skill.zip"
     curl -fsSL -o "$zip_path" "$zip_url"
-    unzip -q "$zip_path" -d "$temp_dir"
+    extract_zip "$zip_path" "$temp_dir"
     rm -f "$zip_path"
     local extracted; extracted=$(find "$temp_dir" -maxdepth 1 -mindepth 1 -type d | head -1)
     echo -e "  ${GREEN}Downloaded via ZIP${NC}"

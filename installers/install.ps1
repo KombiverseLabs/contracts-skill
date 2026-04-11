@@ -47,6 +47,8 @@ $ErrorActionPreference = 'Stop'
 $RepoOwner = 'kombifyio'
 $RepoName  = 'contracts-skill'
 $SkillName = 'contracts'
+$HomeDir = if ($env:USERPROFILE) { $env:USERPROFILE } elseif ($env:HOME) { $env:HOME } else { [Environment]::GetFolderPath('UserProfile') }
+$TempRoot = [System.IO.Path]::GetTempPath()
 
 # --- Agent Configurations ---
 
@@ -55,13 +57,13 @@ $AgentConfigs = @(
         Name = 'GitHub Copilot'
         Id = 'copilot'
         Paths = @(
-            $(if ($env:USERPROFILE) { Join-Path $env:USERPROFILE ".copilot\skills\$SkillName" })
+            $(if ($HomeDir) { Join-Path $HomeDir ".copilot/skills/$SkillName" })
         )
         DetectPaths = @(
-            $(if ($env:USERPROFILE) { Join-Path $env:USERPROFILE '.copilot' }),
-            $(if ($env:APPDATA)     { Join-Path $env:APPDATA 'Code\User\settings.json' })
+            $(if ($HomeDir) { Join-Path $HomeDir '.copilot' }),
+            $(if ($env:APPDATA)     { Join-Path $env:APPDATA 'Code/User/settings.json' })
         )
-        InstructionFile = '.github\copilot-instructions.md'
+        InstructionFile = '.github/copilot-instructions.md'
         InstructionSnippet = @"
 
 ## Contracts System (MANDATORY)
@@ -72,10 +74,10 @@ Before any code changes: locate CONTRACT.md in target module, read spec + metada
         Name = 'Claude Code'
         Id = 'claude'
         Paths = @(
-            $(if ($env:USERPROFILE) { Join-Path $env:USERPROFILE ".claude\skills\$SkillName" })
+            $(if ($HomeDir) { Join-Path $HomeDir ".claude/skills/$SkillName" })
         )
         DetectPaths = @(
-            $(if ($env:USERPROFILE) { Join-Path $env:USERPROFILE '.claude' }),
+            $(if ($HomeDir) { Join-Path $HomeDir '.claude' }),
             $(if ($env:APPDATA)     { Join-Path $env:APPDATA 'Claude' })
         )
         InstructionFile = 'CLAUDE.md'
@@ -93,13 +95,13 @@ When creating a new module, propose generating a matching contract via init-agen
         Name = 'Cursor'
         Id = 'cursor'
         Paths = @(
-            $(if ($env:USERPROFILE) { Join-Path $env:USERPROFILE ".cursor\skills\$SkillName" })
+            $(if ($HomeDir) { Join-Path $HomeDir ".cursor/skills/$SkillName" })
         )
         DetectPaths = @(
-            $(if ($env:USERPROFILE) { Join-Path $env:USERPROFILE '.cursor' }),
+            $(if ($HomeDir) { Join-Path $HomeDir '.cursor' }),
             $(if ($env:APPDATA)     { Join-Path $env:APPDATA 'Cursor' })
         )
-        InstructionFile = '.cursor\rules\contracts-system.mdc'
+        InstructionFile = '.cursor/rules/contracts-system.mdc'
         InstructionSnippet = @"
 ---
 description: "Contracts System preflight - MANDATORY before code changes"
@@ -114,10 +116,10 @@ Before code changes: locate CONTRACT.md in target module, read spec + metadata, 
         Name = 'OpenAI Codex'
         Id = 'codex'
         Paths = @(
-            $(if ($env:USERPROFILE) { Join-Path $env:USERPROFILE ".codex\skills\$SkillName" })
+            $(if ($HomeDir) { Join-Path $HomeDir ".codex/skills/$SkillName" })
         )
         DetectPaths = @(
-            $(if ($env:USERPROFILE) { Join-Path $env:USERPROFILE '.codex' })
+            $(if ($HomeDir) { Join-Path $HomeDir '.codex' })
         )
         InstructionFile = 'codex.md'
         InstructionSnippet = @"
@@ -130,7 +132,7 @@ Before any code changes: locate CONTRACT.md in target module, read spec + metada
         Name = 'Project Local'
         Id = 'local'
         Paths = @(
-            (Join-Path (Get-Location) ".agent\skills\$SkillName")
+            (Join-Path (Get-Location) ".agent/skills/$SkillName")
         )
         DetectPaths = @(
             (Join-Path (Get-Location) '.git'),
@@ -176,7 +178,7 @@ function Get-SkillSource {
     }
 
     $zipUrl = "https://github.com/$RepoOwner/$RepoName/archive/refs/heads/$GitBranch.zip"
-    $zipPath = Join-Path $env:TEMP 'contracts-skill.zip'
+    $zipPath = Join-Path $TempRoot 'contracts-skill.zip'
     Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing -ErrorAction Stop
     Expand-Archive -Path $zipPath -DestinationPath $TempDir -Force
     Remove-Item $zipPath -ErrorAction SilentlyContinue
@@ -254,7 +256,7 @@ if ($selected.Count -eq 0) {
 }
 
 # Get skill source
-$tempDir = Join-Path $env:TEMP ("contracts-skill-{0:yyyyMMddHHmmss}" -f (Get-Date))
+$tempDir = Join-Path $TempRoot ("contracts-skill-{0:yyyyMMddHHmmss}" -f (Get-Date))
 
 try {
     $skillSource = $null
@@ -291,13 +293,13 @@ try {
                 if (Test-Path $instrPath) {
                     $content = Get-Content $instrPath -Raw
                     if ($content -notmatch 'Contracts System') {
-                        Add-Content -Path $instrPath -Value $agent.InstructionSnippet
+                        Add-Content -Path $instrPath -Value $agent.InstructionSnippet -Encoding utf8
                         Write-Host "      -> Updated $($agent.InstructionFile)" -ForegroundColor Gray
                     }
                 } else {
                     $dir = Split-Path $instrPath -Parent
                     if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-                    Set-Content -Path $instrPath -Value $agent.InstructionSnippet.Trim()
+                    Set-Content -Path $instrPath -Value $agent.InstructionSnippet.Trim() -Encoding utf8
                     Write-Host "      -> Created $($agent.InstructionFile)" -ForegroundColor Gray
                 }
             }
@@ -308,7 +310,7 @@ try {
 
     # Install minimal-ui
     if (-not $NoUI) {
-        $uiSource = Join-Path $skillSource 'ui\minimal-ui'
+        $uiSource = Join-Path $skillSource 'ui/minimal-ui'
         if (Test-Path $uiSource) {
             Write-Host ''
             $installUI = $Auto

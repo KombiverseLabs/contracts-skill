@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-04-11
+
+### Changed
+
+- **Public repository is now a consistent slim distribution**
+  - Public CI skips the internal npm/Playwright harness when those dev files are intentionally absent
+  - Public README and CONTRIBUTING now describe the slim distribution model instead of the maintainer source repo
+  - Public release naming is consistent as `Contracts Skill`
+
+### Fixed
+
+- **Public re-publish behavior** — The OSS publish workflow now force-updates the public release tag so repeated publishes of the same version also refresh the public release pipeline
+- **PowerShell installer portability** — Home-directory resolution, relative path handling, temp-directory usage, and generated instruction files now work more reliably across Windows, macOS, and Linux
+- **Bash installer ZIP fallback** — Downloaded archive extraction now falls back to `python3` when `unzip` is unavailable and emits clearer dependency errors
+- **UI documentation** — Static UI opening instructions now cover Windows, macOS, and Linux instead of only `open`
+
 ## [2.3.0] - 2025-07-12
 
 ### Changed

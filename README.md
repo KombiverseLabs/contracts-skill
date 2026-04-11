@@ -3,7 +3,7 @@
 > **Spec-driven development with living contracts for AI-assisted coding.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version: 2.3.0](https://img.shields.io/badge/Version-2.3.0-blue.svg)](#)
+[![Version: 2.4.0](https://img.shields.io/badge/Version-2.4.0-blue.svg)](#)
 [![Works with: Copilot](https://img.shields.io/badge/Works%20with-GitHub%20Copilot-blue)](https://github.com/features/copilot)
 [![Works with: Claude](https://img.shields.io/badge/Works%20with-Claude-orange)](https://claude.ai)
 [![Works with: Cursor](https://img.shields.io/badge/Works%20with-Cursor-purple)](https://cursor.sh)
@@ -147,10 +147,13 @@ If installed into `./contracts-ui/`:
 
 ```bash
 # Start the UI server (live read/write mode)
-./contracts-ui/start.ps1   # or start.sh
+./contracts-ui/start.ps1   # PowerShell
+./contracts-ui/start.sh    # Bash
 
 # Or open static snapshot (read-only)
-open contracts-ui/index.html
+Start-Process contracts-ui/index.html  # Windows PowerShell
+open contracts-ui/index.html           # macOS
+xdg-open contracts-ui/index.html       # Linux
 ```
 
 ---
