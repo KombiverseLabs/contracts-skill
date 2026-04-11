@@ -42,10 +42,16 @@ $ErrorActionPreference = "Stop"
 
 function Get-Sha256([string]$FilePath) {
     if (-not (Test-Path $FilePath)) { return $null }
-    $text = (Get-Content (Resolve-Path $FilePath).Path -Raw -Encoding UTF8) -replace "`r`n", "`n"
-    $bytes = [System.Text.Encoding]::UTF8.GetBytes($text)
+    $rawBytes = [System.IO.File]::ReadAllBytes((Resolve-Path $FilePath).Path)
+    $normalized = [System.Collections.Generic.List[byte]]::new($rawBytes.Length)
+    for ($i = 0; $i -lt $rawBytes.Length; $i++) {
+        if ($rawBytes[$i] -eq 0x0D -and ($i + 1) -lt $rawBytes.Length -and $rawBytes[$i + 1] -eq 0x0A) {
+            continue
+        }
+        $normalized.Add($rawBytes[$i])
+    }
     $sha = [System.Security.Cryptography.SHA256]::Create()
-    $hashBytes = $sha.ComputeHash($bytes)
+    $hashBytes = $sha.ComputeHash($normalized.ToArray())
     $hex = -join ($hashBytes | ForEach-Object { $_.ToString("x2") })
     return "sha256:$hex"
 }

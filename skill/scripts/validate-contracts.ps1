@@ -49,10 +49,17 @@ function Get-FileHash256 {
         return $null
     }
     
-    $text = (Get-Content (Resolve-Path $FilePath).Path -Raw -Encoding UTF8) -replace "`r`n", "`n"
-    $bytes = [System.Text.Encoding]::UTF8.GetBytes($text)
+    $rawBytes = [System.IO.File]::ReadAllBytes((Resolve-Path $FilePath).Path)
+    # Normalize CRLF to LF at byte level (platform-independent)
+    $normalized = [System.Collections.Generic.List[byte]]::new($rawBytes.Length)
+    for ($i = 0; $i -lt $rawBytes.Length; $i++) {
+        if ($rawBytes[$i] -eq 0x0D -and ($i + 1) -lt $rawBytes.Length -and $rawBytes[$i + 1] -eq 0x0A) {
+            continue
+        }
+        $normalized.Add($rawBytes[$i])
+    }
     $sha = [System.Security.Cryptography.SHA256]::Create()
-    $hashBytes = $sha.ComputeHash($bytes)
+    $hashBytes = $sha.ComputeHash($normalized.ToArray())
     $hex = -join ($hashBytes | ForEach-Object { $_.ToString("x2") })
     return "sha256:$hex"
 }
@@ -283,7 +290,7 @@ foreach ($mdFile in $contractFiles) {
                 stored = $storedHash
                 current = $currentHash
             }
-            Write-Result -Type "error" -Path $relativePath -Message "DRIFT DETECTED - Hash mismatch"
+            Write-Result -Type "error" -Path $relativePath -Message "DRIFT DETECTED - Hash mismatch (stored=$storedHash computed=$currentHash)"
             
             if ($Fix) {
                 Write-Host "  → Fix mode: Would update hash (not implemented)" -ForegroundColor DarkGray
