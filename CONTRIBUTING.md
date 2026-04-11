@@ -77,8 +77,7 @@ contracts-skill/
 │   └── references/       # Preflight & init hooks with Beads lifecycle
 │
 ├── installers/            # One-liner installers (PS1, Bash)
-├── examples/              # Sample project with contracts
-└── tests/                 # Playwright-based test suite
+└── examples/              # Sample project with contracts
 ```
 
 ## Testing
@@ -90,14 +89,20 @@ contracts-skill/
 3. Create/modify contracts
 4. Verify sync behavior with your AI assistant
 
-### Automated Testing
+### Public Repo Validation
+
+This public repository intentionally excludes the internal npm/Playwright test harness. For changes made here, run the validation commands below. Maintainers run the fuller internal suite before publishing.
 
 ```bash
-npm install
-npm test
+bash -n installers/install.sh
 ```
 
-### Script Testing
+```powershell
+$content = Get-Content installers/install.ps1 -Raw
+[scriptblock]::Create($content) | Out-Null
+```
+
+### Contract Script Testing
 
 ```powershell
 # Validate contract structure

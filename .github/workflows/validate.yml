@@ -127,19 +127,54 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Detect UI visual test suite
+        id: detect
+        shell: pwsh
+        run: |
+          $requiredPaths = @(
+            'package.json'
+            'package-lock.json'
+            'playwright.config.js'
+            'tests/ui'
+          )
+          $hasUiSuite = $true
+          foreach ($path in $requiredPaths) {
+            if (-not (Test-Path $path)) {
+              $hasUiSuite = $false
+              break
+            }
+          }
+          if ($hasUiSuite) {
+            "enabled=true" >> $env:GITHUB_OUTPUT
+            Write-Host '✅ UI visual test suite detected'
+          } else {
+            "enabled=false" >> $env:GITHUB_OUTPUT
+            Write-Host 'ℹ️ UI visual test suite not present in this slim repo export; skipping.'
+          }
+
       - name: Setup Node
+        if: steps.detect.outputs.enabled == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
       - name: Install npm deps
+        if: steps.detect.outputs.enabled == 'true'
         run: npm ci
 
       - name: Install Playwright (Chromium)
+        if: steps.detect.outputs.enabled == 'true'
         run: npx playwright install chromium
 
       - name: Run UI visual regression tests
+        if: steps.detect.outputs.enabled == 'true'
         run: npm run test:ui
+
+      - name: Skip UI visual regression tests
+        if: steps.detect.outputs.enabled != 'true'
+        shell: pwsh
+        run: |
+          Write-Host 'Skipping UI visual regression tests because this distribution repo does not ship the internal npm/Playwright harness.'
 
   dependency-review:
     name: Dependency Review

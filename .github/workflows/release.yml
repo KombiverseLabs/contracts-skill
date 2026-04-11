@@ -95,7 +95,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
-          name: Contract Skill ${{ needs.prepare.outputs.tag }}
+          name: Contracts Skill ${{ needs.prepare.outputs.tag }}
           body_path: release-notes.md
           draft: false
           prerelease: ${{ needs.prepare.outputs.prerelease == 'true' }}

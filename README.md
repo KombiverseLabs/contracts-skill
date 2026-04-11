@@ -11,6 +11,8 @@
 
 Keep your AI coding assistant aligned with your specifications. Never let implementations drift from requirements again.
 
+This public repository is intentionally a slim distribution export. Maintainer-only dev tooling such as the npm manifest, Playwright suite, and git hooks is not published here.
+
 ---
 
 ## Two Variants
@@ -170,6 +172,8 @@ pwsh .github/skills/contracts/scripts/contract-preflight.ps1 -Path . -Changed
   run: pwsh .github/skills/contracts/scripts/validate-contracts.ps1 -OutputFormat github-actions
 ```
 
+The public distribution repo validates contracts and installer syntax. The internal npm/Playwright UI suite is run in the maintainer source repo before export and is intentionally not part of this public package.
+
 ---
 
 ## Repository Structure
@@ -189,8 +193,7 @@ contracts-skill/
 │   └── references/
 │       └── assistant-hooks/  # Preflight & init hooks with Beads lifecycle
 ├── examples/                 # Sample project with contracts
-├── installers/               # One-liner installers (PS1, Bash)
-└── tests/                    # Playwright-based test suite
+└── installers/               # One-liner installers (PS1, Bash)
 ```
 
 ---
