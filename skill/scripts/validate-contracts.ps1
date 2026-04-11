@@ -49,15 +49,12 @@ function Get-FileHash256 {
         return $null
     }
     
-    $stream = [System.IO.File]::OpenRead((Resolve-Path $FilePath).Path)
-    try {
-        $sha = [System.Security.Cryptography.SHA256]::Create()
-        $hashBytes = $sha.ComputeHash($stream)
-        $hex = -join ($hashBytes | ForEach-Object { $_.ToString("x2") })
-        return "sha256:$hex"
-    } finally {
-        $stream.Close()
-    }
+    $text = (Get-Content (Resolve-Path $FilePath).Path -Raw -Encoding UTF8) -replace "`r`n", "`n"
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($text)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $hashBytes = $sha.ComputeHash($bytes)
+    $hex = -join ($hashBytes | ForEach-Object { $_.ToString("x2") })
+    return "sha256:$hex"
 }
 
 function Test-YamlStructure {

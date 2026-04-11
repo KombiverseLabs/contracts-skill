@@ -42,15 +42,12 @@ $ErrorActionPreference = "Stop"
 
 function Get-Sha256([string]$FilePath) {
     if (-not (Test-Path $FilePath)) { return $null }
-    $stream = [System.IO.File]::OpenRead((Resolve-Path $FilePath).Path)
-    try {
-        $sha = [System.Security.Cryptography.SHA256]::Create()
-        $hashBytes = $sha.ComputeHash($stream)
-        $hex = -join ($hashBytes | ForEach-Object { $_.ToString("x2") })
-        return "sha256:$hex"
-    } finally {
-        $stream.Close()
-    }
+    $text = (Get-Content (Resolve-Path $FilePath).Path -Raw -Encoding UTF8) -replace "`r`n", "`n"
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($text)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $hashBytes = $sha.ComputeHash($bytes)
+    $hex = -join ($hashBytes | ForEach-Object { $_.ToString("x2") })
+    return "sha256:$hex"
 }
 
 function Get-RelativePath([string]$Root, [string]$FullPath) {
