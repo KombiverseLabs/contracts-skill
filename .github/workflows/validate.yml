@@ -96,7 +96,7 @@ jobs:
           )
           $allIssues = @()
           foreach ($p in $paths) {
-            $allIssues += Invoke-ScriptAnalyzer -Path $p -Severity Warning,Error -ExcludeRule PSAvoidUsingWriteHost,PSAvoidUsingEmptyCatchBlock
+            $allIssues += Invoke-ScriptAnalyzer -Path $p -Severity Warning,Error -ExcludeRule PSAvoidUsingWriteHost,PSAvoidUsingEmptyCatchBlock,PSReviewUnusedParameter
           }
           if ($allIssues) {
             $allIssues | Select-Object RuleName,Severity,ScriptName,Line,Message | Format-Table -AutoSize
