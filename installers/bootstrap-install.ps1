@@ -12,8 +12,8 @@
 #>
 
 param(
-    [string]$RepoOwner = 'KombiverseLabs',
-    [string]$RepoName = 'contracts-skill',
+    [string]$RepoOwner = 'kombifyio',
+    [string]$RepoName = 'contract-skill',
     [string]$Branch = 'main',
 
     [string[]]$InstallerArgs = @()

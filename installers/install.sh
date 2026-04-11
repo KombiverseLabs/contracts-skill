@@ -1,14 +1,14 @@
 #!/bin/bash
 #
 # Contracts Skill Installer with Agent Selection
-# One-liner: curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.sh | bash
+# One-liner: curl -fsSL https://raw.githubusercontent.com/kombifyio/contract-skill/main/installers/install.sh | bash
 #
 
 set -e
 
 # Configuration
-REPO_OWNER="KombiverseLabs"
-REPO_NAME="contracts-skill"
+REPO_OWNER="kombifyio"
+REPO_NAME="contract-skill"
 BRANCH="main"
 SKILL_NAME="contracts"
 

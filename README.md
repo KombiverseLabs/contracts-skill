@@ -29,12 +29,12 @@ Both variants share the same scripts, templates, AI analyzer, and UI. They diffe
 
 ```powershell
 # PowerShell (Windows/macOS/Linux)
-irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/bootstrap-install.ps1 | iex
+irm https://raw.githubusercontent.com/kombifyio/contract-skill/main/installers/bootstrap-install.ps1 | iex
 ```
 
 ```bash
 # Bash
-curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/kombifyio/contract-skill/main/installers/install.sh | bash
 ```
 
 The installer will:
@@ -211,4 +211,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT © KombiverseLabs
+MIT © kombifyio

@@ -99,6 +99,7 @@ skill/ui/minimal-ui/.logs/
 # Local agent skills and generated contracts (not source)
 .agent/
 .contracts/
+.claude/
 
 # Temporary test projects created during development
 test-fresh-project/

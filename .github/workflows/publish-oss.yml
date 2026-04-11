@@ -1,0 +1,186 @@
+name: Publish OSS
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish (e.g. v2.1.0)'
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+concurrency:
+  group: publish-oss-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Resolve Publish Plan
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.plan.outputs.tag }}
+      checkout_ref: ${{ steps.plan.outputs.checkout_ref }}
+
+    steps:
+      - name: Resolve publish plan
+        id: plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag="${{ github.event.inputs.tag }}"
+            checkout_ref="refs/tags/$tag"
+          else
+            tag="${{ github.ref_name }}"
+            checkout_ref="${{ github.ref }}"
+          fi
+          {
+            echo "tag=$tag"
+            echo "checkout_ref=$checkout_ref"
+          } >> "$GITHUB_OUTPUT"
+
+  validate:
+    name: Pre-publish Validation
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.checkout_ref }}
+
+      - name: Validate Example Contracts
+        shell: pwsh
+        run: |
+          ./skill/scripts/validate-contracts.ps1 -Path "./examples/sample-project" -OutputFormat github-actions
+
+      - name: Check script syntax
+        shell: bash
+        run: |
+          bash -n ./setup.sh
+          bash -n ./installers/install.sh
+          echo "✅ Bash scripts valid"
+
+      - name: Check PowerShell syntax
+        shell: pwsh
+        run: |
+          $paths = @('./setup.ps1', './installers/install.ps1')
+          foreach ($p in $paths) {
+            $content = Get-Content $p -Raw
+            [scriptblock]::Create($content) | Out-Null
+            Write-Host "✅ $p syntax valid"
+          }
+
+      - name: Verify version tag matches CHANGELOG
+        shell: bash
+        run: |
+          tag="${{ needs.prepare.outputs.tag }}"
+          version="${tag#v}"
+          if ! grep -q "\[${version}\]" CHANGELOG.md; then
+            echo "::error::Tag $tag not found in CHANGELOG.md"
+            exit 1
+          fi
+          echo "✅ Version $version found in CHANGELOG.md"
+
+  publish-source:
+    name: Export & Push to kombifyio/contract-skill
+    needs: [prepare, validate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OSS_REPO: kombifyio/contract-skill
+      OSS_PUBLISH_TOKEN: ${{ secrets.OSS_PUBLISH_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.checkout_ref }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Verify publish token
+        shell: bash
+        run: |
+          if [ -z "$OSS_PUBLISH_TOKEN" ]; then
+            echo "::error title=Missing credentials::Configure OSS_PUBLISH_TOKEN secret (GitHub PAT with contents:write on kombifyio)."
+            exit 1
+          fi
+
+      - name: Prepare clean export
+        shell: bash
+        run: |
+          set -euo pipefail
+          export_dir="${{ runner.temp }}/oss-export"
+          mkdir -p "$export_dir"
+
+          # Export tracked files only (respects .gitignore)
+          git archive HEAD | tar -x -C "$export_dir"
+
+          # Remove private/dev-only files from export
+          rm -rf "$export_dir/.claude"
+          rm -rf "$export_dir/local-test-project"
+          rm -rf "$export_dir/test-installation-project"
+          rm -rf "$export_dir/test-results"
+          rm -f "$export_dir/.github/workflows/publish-oss.yml"
+
+          echo "✅ Clean export prepared at $export_dir"
+          echo "export_dir=$export_dir" >> "$GITHUB_ENV"
+
+      - name: Clone kombifyio/contract-skill
+        env:
+          RELEASE_AUTH_TOKEN: ${{ secrets.OSS_PUBLISH_TOKEN }}
+        run: |
+          set -euo pipefail
+          rm -rf oss-repo
+          git clone "https://x-access-token:${RELEASE_AUTH_TOKEN}@github.com/${OSS_REPO}.git" oss-repo
+
+      - name: Sync export into OSS repo
+        run: |
+          cd oss-repo
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          cp -R "${{ runner.temp }}/oss-export"/. .
+
+      - name: Commit and push
+        env:
+          RELEASE_AUTH_TOKEN: ${{ secrets.OSS_PUBLISH_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd oss-repo
+          tag="${{ needs.prepare.outputs.tag }}"
+          git remote set-url origin "https://x-access-token:${RELEASE_AUTH_TOKEN}@github.com/${OSS_REPO}.git"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No OSS content changes to commit."
+          else
+            git commit -m "release: $tag"
+            git push origin HEAD:main
+          fi
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null 2>&1 || \
+             git ls-remote --exit-code --tags origin "$tag" >/dev/null 2>&1; then
+            echo "OSS tag $tag already exists on origin."
+          else
+            git tag "$tag"
+            git push origin "refs/tags/$tag"
+          fi
+
+      - name: Publish summary
+        shell: bash
+        run: |
+          {
+            echo "## OSS publish complete"
+            echo ""
+            echo "- Source export pushed to \`kombifyio/contract-skill\`."
+            echo "- Tag \`${{ needs.prepare.outputs.tag }}\` pushed to the public repository."
+            echo "- Public repository workflows now handle CI and GitHub Releases."
+          } >> "$GITHUB_STEP_SUMMARY"

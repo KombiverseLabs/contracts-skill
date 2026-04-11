@@ -38,7 +38,7 @@ When running the installer, choose the Beads variant:
 
 ```powershell
 # The installer auto-detects Beads and offers the enforced variant
-irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/bootstrap-install.ps1 | iex
+irm https://raw.githubusercontent.com/kombifyio/contract-skill/main/installers/bootstrap-install.ps1 | iex
 ```
 
 Or manually copy `skill-beads/` to your project's skill directory instead of `skill/`.

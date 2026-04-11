@@ -1,7 +1,28 @@
 {
-  "name": "contracts-skill",
+  "name": "contract-skill",
   "version": "2.2.0",
-  "private": true,
+  "description": "Spec-driven development with living contracts for AI-assisted coding",
+  "license": "MIT",
+  "author": "kombifyio",
+  "homepage": "https://github.com/kombifyio/contract-skill",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kombifyio/contract-skill.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kombifyio/contract-skill/issues"
+  },
+  "keywords": [
+    "ai",
+    "copilot",
+    "claude",
+    "cursor",
+    "contracts",
+    "specifications",
+    "drift-detection",
+    "ai-coding",
+    "skill"
+  ],
   "type": "commonjs",
   "scripts": {
     "test": "playwright test",

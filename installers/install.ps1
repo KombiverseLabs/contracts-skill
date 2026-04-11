@@ -36,7 +36,7 @@
 
 .EXAMPLE
     # One-liner via Invoke-Expression
-    irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/installers/install.ps1 | iex
+    irm https://raw.githubusercontent.com/kombifyio/contract-skill/main/installers/install.ps1 | iex
 #>
 
 & {
@@ -88,8 +88,8 @@ $ErrorActionPreference = 'Stop'
 $ProjectRoot = (Get-Location).Path
 
 # Configuration
-$RepoOwner = 'KombiverseLabs'
-$RepoName  = 'contracts-skill'
+$RepoOwner = 'kombifyio'
+$RepoName  = 'contract-skill'
 $SkillName = 'contracts'
 
 # Colors

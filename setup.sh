@@ -3,14 +3,14 @@
 # Contracts Skill - Automated Installer
 # Detects AI coding assistants and installs to all of them
 #
-# One-liner: curl -fsSL https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/setup.sh | bash
+# One-liner: curl -fsSL https://raw.githubusercontent.com/kombifyio/contract-skill/main/setup.sh | bash
 #
 
 set -e
 
 # Configuration
-REPO_OWNER="KombiverseLabs"
-REPO_NAME="contracts-skill"
+REPO_OWNER="kombifyio"
+REPO_NAME="contract-skill"
 BRANCH="main"
 SKILL_NAME="contracts"
 

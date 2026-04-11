@@ -11,7 +11,7 @@
 
 .EXAMPLE
     # Interactive mode (recommended)
-    irm https://raw.githubusercontent.com/KombiverseLabs/contracts-skill/main/setup.ps1 | iex
+    irm https://raw.githubusercontent.com/kombifyio/contract-skill/main/setup.ps1 | iex
 
 .EXAMPLE
     # Auto-install to all detected agents
@@ -47,8 +47,8 @@ param(
 $ErrorActionPreference = "Stop"
 
 # Configuration
-$RepoOwner = "KombiverseLabs"
-$RepoName = "contracts-skill"
+$RepoOwner = "kombifyio"
+$RepoName = "contract-skill"
 $Branch = "main"
 $SkillName = "contracts"
 
