@@ -70,7 +70,7 @@ contracts-skill/
 │   ├── references/       # Templates and assistant hooks
 │   ├── scripts/          # PowerShell & Bash validation tools
 │   ├── ai/init-agent/    # Semantic project analyzer (Node.js)
-│   └── ui/               # Minimal UI & PHP UI
+│   └── ui/minimal-ui/   # Contracts Web UI (Node.js)
 │
 ├── skill-beads/           # Beads-enforced variant
 │   ├── SKILL.md          # Skill definition with Beads integration

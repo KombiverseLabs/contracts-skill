@@ -29,7 +29,7 @@ Both variants share the same scripts, templates, AI analyzer, and UI. They diffe
 
 ```powershell
 # PowerShell (Windows/macOS/Linux)
-irm https://raw.githubusercontent.com/kombifyio/contract-skill/main/installers/bootstrap-install.ps1 | iex
+irm https://raw.githubusercontent.com/kombifyio/contract-skill/main/installers/install.ps1 | iex
 ```
 
 ```bash
@@ -38,10 +38,10 @@ curl -fsSL https://raw.githubusercontent.com/kombifyio/contract-skill/main/insta
 ```
 
 The installer will:
-- Detect your AI assistants (Copilot, Claude, Cursor, Windsurf, Cline, Aider, OpenCode)
+- Detect your AI assistants (Copilot, Claude, Cursor, Windsurf)
 - Let you choose which to configure
-- Optionally add the Contracts UI
-- Auto-detect [Beads](https://github.com/steveyegge/beads) and offer the enforced variant
+- Inject instruction hooks into your project
+- Optionally install the Contracts Web UI
 
 ### 2. Initialize contracts
 
@@ -182,7 +182,7 @@ contracts-skill/
 │   │   └── templates/        # CONTRACT.md templates per tier
 │   ├── scripts/              # PowerShell & Bash validation tools
 │   ├── ai/init-agent/        # Semantic project analyzer (Node.js)
-│   └── ui/                   # Minimal UI & PHP UI
+│   └── ui/minimal-ui/        # Contracts Web UI (Node.js)
 ├── skill-beads/              # Beads-enforced variant
 │   ├── SKILL.md              # Skill definition with Beads integration
 │   └── references/

@@ -31,7 +31,7 @@ command -v python3 >/dev/null 2>&1 && PY=python3
 
 if [ -z "$PY" ]; then
   echo "python3/python not found; cannot generate contracts-bundle.js automatically." >&2
-  echo "Install python or use the php-ui variant for automatic project scanning." >&2
+  echo "Install python3 to enable automatic project scanning." >&2
   exit 1
 fi
 

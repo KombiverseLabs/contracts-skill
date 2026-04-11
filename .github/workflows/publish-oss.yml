@@ -65,14 +65,13 @@ jobs:
       - name: Check script syntax
         shell: bash
         run: |
-          bash -n ./setup.sh
           bash -n ./installers/install.sh
           echo "✅ Bash scripts valid"
 
       - name: Check PowerShell syntax
         shell: pwsh
         run: |
-          $paths = @('./setup.ps1', './installers/install.ps1')
+          $paths = @('./installers/install.ps1')
           foreach ($p in $paths) {
             $content = Get-Content $p -Raw
             [scriptblock]::Create($content) | Out-Null

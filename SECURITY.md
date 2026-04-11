@@ -32,7 +32,7 @@ If you discover a security vulnerability in Contract Skill, please report it res
 ### Scope
 
 This security policy covers:
-- Installer scripts (`installers/`, `setup.ps1`, `setup.sh`)
+- Installer scripts (`installers/`)
 - Validation and preflight scripts (`skill/scripts/`)
 - UI components (`skill/ui/`)
 - AI initialization agent (`skill/ai/`)

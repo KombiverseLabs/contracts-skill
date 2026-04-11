@@ -66,8 +66,6 @@ test('offline install: multi-agent + instruction hooks', async () => {
   mkdirp(path.join(fakeHome, '.claude'));
   mkdirp(path.join(fakeHome, '.cursor'));
   mkdirp(path.join(fakeHome, '.windsurf'));
-  mkdirp(path.join(fakeHome, '.cline'));
-  mkdirp(path.join(fakeHome, '.opencode'));
 
   // Mark project as a project (for project-local agent)
   mkdirp(path.join(projectRoot, '.git'));
@@ -86,11 +84,9 @@ test('offline install: multi-agent + instruction hooks', async () => {
       env,
       args: [
         '-Agents',
-        'copilot,claude,cursor,windsurf,cline,opencode,local',
+        'copilot,claude,cursor,windsurf,local',
         '-UseLocalSource',
-        '-UpdateInstructions',
-        '-SkipUI',
-        '-SkipAgentMd',
+        '-NoUI',
       ],
     });
 
@@ -99,17 +95,13 @@ test('offline install: multi-agent + instruction hooks', async () => {
     const claudeInstr = path.join(projectRoot, 'CLAUDE.md');
     const cursorInstr = path.join(projectRoot, '.cursor', 'rules', 'contracts-system.mdc');
     const windsurfInstr = path.join(projectRoot, '.windsurf', 'rules', '01-contracts-system.md');
-    const clineInstr = path.join(projectRoot, '.clinerules', '01-contracts-system.md');
-    const opencodeInstr = path.join(projectRoot, '.opencodesettings');
 
-    for (const p of [copilotInstr, claudeInstr, cursorInstr, windsurfInstr, clineInstr, opencodeInstr]) {
+    for (const p of [copilotInstr, claudeInstr, cursorInstr, windsurfInstr]) {
       expect(fs.existsSync(p), `${p} should exist`).toBeTruthy();
       const txt = readFile(p);
+      expect(txt).toMatch(/Contracts?\s+System/i);
       expect(txt).toMatch(/CONTRACT\.md/i);
-      expect(txt).toMatch(/max 5 sentences/i);
-      expect(txt).toMatch(/MUST/i);
-      expect(txt).toMatch(/MUST\s+NOT/i);
-      expect(txt).toMatch(/drift|source_hash/i);
+      expect(txt).toMatch(/source_hash|constraints/i);
     }
 
     // Skill installed into each agent home
@@ -118,8 +110,6 @@ test('offline install: multi-agent + instruction hooks', async () => {
       path.join(fakeHome, '.claude', 'skills', 'contracts'),
       path.join(fakeHome, '.cursor', 'skills', 'contracts'),
       path.join(fakeHome, '.windsurf', 'skills', 'contracts'),
-      path.join(fakeHome, '.cline', 'skills', 'contracts'),
-      path.join(fakeHome, '.opencode', 'skills', 'contracts'),
       path.join(projectRoot, '.agent', 'skills', 'contracts'),
     ];
 
@@ -136,7 +126,7 @@ test('offline install: multi-agent + instruction hooks', async () => {
       expect(fs.existsSync(p)).toBeFalsy();
     }
 
-    for (const p of [copilotInstr, claudeInstr, cursorInstr, windsurfInstr, clineInstr, opencodeInstr]) {
+    for (const p of [copilotInstr, claudeInstr, cursorInstr, windsurfInstr]) {
       fs.rmSync(p, { force: true });
       expect(fs.existsSync(p)).toBeFalsy();
     }

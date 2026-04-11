@@ -33,7 +33,6 @@ jobs:
         shell: pwsh
         run: |
           $paths = @(
-            './setup.ps1',
             './installers/install.ps1'
           )
           foreach ($p in $paths) {
@@ -65,7 +64,6 @@ jobs:
         shell: pwsh
         run: |
           $paths = @(
-            './setup.ps1',
             './installers/install.ps1'
           )
           foreach ($p in $paths) {
@@ -94,7 +92,6 @@ jobs:
         run: |
           Import-Module PSScriptAnalyzer
           $paths = @(
-            './setup.ps1',
             './installers/install.ps1'
           )
           $issues = Invoke-ScriptAnalyzer -Path $paths -Severity Warning,Error
@@ -115,7 +112,6 @@ jobs:
 
       - name: Test Bash Install Script Syntax
         run: |
-          bash -n ./setup.sh
           bash -n ./installers/install.sh
           echo "✅ bash script syntax valid"
 

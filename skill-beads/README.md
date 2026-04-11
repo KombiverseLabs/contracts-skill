@@ -36,9 +36,4 @@ Everything else (templates, scripts, AI agent, UI) is shared with `skill/` and r
 
 When running the installer, choose the Beads variant:
 
-```powershell
-# The installer auto-detects Beads and offers the enforced variant
-irm https://raw.githubusercontent.com/kombifyio/contract-skill/main/installers/bootstrap-install.ps1 | iex
-```
-
-Or manually copy `skill-beads/` to your project's skill directory instead of `skill/`.
+Manually copy `skill-beads/` to your project's skill directory instead of `skill/`.
