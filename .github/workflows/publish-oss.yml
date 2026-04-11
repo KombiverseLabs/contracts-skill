@@ -131,6 +131,7 @@ jobs:
           rm -rf "$export_dir/test-results"
           rm -f "$export_dir/.github/workflows/publish-oss.yml"
           rm -f "$export_dir/package-lock.json"
+          rm -f "$export_dir/playwright.config.js"
 
           echo "✅ Clean export prepared at $export_dir"
           echo "export_dir=$export_dir" >> "$GITHUB_ENV"
