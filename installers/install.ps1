@@ -3,7 +3,7 @@
     Installs the Contracts skill to detected AI coding assistants.
 
 .DESCRIPTION
-    Detects AI coding assistants (Copilot, Claude, Cursor, Windsurf) and installs
+    Detects AI coding assistants (Copilot, Claude, Cursor, Codex) and installs
     the Contracts skill for spec-driven development.
 
 .PARAMETER Agents
@@ -111,21 +111,19 @@ Before code changes: locate CONTRACT.md in target module, read spec + metadata, 
 "@
     },
     @{
-        Name = 'Windsurf'
-        Id = 'windsurf'
+        Name = 'OpenAI Codex'
+        Id = 'codex'
         Paths = @(
-            $(if ($env:USERPROFILE) { Join-Path $env:USERPROFILE ".windsurf\skills\$SkillName" })
+            $(if ($env:USERPROFILE) { Join-Path $env:USERPROFILE ".codex\skills\$SkillName" })
         )
         DetectPaths = @(
-            $(if ($env:USERPROFILE) { Join-Path $env:USERPROFILE '.windsurf' }),
-            $(if ($env:USERPROFILE) { Join-Path $env:USERPROFILE '.codeium' }),
-            $(if ($env:APPDATA)     { Join-Path $env:APPDATA 'Windsurf' })
+            $(if ($env:USERPROFILE) { Join-Path $env:USERPROFILE '.codex' })
         )
-        InstructionFile = '.windsurf\rules\01-contracts-system.md'
+        InstructionFile = 'codex.md'
         InstructionSnippet = @"
 
-# Contracts System (MANDATORY)
-Before code changes: locate CONTRACT.md in target module, read spec + metadata, verify source_hash, summarize constraints briefly.
+## Contracts System (MANDATORY)
+Before any code changes: locate CONTRACT.md in target module, read spec + metadata, verify source_hash, summarize constraints briefly, then proceed.
 "@
     },
     @{

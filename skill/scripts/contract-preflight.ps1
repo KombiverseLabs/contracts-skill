@@ -42,8 +42,15 @@ $ErrorActionPreference = "Stop"
 
 function Get-Sha256([string]$FilePath) {
     if (-not (Test-Path $FilePath)) { return $null }
-    $h = Get-FileHash -Path $FilePath -Algorithm SHA256
-    return "sha256:$($h.Hash.ToLower())"
+    $stream = [System.IO.File]::OpenRead((Resolve-Path $FilePath).Path)
+    try {
+        $sha = [System.Security.Cryptography.SHA256]::Create()
+        $hashBytes = $sha.ComputeHash($stream)
+        $hex = -join ($hashBytes | ForEach-Object { $_.ToString("x2") })
+        return "sha256:$hex"
+    } finally {
+        $stream.Close()
+    }
 }
 
 function Get-RelativePath([string]$Root, [string]$FullPath) {

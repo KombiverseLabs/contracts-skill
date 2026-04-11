@@ -49,8 +49,15 @@ function Get-FileHash256 {
         return $null
     }
     
-    $hash = Get-FileHash -Path $FilePath -Algorithm SHA256
-    return "sha256:$($hash.Hash.ToLower())"
+    $stream = [System.IO.File]::OpenRead((Resolve-Path $FilePath).Path)
+    try {
+        $sha = [System.Security.Cryptography.SHA256]::Create()
+        $hashBytes = $sha.ComputeHash($stream)
+        $hex = -join ($hashBytes | ForEach-Object { $_.ToString("x2") })
+        return "sha256:$hex"
+    } finally {
+        $stream.Close()
+    }
 }
 
 function Test-YamlStructure {

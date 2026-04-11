@@ -3,10 +3,11 @@
 > **Spec-driven development with living contracts for AI-assisted coding.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version: 2.2.0](https://img.shields.io/badge/Version-2.2.0-blue.svg)](#)
+[![Version: 2.3.0](https://img.shields.io/badge/Version-2.3.0-blue.svg)](#)
 [![Works with: Copilot](https://img.shields.io/badge/Works%20with-GitHub%20Copilot-blue)](https://github.com/features/copilot)
 [![Works with: Claude](https://img.shields.io/badge/Works%20with-Claude-orange)](https://claude.ai)
 [![Works with: Cursor](https://img.shields.io/badge/Works%20with-Cursor-purple)](https://cursor.sh)
+[![Works with: Codex](https://img.shields.io/badge/Works%20with-OpenAI%20Codex-green)](https://github.com/openai/codex)
 
 Keep your AI coding assistant aligned with your specifications. Never let implementations drift from requirements again.
 
@@ -38,7 +39,7 @@ curl -fsSL https://raw.githubusercontent.com/kombifyio/contract-skill/main/insta
 ```
 
 The installer will:
-- Detect your AI assistants (Copilot, Claude, Cursor, Windsurf)
+- Detect your AI assistants (Copilot, Claude, Cursor, Codex)
 - Let you choose which to configure
 - Inject instruction hooks into your project
 - Optionally install the Contracts Web UI

@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Simplified installer** — Reduced from ~2000 to ~350 lines per script
-  - 5 agents (Copilot, Claude, Cursor, Windsurf, Project Local) instead of 8
+  - 5 agents (Copilot, Claude, Cursor, Codex, Project Local) instead of 8
   - 6 parameters instead of 20+
   - Simple numbered list selection instead of checkbox UI
   - Instruction hooks always injected (no opt-out flag)
@@ -159,7 +159,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Copilot
 - Claude (Claude Code, Claude Desktop)
 - Cursor
-- Windsurf
-- Cline
-- Aider
+- OpenAI Codex
 - Any assistant supporting custom instructions

@@ -71,7 +71,7 @@ test('quality gates: instruction hooks compact + required semantics', async () =
   mkdirp(path.join(fakeHome, '.copilot'));
   mkdirp(path.join(fakeHome, '.claude'));
   mkdirp(path.join(fakeHome, '.cursor'));
-  mkdirp(path.join(fakeHome, '.windsurf'));
+  mkdirp(path.join(fakeHome, '.codex'));
 
   mkdirp(path.join(projectRoot, '.git'));
 
@@ -86,7 +86,7 @@ test('quality gates: instruction hooks compact + required semantics', async () =
     'copilot-instructions.md': path.join(projectRoot, '.github', 'copilot-instructions.md'),
     'CLAUDE.md': path.join(projectRoot, 'CLAUDE.md'),
     '.cursor/rules/contracts-system.mdc': path.join(projectRoot, '.cursor', 'rules', 'contracts-system.mdc'),
-    '.windsurf/rules/01-contracts-system.md': path.join(projectRoot, '.windsurf', 'rules', '01-contracts-system.md'),
+    'codex.md': path.join(projectRoot, 'codex.md'),
   };
 
   try {
@@ -96,7 +96,7 @@ test('quality gates: instruction hooks compact + required semantics', async () =
       env,
       args: [
         '-Agents',
-        'copilot,claude,cursor,windsurf,local',
+        'copilot,claude,cursor,codex,local',
         '-UseLocalSource',
         '-NoUI',
       ],

@@ -45,8 +45,8 @@ WHITE='\033[1;37m'
 NC='\033[0m'
 
 # --- Agent Definitions ---
-declare -a AGENT_IDS=("copilot" "claude" "cursor" "windsurf" "local")
-declare -a AGENT_NAMES=("GitHub Copilot" "Claude Code" "Cursor" "Windsurf" "Project Local")
+declare -a AGENT_IDS=("copilot" "claude" "cursor" "codex" "local")
+declare -a AGENT_NAMES=("GitHub Copilot" "Claude Code" "Cursor" "OpenAI Codex" "Project Local")
 
 get_install_path() {
     local id="$1"
@@ -54,7 +54,7 @@ get_install_path() {
         copilot)  echo "$HOME/.copilot/skills/$SKILL_NAME" ;;
         claude)   echo "$HOME/.claude/skills/$SKILL_NAME" ;;
         cursor)   echo "$HOME/.cursor/skills/$SKILL_NAME" ;;
-        windsurf) echo "$HOME/.windsurf/skills/$SKILL_NAME" ;;
+        codex)    echo "$HOME/.codex/skills/$SKILL_NAME" ;;
         local)    echo "$(pwd)/.agent/skills/$SKILL_NAME" ;;
     esac
 }
@@ -65,7 +65,7 @@ is_detected() {
         copilot)  [[ -d "$HOME/.copilot" ]] || [[ -d "$HOME/.vscode" ]] ;;
         claude)   [[ -d "$HOME/.claude" ]] ;;
         cursor)   [[ -d "$HOME/.cursor" ]] ;;
-        windsurf) [[ -d "$HOME/.windsurf" ]] || [[ -d "$HOME/.codeium" ]] ;;
+        codex)    [[ -d "$HOME/.codex" ]] ;;
         local)    [[ -d ".git" ]] || [[ -f "package.json" ]] ;;
     esac
 }
@@ -81,7 +81,7 @@ get_instruction_file() {
         copilot)  echo ".github/copilot-instructions.md" ;;
         claude)   echo "CLAUDE.md" ;;
         cursor)   echo ".cursor/rules/contracts-system.mdc" ;;
-        windsurf) echo ".windsurf/rules/01-contracts-system.md" ;;
+        codex)    echo "codex.md" ;;
         local)    echo "" ;;
     esac
 }
@@ -118,11 +118,11 @@ alwaysApply: true
 Before code changes: locate CONTRACT.md in target module, read spec + metadata, verify source_hash, summarize constraints briefly.
 SNIPPET
             ;;
-        windsurf)
+        codex)
             cat <<'SNIPPET'
 
-# Contracts System (MANDATORY)
-Before code changes: locate CONTRACT.md in target module, read spec + metadata, verify source_hash, summarize constraints briefly.
+## Contracts System (MANDATORY)
+Before any code changes: locate CONTRACT.md in target module, read spec + metadata, verify source_hash, summarize constraints briefly, then proceed.
 SNIPPET
             ;;
     esac

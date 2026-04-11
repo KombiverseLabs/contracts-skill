@@ -34,8 +34,14 @@ if (-not (Test-Path $FilePath)) {
     exit 1
 }
 
-$hash = Get-FileHash -Path $FilePath -Algorithm SHA256
-$hashLower = $hash.Hash.ToLower()
+$stream = [System.IO.File]::OpenRead((Resolve-Path $FilePath).Path)
+try {
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $hashBytes = $sha.ComputeHash($stream)
+    $hashLower = -join ($hashBytes | ForEach-Object { $_.ToString("x2") })
+} finally {
+    $stream.Close()
+}
 
 switch ($Format) {
     "full" {

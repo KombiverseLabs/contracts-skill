@@ -49,7 +49,12 @@ foreach ($f in $mdFiles) {
   if (-not $map.ContainsKey($dir)) { $map[$dir] = @{ dir=$dir } }
   $map[$dir].md_path = Get-RelPath $root $f.FullName
   $map[$dir].md_text = Get-Content $f.FullName -Raw
-  $map[$dir].md_hash = (Get-FileHash -Path $f.FullName -Algorithm SHA256).Hash.ToLower()
+  $stream = [System.IO.File]::OpenRead($f.FullName)
+  try {
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $hb = $sha.ComputeHash($stream)
+    $map[$dir].md_hash = -join ($hb | ForEach-Object { $_.ToString("x2") })
+  } finally { $stream.Close() }
 }
 foreach ($f in $yamlFiles) {
   $dir = Get-RelPath $root $f.Directory.FullName
