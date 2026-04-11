@@ -19,8 +19,8 @@ function readFile(p) {
 }
 
 function sha256File(filePath) {
-  const buf = fs.readFileSync(filePath);
-  const h = crypto.createHash('sha256').update(buf).digest('hex');
+  const text = fs.readFileSync(filePath, 'utf8').replace(/\r\n/g, '\n');
+  const h = crypto.createHash('sha256').update(text, 'utf8').digest('hex');
   return `sha256:${h}`;
 }
 

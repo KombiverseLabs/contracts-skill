@@ -94,10 +94,13 @@ jobs:
           $paths = @(
             './installers/install.ps1'
           )
-          $issues = Invoke-ScriptAnalyzer -Path $paths -Severity Warning,Error
-          if ($issues) {
-            $issues | Select-Object RuleName,Severity,ScriptName,Line,Message | Format-Table -AutoSize
-            throw "PSScriptAnalyzer found $($issues.Count) issue(s)."
+          $allIssues = @()
+          foreach ($p in $paths) {
+            $allIssues += Invoke-ScriptAnalyzer -Path $p -Severity Warning,Error
+          }
+          if ($allIssues) {
+            $allIssues | Select-Object RuleName,Severity,ScriptName,Line,Message | Format-Table -AutoSize
+            throw "PSScriptAnalyzer found $($allIssues.Count) issue(s)."
           }
           Write-Host '✅ PSScriptAnalyzer clean'
 
