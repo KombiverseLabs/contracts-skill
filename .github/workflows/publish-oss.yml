@@ -171,13 +171,8 @@ jobs:
             git commit -m "release: $tag"
             git push origin HEAD:main
           fi
-          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null 2>&1 || \
-             git ls-remote --exit-code --tags origin "$tag" >/dev/null 2>&1; then
-            echo "OSS tag $tag already exists on origin."
-          else
-            git tag "$tag"
-            git push origin "refs/tags/$tag"
-          fi
+          git tag -f "$tag"
+          git push --force origin "refs/tags/$tag"
 
       - name: Publish summary
         shell: bash
