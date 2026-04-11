@@ -117,7 +117,7 @@ function Test-Attestation {
 
     # Check confidence level
     if ($content -match 'confidence:\s*low') {
-        $warnings += "Contract attestation confidence is low — verification tests may not be implemented"
+        $warnings += "Contract attestation confidence is low - verification tests may not be implemented"
     }
 
     # Check for stale attestation (next_review in the past)
