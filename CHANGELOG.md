@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2025-07-12
+
+### Changed
+
+- **Simplified installer** — Reduced from ~2000 to ~350 lines per script
+  - 5 agents (Copilot, Claude, Cursor, Windsurf, Project Local) instead of 8
+  - 6 parameters instead of 20+
+  - Simple numbered list selection instead of checkbox UI
+  - Instruction hooks always injected (no opt-out flag)
+
+### Removed
+
+- `setup.ps1`, `setup.sh` — Redundant auto-installer wrappers
+- `installers/bootstrap-install.ps1` — Unnecessary download-and-execute wrapper
+- PHP UI (`skill/ui/contracts-ui/`) — Redundant with minimal-ui
+- Beads integration in installer
+- Cline, Aider, OpenCode agent targets
+
 ## [2.2.0] - 2026-02-28
 
 ### Added
