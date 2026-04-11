@@ -129,7 +129,11 @@ jobs:
           rm -rf "$export_dir/local-test-project"
           rm -rf "$export_dir/test-installation-project"
           rm -rf "$export_dir/test-results"
+          rm -rf "$export_dir/tests"
+          rm -rf "$export_dir/scripts"
+          rm -rf "$export_dir/.githooks"
           rm -f "$export_dir/.github/workflows/publish-oss.yml"
+          rm -f "$export_dir/package.json"
           rm -f "$export_dir/package-lock.json"
           rm -f "$export_dir/playwright.config.js"
 
