@@ -143,11 +143,11 @@ for cdir in "${DIRS[@]}"; do
   name="$(grep -m1 '^# ' "$cdir/CONTRACT.md" | sed 's/^# //')"
   echo "- ${name:-$rel} ($rel)"
 
-  awk 'BEGIN{in=0}
-       /^##[[:space:]]+Constraints/{in=1;next}
-       /^##[[:space:]]+/{in=0}
-       in && $0 ~ /^- MUST:/{print "  MUST: " substr($0,9)}
-       in && $0 ~ /^- MUST NOT:/{print "  MUST NOT: " substr($0,13)}' "$cdir/CONTRACT.md" || true
+  awk 'BEGIN{n=0}
+       /^##[[:space:]]+Constraints/{n=1;next}
+       /^##[[:space:]]+/{n=0}
+       n && $0 ~ /^- MUST:/{print "  MUST: " substr($0,9)}
+       n && $0 ~ /^- MUST NOT:/{print "  MUST NOT: " substr($0,13)}' "$cdir/CONTRACT.md" || true
 
   echo ""
 done

@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Missing acceptance_tests in generated YAML** — init-agent `makeYaml()` now emits `acceptance_tests` section
 - **Preflight gap** — Previously skipped AT and Out of Scope validation, now enforced
 
+## [2.4.0] - 2026-04-11
+
 ### Changed
 
 - **Public repository is now a consistent slim distribution**
