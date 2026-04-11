@@ -5,11 +5,11 @@ set -euo pipefail
 # Installs the Contracts skill for AI coding assistants.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/kombifyio/contract-skill/main/installers/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/kombifyio/contracts-skill/main/installers/install.sh | bash
 #   ./install.sh --agents copilot,claude --auto
 
 REPO_OWNER="kombifyio"
-REPO_NAME="contract-skill"
+REPO_NAME="contracts-skill"
 SKILL_NAME="contracts"
 GIT_BRANCH="main"
 AGENTS=""

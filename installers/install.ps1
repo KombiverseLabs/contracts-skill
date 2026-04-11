@@ -25,7 +25,7 @@
     Path to a local skill folder (overrides download).
 
 .EXAMPLE
-    irm https://raw.githubusercontent.com/kombifyio/contract-skill/main/installers/install.ps1 | iex
+    irm https://raw.githubusercontent.com/kombifyio/contracts-skill/main/installers/install.ps1 | iex
 
 .EXAMPLE
     .\install.ps1 -Agents "copilot,claude" -Auto
@@ -45,7 +45,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $RepoOwner = 'kombifyio'
-$RepoName  = 'contract-skill'
+$RepoName  = 'contracts-skill'
 $SkillName = 'contracts'
 
 # --- Agent Configurations ---

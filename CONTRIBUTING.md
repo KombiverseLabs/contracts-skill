@@ -24,8 +24,8 @@ Thank you for your interest in contributing! This document provides guidelines f
 
 ```bash
 # Fork and clone
-git clone https://github.com/kombifyio/contract-skill.git
-cd contract-skill
+git clone https://github.com/kombifyio/contracts-skill.git
+cd contracts-skill
 
 # Create a branch
 git checkout -b feature/your-feature-name

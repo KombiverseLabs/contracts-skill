@@ -90,12 +90,12 @@ jobs:
           echo "✅ Version $version found in CHANGELOG.md"
 
   publish-source:
-    name: Export & Push to kombifyio/contract-skill
+    name: Export & Push to kombifyio/contracts-skill
     needs: [prepare, validate]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      OSS_REPO: kombifyio/contract-skill
+      OSS_REPO: kombifyio/contracts-skill
       OSS_PUBLISH_TOKEN: ${{ secrets.OSS_PUBLISH_TOKEN }}
 
     steps:
@@ -134,7 +134,7 @@ jobs:
           echo "✅ Clean export prepared at $export_dir"
           echo "export_dir=$export_dir" >> "$GITHUB_ENV"
 
-      - name: Clone kombifyio/contract-skill
+      - name: Clone kombifyio/contracts-skill
         env:
           RELEASE_AUTH_TOKEN: ${{ secrets.OSS_PUBLISH_TOKEN }}
         run: |
@@ -179,7 +179,7 @@ jobs:
           {
             echo "## OSS publish complete"
             echo ""
-            echo "- Source export pushed to \`kombifyio/contract-skill\`."
+            echo "- Source export pushed to \`kombifyio/contracts-skill\`."
             echo "- Tag \`${{ needs.prepare.outputs.tag }}\` pushed to the public repository."
             echo "- Public repository workflows now handle CI and GitHub Releases."
           } >> "$GITHUB_STEP_SUMMARY"

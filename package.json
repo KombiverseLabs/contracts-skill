@@ -1,16 +1,16 @@
 {
-  "name": "contract-skill",
+  "name": "contracts-skill",
   "version": "2.3.0",
   "description": "Spec-driven development with living contracts for AI-assisted coding",
   "license": "MIT",
   "author": "kombifyio",
-  "homepage": "https://github.com/kombifyio/contract-skill",
+  "homepage": "https://github.com/kombifyio/contracts-skill",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kombifyio/contract-skill.git"
+    "url": "https://github.com/kombifyio/contracts-skill.git"
   },
   "bugs": {
-    "url": "https://github.com/kombifyio/contract-skill/issues"
+    "url": "https://github.com/kombifyio/contracts-skill/issues"
   },
   "keywords": [
     "ai",
