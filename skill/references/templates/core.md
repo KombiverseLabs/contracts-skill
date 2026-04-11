@@ -14,10 +14,18 @@
 
 ## Success Criteria
 <!-- GOOD: "Hashing completes in <10ms for inputs up to 1MB" -->
-<!-- GOOD: "Failed login attempts are logged with timestamp and IP" -->
 <!-- BAD: "Module functions correctly" (untestable) -->
-<!-- BAD: "Handles errors gracefully" (undefined) -->
 - [ ] [Specific, measurable criterion]
+
+## Out of Scope
+<!-- What this module does NOT do. Prevents scope creep. -->
+- [Responsibility that belongs elsewhere]
+
+## Acceptance Tests
+<!-- REQUIRED. Define what "done" means — at least one measurable criterion. -->
+- [ ] All verification tests pass
+- [ ] Build succeeds
+- [ ] [Additional measurable done-criterion]
 
 ## Verification Tests
 <!--

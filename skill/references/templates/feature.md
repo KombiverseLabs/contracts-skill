@@ -20,6 +20,16 @@
 - [ ] Given [context], when [action], then [expected outcome]
 - [ ] [Metric]: [target value]
 
+## Out of Scope
+<!-- What this feature does NOT handle. Prevents scope creep. -->
+- [Responsibility that belongs to another module]
+
+## Acceptance Tests
+<!-- REQUIRED. At least one measurable done-criterion beyond VTs. -->
+- [ ] All verification tests pass
+- [ ] Build succeeds: `npm run build`
+- [ ] [Additional measurable done-criterion — e.g., performance target, coverage %]
+
 ## Verification Tests
 <!--
   1-3 tests that prove the module ACTUALLY WORKS through its golden path.

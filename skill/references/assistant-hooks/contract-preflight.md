@@ -41,21 +41,33 @@ If no contract exists, say so and offer to create one.
 - If VTs are only `defined` (no test file exists) → **warn**: "VTs are defined but not yet implemented — contract is not fully verified"
 - If features are marked `implemented` but VT-1 is not `passing` → **STOP**: "Feature marked as implemented but VT-1 is not passing. Verify or fix before proceeding."
 
-### 6. Test Coverage Check
+### 6. Acceptance Test Check
+- Check `acceptance_tests` section in `CONTRACT.yaml`
+- If empty or missing → **warn**: "Contract has no acceptance tests. Every contract must define at least one measurable AT."
+- If acceptance tests exist → confirm count and types (vt_pass, command, http, arena_score)
+
+### 7. Out of Scope Check
+- Read `## Out of Scope` section from `CONTRACT.md` (if it exists)
+- Compare planned changes against out-of-scope items
+- If a planned change matches an out-of-scope item → **STOP**: "[X] is listed as Out of Scope in the contract."
+
+### 8. Test Coverage Check
 - Do features being changed have corresponding test files?
 - If a feature status is `implemented` but no tests exist → **warn the user**
 - If adding a new feature → ask where tests should go and suggest a VT update
 
-### 7. Dependency Impact Check
+### 9. Dependency Impact Check
 - Check `registry.yaml` for modules that depend on the one being changed
 - If dependents exist → note which contracts may be affected
 - If changes could break dependent contracts → warn before proceeding
 
-### 8. Return Contract Notes (max 7 sentences)
+### 10. Return Contract Notes (max 7 sentences)
 Summarize:
 - MUST and MUST NOT constraints affecting the requested change
 - Attestation status (current / stale / missing)
 - Verification test status (all passing / some failing / not implemented)
+- Acceptance test status (defined / missing)
+- Out of scope boundaries relevant to planned changes
 - Test coverage status for impacted features
 - Dependent modules that may be affected
 

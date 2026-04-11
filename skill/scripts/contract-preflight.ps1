@@ -34,6 +34,8 @@ param(
 
     [switch]$Changed,
 
+    [switch]$RunVts,
+
     [ValidateSet("console", "json")]
     [string]$OutputFormat = "console"
 )
@@ -259,4 +261,17 @@ foreach ($m in $modules) {
     }
 
     Write-Host "" 
+}
+
+# ─── Optional VT Execution ────────────────────────────────────
+if ($RunVts) {
+    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+    $runVtsScript = Join-Path $scriptDir 'run-vts.ps1'
+    if (Test-Path $runVtsScript) {
+        Write-Host "Running verification tests..." -ForegroundColor Cyan
+        Write-Host ""
+        & $runVtsScript -Path $root -UpdateYaml -OutputFormat $OutputFormat
+    } else {
+        Write-Host "Warning: run-vts.ps1 not found at $runVtsScript" -ForegroundColor Yellow
+    }
 }

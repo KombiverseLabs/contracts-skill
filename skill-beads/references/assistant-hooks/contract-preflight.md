@@ -60,23 +60,35 @@ If no contract exists, say so and offer to create one.
 - If VTs only `defined` → **warn**: contract not fully verified
 - If features `implemented` but VT-1 not `passing` → **STOP**: verify first
 
-### 7. Test Coverage Check
+### 7. Acceptance Test Check
+
+- Check `acceptance_tests` section in `CONTRACT.yaml`
+- If empty or missing → **warn**: "Contract has no acceptance tests. Every contract must define at least one measurable AT."
+- If acceptance tests exist → confirm count and types (vt_pass, command, http, arena_score)
+
+### 8. Out of Scope Check
+
+- Read `## Out of Scope` section from `CONTRACT.md` (if it exists)
+- Compare planned changes against out-of-scope items
+- If a planned change matches an out-of-scope item → **STOP**: "[X] is listed as Out of Scope in the contract."
+
+### 9. Test Coverage Check
 
 - Do features being changed have corresponding test files?
 - If a feature status is `implemented` but no tests exist → **warn the user**
 - If adding a new feature → ask where tests should go and suggest VT update
 
-### 8. Dependency Impact Check
+### 10. Dependency Impact Check
 
 - Check `registry.yaml` for modules that depend on the one being changed
 - If dependents exist → note which contracts may be affected
 - If changes could break dependent contracts → warn before proceeding
 
-### 9. Close Preflight Task
+### 11. Close Preflight Task
 
 Summarize (max 7 sentences) and close the Beads task:
 ```bash
-bd close <preflight-task-id> --design "Checked [modules]. MUST: [constraints]. Attestation: [status]. VTs: [status]. Dependents: [list]."
+bd close <preflight-task-id> --design "Checked [modules]. MUST: [constraints]. Attestation: [status]. VTs: [status]. ATs: [count]. Dependents: [list]."
 ```
 
 This unblocks all feature tasks that depend on the preflight.

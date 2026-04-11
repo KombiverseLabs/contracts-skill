@@ -32,6 +32,17 @@
 - [ ] Given rate limit hit, when requesting, then queues and retries → Test: [file]
 - [ ] Given service unavailable, when requesting, then degrades gracefully → Test: [file]
 
+## Out of Scope
+<!-- What this integration does NOT handle (e.g., billing, admin features). -->
+- [Responsibility outside this integration's boundary]
+
+## Acceptance Tests
+<!-- REQUIRED. At least one measurable done-criterion beyond VTs. -->
+- [ ] All verification tests pass
+- [ ] Build succeeds
+- [ ] Integration test suite passes against staging
+- [ ] [Additional measurable criterion — e.g., latency target, error rate]
+
 ## Verification Tests
 <!--
   1-3 tests that prove the integration ACTUALLY CONNECTS and RETURNS REAL DATA.

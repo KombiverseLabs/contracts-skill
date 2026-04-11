@@ -7,7 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.4.0] - 2026-04-11
+## [2.5.0] - 2026-04-11
+
+### Added
+
+- **Bootstrap prompt for agent-driven installation** — Users can paste a short prompt to any AI agent (Copilot, Claude, Cursor, Codex) to install the skill without finding install commands manually
+- **INSTALL.md** — Comprehensive agent-readable installation guide with automated (script) and manual (clone + copy) options, verification steps, and troubleshooting
+- **Acceptance Test validation in preflight** — Preflight hooks (base + Beads) now verify that contracts define at least one measurable acceptance test
+- **Out of Scope validation in preflight** — Preflight hooks now check planned changes against the contract’s Out of Scope section
+- **Acceptance tests in init-agent output** — AI-assisted contract generation now includes a default `acceptance_tests` entry ("All VTs pass")
+
+### Changed
+
+- **SKILL.md rewritten** — Both base and Beads variants reduced to ~130 lines with modern frontmatter format, 6 Integrity Rules, mandatory ATs
+- **Templates updated** — All 4 templates (core, feature, integration, utility) now include mandatory Acceptance Tests and Out of Scope sections
+- **CONTRACT.yaml.template** — `acceptance_tests` section now uncommented with a default entry; previously was commented-out example
+- **contract-review.md** — New assistant hook for scope drift detection with Beads integration
+- **Preflight steps expanded** — Base: 8→10 steps, Beads: 9→11 steps
+
+### Fixed
+
+- **Missing acceptance_tests in generated YAML** — init-agent `makeYaml()` now emits `acceptance_tests` section
+- **Preflight gap** — Previously skipped AT and Out of Scope validation, now enforced
 
 ### Changed
 

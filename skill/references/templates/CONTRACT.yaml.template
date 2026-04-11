@@ -37,8 +37,21 @@ verification_tests:
     name: ""                      # Descriptive name from CONTRACT.md
     status: defined               # defined | implemented | passing | failing
     test_file: ""                 # Path to test file once implemented
+    test_command: ""              # Command to run this VT (e.g. "npx vitest run auth.vt.test.ts")
+    assertion_type: content       # content | exit_code | regex | json_path
+    expected_output: ""           # Expected assertion value (for automated checking)
     last_run: null                # ISO timestamp of last execution
     last_result: null             # pass | fail
+
+acceptance_tests:                 # REQUIRED — at least one measurable "done" criterion
+  - name: "All VTs pass"
+    type: vt_pass                 # vt_pass | command | http | arena_score
+    target: "all"                 # "all" or specific VT IDs: "VT-1,VT-2"
+    passed: false
+  # - name: "Build succeeds"
+  #   type: command
+  #   target: "npm run build"
+  #   passed: false
 
 attestation:
   contract_version: "1.0"        # CONTRACT.md version at time of attestation

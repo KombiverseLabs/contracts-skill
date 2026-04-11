@@ -3,7 +3,7 @@
 > **Spec-driven development with living contracts for AI-assisted coding.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version: 2.4.0](https://img.shields.io/badge/Version-2.4.0-blue.svg)](#)
+[![Version: 2.5.0](https://img.shields.io/badge/Version-2.5.0-blue.svg)](#)
 [![Works with: Copilot](https://img.shields.io/badge/Works%20with-GitHub%20Copilot-blue)](https://github.com/features/copilot)
 [![Works with: Claude](https://img.shields.io/badge/Works%20with-Claude-orange)](https://claude.ai)
 [![Works with: Cursor](https://img.shields.io/badge/Works%20with-Cursor-purple)](https://cursor.sh)
@@ -12,6 +12,25 @@
 Keep your AI coding assistant aligned with your specifications. Never let implementations drift from requirements again.
 
 This public repository is intentionally a slim distribution export. Maintainer-only dev tooling such as the npm manifest, Playwright suite, and git hooks is not published here.
+
+---
+
+## Install via AI Agent
+
+Copy this prompt and paste it to your AI assistant (Copilot, Claude, Cursor, Codex — any agent with terminal access):
+
+> Install the "Contracts Skill" for spec-driven development from the public repo https://github.com/kombifyio/contracts-skill — read the INSTALL.md at the repo root and follow it step by step. Detect my OS, run the matching installer, and confirm what was installed.
+
+That's it. The agent clones the repo, runs the installer, and sets everything up. No manual steps required.
+
+<details>
+<summary><b>Alternative: paste this if your agent has no web/terminal access</b></summary>
+
+> Install the "Contracts Skill" by cloning https://github.com/kombifyio/contracts-skill (depth 1). Copy the `skill/` directory to `~/.copilot/skills/contracts/` (for Copilot), `~/.claude/skills/contracts/` (for Claude), `~/.cursor/skills/contracts/` (for Cursor), or `~/.codex/skills/contracts/` (for Codex). Verify `SKILL.md` exists at the target path. Then say: "Contracts Skill installed. Say 'init contracts' to get started."
+
+</details>
+
+For manual installation or troubleshooting, see [INSTALL.md](./INSTALL.md).
 
 ---
 
@@ -29,6 +48,10 @@ Both variants share the same scripts, templates, AI analyzer, and UI. They diffe
 ## Quick Start
 
 ### 1. Install
+
+**Easiest:** Paste the [bootstrap prompt](#install-via-ai-agent) to your AI agent — it handles everything.
+
+**Or run manually:**
 
 ```powershell
 # PowerShell (Windows/macOS/Linux)

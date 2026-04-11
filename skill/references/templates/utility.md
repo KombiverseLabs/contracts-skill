@@ -39,6 +39,16 @@ const result = function1(input);
 - [ ] Documentation complete for all exports
 - [ ] No dependencies on other project modules
 
+## Out of Scope
+<!-- What this utility does NOT handle. -->
+- [Responsibility that belongs elsewhere]
+
+## Acceptance Tests
+<!-- REQUIRED. At least one measurable done-criterion. -->
+- [ ] All verification tests pass
+- [ ] Build succeeds
+- [ ] [Additional measurable done-criterion]
+
 ## Verification Tests
 <!--
   1 test that proves the utility produces CORRECT RESULTS, not just "runs."

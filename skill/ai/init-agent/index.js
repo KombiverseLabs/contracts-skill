@@ -89,6 +89,12 @@ ${exportsYaml}
   test_pattern: "*.test.*"
   custom_script: null
 
+acceptance_tests:
+  - name: "All VTs pass"
+    type: vt_pass
+    target: "all"
+    passed: false
+
 changelog:
   - date: "${shortDate}"
     version: "1.0"
@@ -387,6 +393,16 @@ async function applyMode(root, options = {}) {
   log('  1. Review each CONTRACT.md and customize as needed');
   log('  2. Remove the "<!-- DRAFT -->" comment when ready');
   log('  3. Ask your AI assistant to help implement the features');
+  log('');
+  log('Optional: Agent Arena integration', 'cyan');
+  log('  Add an arena_score acceptance test to CONTRACT.yaml for external validation:');
+  log('    acceptance_tests:');
+  log('      - name: "Arena: ≥80% score"');
+  log('        type: arena_score');
+  log('        threshold_percent: 80');
+  log('        difficulty: medium');
+  log('  Then submit contract tasks via Agent Arena MCP for validated scoring.');
+  log('  Details: https://github.com/KombiverseLabs/agent-arena');
   
   return created;
 }

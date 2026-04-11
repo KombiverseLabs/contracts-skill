@@ -7,6 +7,7 @@ set -euo pipefail
 ROOT="."
 OUTPUT="console"
 CHANGED=false
+RUN_VTS=false
 FILES=()
 
 usage() {
@@ -24,6 +25,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --path) ROOT="$2"; shift 2 ;;
     --changed) CHANGED=true; shift ;;
+    --run-vts) RUN_VTS=true; shift ;;
     --file) FILES+=("$2"); shift 2 ;;
     --output) OUTPUT="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
@@ -92,43 +94,38 @@ for f in "${FILES[@]}"; do
 done
 
 if [[ "$OUTPUT" == "json" ]]; then
-  # minimal JSON; constraints extraction is best-effort
-  echo '{'
-  echo "  \"root\": \"$ROOT_ABS\","
-  echo '  "modules": ['
-  first=true
+  # Require jq for safe JSON output
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "Error: jq is required for JSON output but not found in PATH." >&2
+    exit 1
+  fi
+
+  modules_json="[]"
   for cdir in "${DIRS[@]}"; do
     rel="${cdir#"$ROOT_ABS"/}"
     name="$(grep -m1 '^# ' "$cdir/CONTRACT.md" | sed 's/^# //')"
-    must="$(awk 'BEGIN{in=0} /^##[[:space:]]+Constraints/{in=1;next} /^##[[:space:]]+/{in=0} in && $0 ~ /^- MUST:/{sub(/^- MUST:[[:space:]]*/,"",$0); print $0}' "$cdir/CONTRACT.md" | sed 's/"/\\"/g')"
-    mustnot="$(awk 'BEGIN{in=0} /^##[[:space:]]+Constraints/{in=1;next} /^##[[:space:]]+/{in=0} in && $0 ~ /^- MUST NOT:/{sub(/^- MUST NOT:[[:space:]]*/,"",$0); print $0}' "$cdir/CONTRACT.md" | sed 's/"/\\"/g')"
+    must="$(awk 'BEGIN{n=0} /^##[[:space:]]+Constraints/{n=1;next} /^##[[:space:]]+/{n=0} n && $0 ~ /^- MUST:/{sub(/^- MUST:[[:space:]]*/,"",$0); print $0}' "$cdir/CONTRACT.md")"
+    mustnot="$(awk 'BEGIN{n=0} /^##[[:space:]]+Constraints/{n=1;next} /^##[[:space:]]+/{n=0} n && $0 ~ /^- MUST NOT:/{sub(/^- MUST NOT:[[:space:]]*/,"",$0); print $0}' "$cdir/CONTRACT.md")"
 
-    $first || echo '    ,'
-    first=false
-
-    echo '    {'
-    echo "      \"path\": \"$rel\","
-    echo "      \"name\": \"${name:-$rel}\","
-    echo '      "constraints": {'
-    echo '        "must": ['
+    must_json="[]"
     if [[ -n "$must" ]]; then
-      while IFS= read -r line; do
-        echo "          \"$line\","
-      done <<< "$must" | sed '$s/,$//'
+      must_json="$(printf '%s\n' "$must" | jq -R . | jq -sc '.')"
     fi
-    echo '        ],'
-    echo '        "must_not": ['
+    mustnot_json="[]"
     if [[ -n "$mustnot" ]]; then
-      while IFS= read -r line; do
-        echo "          \"$line\","
-      done <<< "$mustnot" | sed '$s/,$//'
+      mustnot_json="$(printf '%s\n' "$mustnot" | jq -R . | jq -sc '.')"
     fi
-    echo '        ]'
-    echo '      }'
-    echo '    }'
+
+    mod_json="$(jq -nc \
+      --arg path "$rel" \
+      --arg name "${name:-$rel}" \
+      --argjson must "$must_json" \
+      --argjson mustnot "$mustnot_json" \
+      '{path:$path, name:$name, constraints:{must:$must, must_not:$mustnot}}')"
+    modules_json="$(echo "$modules_json" | jq --argjson mod "$mod_json" '. + [$mod]')"
   done
-  echo '  ]'
-  echo '}'
+
+  jq -nc --arg root "$ROOT_ABS" --argjson modules "$modules_json" '{root:$root, modules:$modules}'
   exit 0
 fi
 
@@ -154,3 +151,16 @@ for cdir in "${DIRS[@]}"; do
 
   echo ""
 done
+
+# Optional VT execution
+if $RUN_VTS; then
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  RUN_VTS_SCRIPT="$SCRIPT_DIR/run-vts.sh"
+  if [[ -x "$RUN_VTS_SCRIPT" ]]; then
+    echo "Running verification tests..."
+    echo ""
+    "$RUN_VTS_SCRIPT" --path "$ROOT_ABS" --update-yaml --output "$OUTPUT"
+  else
+    echo "Warning: run-vts.sh not found at $RUN_VTS_SCRIPT" >&2
+  fi
+fi
