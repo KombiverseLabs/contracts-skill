@@ -1,7 +1,7 @@
 # CONTRACT.yaml - Technical specification derived from CONTRACT.md
 
 meta:
-  source_hash: "sha256:3ea0320f3c7e368d50d4900b2503e392912b94907b37b0379ab3a8fabaeeae44"
+  source_hash: "sha256:87af90c5bda2f729a26577d78016b37f69c3455e673354a22528b22217667d31"
   last_sync: "2026-02-28T12:00:00Z"
   tier: standard
   version: "1.1"
