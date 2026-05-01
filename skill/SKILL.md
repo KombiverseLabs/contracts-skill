@@ -19,11 +19,13 @@ Maintain alignment between user intent and implementation through **living contr
 
 | Command | Action | Reference |
 |---------|--------|-----------|
-| "init contracts" | AI-assisted initialization | [init-contracts.md](./references/assistant-hooks/init-contracts.md) |
+| "init contracts" | AI-assisted initialization + creates project guide | [init-contracts.md](./references/assistant-hooks/init-contracts.md) |
 | "contract preflight" | Read contracts, check drift | [contract-preflight.md](./references/assistant-hooks/contract-preflight.md) |
 | "contract review" | Evaluate if contract needs update | [contract-review.md](./references/assistant-hooks/contract-review.md) |
 | "check contracts" | Scan all, report drift/sync status | Run: `validate-contracts.ps1` |
 | "sync contracts" | Update all YAMLs from changed MDs | Manual |
+
+> **Project guide:** After running "init contracts", `.contracts/CONTRACTS-GUIDE.md` is created in the project repo. This file is permanent — commit it. It tells every developer and AI agent where contracts live and how they are applied in this project. If it exists, read it first before asking the user setup questions.
 
 ## Principles
 
@@ -131,6 +133,7 @@ Contracts are binding commitments, not suggestions. These rules prevent gaming:
 
 ## References (Load When Needed)
 
+- **Project guide exists?** → Read `.contracts/CONTRACTS-GUIDE.md` first (project-level context, module map, conventions)
 - **Initializing?** → [init-contracts.md](./references/assistant-hooks/init-contracts.md)
 - **Before coding?** → [contract-preflight.md](./references/assistant-hooks/contract-preflight.md)
 - **Scope change?** → [contract-review.md](./references/assistant-hooks/contract-review.md)
@@ -138,3 +141,4 @@ Contracts are binding commitments, not suggestions. These rules prevent gaming:
 - **Scripts** → [scripts/](./scripts/) (validate, compute-hash, run-vts)
 
 Do NOT pre-load all references. Load only what the current task requires.
+When starting work in an unfamiliar project, check for `.contracts/CONTRACTS-GUIDE.md` — it is the fastest way to orient yourself without asking the user setup questions they've already answered.

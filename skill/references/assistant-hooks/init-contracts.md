@@ -6,11 +6,12 @@
 
 ## Quick Start
 
-1. Verify skill is installed (look for `SKILL.md` in skill directory)
+1. Gather project context (Step 0)
 2. Run semantic analysis on the project
 3. Present recommendations with reasoning
 4. Generate drafts for user review
 5. Create files ONLY after explicit user approval
+6. Create/update `.contracts/CONTRACTS-GUIDE.md` as the permanent project reference
 
 ```bash
 # CLI alternative
@@ -22,10 +23,30 @@ node .github/skills/contracts/ai/init-agent/index.js --path . --apply --yes
 
 ## The Initialization Flow
 
+### Step 0: Gather Project Context
+
+Before scanning, establish the project identity. This context feeds directly into the permanent guide.
+
+**Check first:** does `.contracts/CONTRACTS-GUIDE.md` already exist?
+
+- **Yes** — read it, extract existing values (name, stack, owner, conventions), skip asking for what's already there. Tell the user: "Found existing CONTRACTS-GUIDE.md — continuing from existing setup."
+- **No** — ask the following (accept Enter to skip any question):
+
+  1. **Project name** — if not provided, auto-detect: check `package.json` → `name`, or `go.mod` → first `module` line, or `Cargo.toml` → `[package] name`, or current directory name as fallback.
+  2. **Primary stack / language** — e.g., "TypeScript + Node", "Go", "Python / FastAPI"
+  3. **Contracts owner or team** — the person or team responsible for keeping contracts up-to-date
+  4. **Any project-specific conventions?** — e.g., "all features live in src/features/, tests in __tests__/ next to source" — or say "none / skip"
+
+Save these answers. They will be written into `.contracts/CONTRACTS-GUIDE.md` at the end.
+
+---
+
 ### Step 1: Project Discovery
 
 Detect project type from config files (package.json, pyproject.toml, go.mod, Cargo.toml).
 Scan source directories (src/, lib/, app/). Map module boundaries.
+
+---
 
 ### Step 2: Semantic Module Analysis
 
@@ -35,6 +56,8 @@ For each potential module, evaluate:
 - **Public API**: exports, entry points → feature extraction
 - **Test coverage**: test file presence → maturity signal
 - **Relationships**: import patterns → dependency mapping
+
+---
 
 ### Step 3: Score and Recommend
 
@@ -51,10 +74,14 @@ score = (lineCount / 10) + (subDirCount * 5) + (hasEntryPoint ? 10 : 0)
 
 Module type by path: core/ → core, features/ → feature, integration/ → integration, util/ → utility.
 
+---
+
 ### Step 4: Present Recommendations
 
 Show user a table with module name, type, tier, reason (why this module needs a contract).
 Ask: "Generate drafts for all, select specific, add unlisted, or skip?"
+
+---
 
 ### Step 5: Generate and Review Drafts
 
@@ -119,13 +146,44 @@ User action → Feature A → Feature B → Feature C → Observable output
 | **Failure sensitivity** | Would fail if ANY core feature breaks | Only fails for one specific bug |
 | **Specificity** | Exact expected value defined | Vague "works correctly" |
 
-### Step 6: Create Files
+---
+
+### Step 6: Create Contract Files
 
 After explicit approval:
-1. Create CONTRACT.md files (marked DRAFT)
-2. Create CONTRACT.yaml files with computed hashes
+1. Create `CONTRACT.md` files (marked DRAFT)
+2. Create `CONTRACT.yaml` files with computed hashes
 3. Create/update `.contracts/registry.yaml`
 4. Present summary with next steps
+
+---
+
+### Step 7: Create the Project Reference Guide
+
+This step is mandatory. It creates a **permanent, project-committed** document that any developer or AI agent can read to understand how the Contracts system is configured for this project.
+
+**Action:** Create (or update) `.contracts/CONTRACTS-GUIDE.md`
+
+**Always create `.contracts/` if it doesn't exist.** Then write the guide using the template at `references/templates/contracts-guide.md`, filling in:
+
+| Placeholder | Value |
+|-------------|-------|
+| `{{PROJECT_NAME}}` | From Step 0 (auto-detected or user-provided) |
+| `{{STACK}}` | From Step 0 |
+| `{{OWNER}}` | From Step 0 |
+| `{{INIT_DATE}}` | Today's date (YYYY-MM-DD) |
+| `{{SKILL_PATHS}}` | A table of detected agent skill paths (check `~/.claude/skills/contracts/`, `~/.copilot/skills/contracts/`, `.agent/skills/contracts/` — list any that exist) |
+| `{{MODULE_TABLE}}` | A Markdown table of discovered modules: `Module | Path | Tier | Contract` — link to `CONTRACT.md` for each approved module, note "pending" for any not yet created |
+| `{{CONVENTIONS}}` | From Step 0, or placeholder comment if the user skipped |
+
+**If the guide already exists** (re-running init):
+- Preserve `{{PROJECT_NAME}}`, `{{STACK}}`, `{{OWNER}}`, and `{{CONVENTIONS}}` from the existing file.
+- Update `{{MODULE_TABLE}}` with newly discovered modules.
+- Update `{{SKILL_PATHS}}` if changed.
+- Add a note at the top: `> Last updated: {{TODAY}} by init contracts`
+
+**Tell the user:**
+> "Created `.contracts/CONTRACTS-GUIDE.md`. Commit this file — it's the permanent reference for how contracts work in this project."
 
 ---
 
@@ -185,7 +243,7 @@ A good contract draft must pass these checks:
 Analyze from root. Present packages as top-level modules. Offer to drill into specific packages.
 
 ### Existing Contracts
-Report existing contracts. Only recommend new ones for uncovered modules.
+Report existing contracts. Only recommend new ones for uncovered modules. Update `CONTRACTS-GUIDE.md` to reflect all known contracts.
 
 ### Non-Standard Structures
 Fall back to complexity-based detection. Show top candidates by line count. Let user specify directories.
@@ -208,13 +266,14 @@ For project-wide standards (testing policy, deployment, dev workflow), suggest m
 
 ## Post-Initialization Next Steps
 
-1. Review each CONTRACT.md — remove `<!-- DRAFT -->` when satisfied
+1. Review each `CONTRACT.md` — remove `<!-- DRAFT -->` when satisfied
 2. Adjust features, constraints, success criteria
 3. **Review Verification Tests critically** — ask for each VT:
    - "If this test passes, am I confident the module works?" → if not, strengthen the assertion
    - "Does the Verify check actual content or just existence?" → content is mandatory
    - "How many features would break this test?" → aim for 3+ (chain coverage)
-4. Use "check contracts" to verify sync status
-5. Use "contract preflight" before implementing features
-6. **Implement VT-1 for each contract** as the first development step — this establishes the baseline
-7. Attestation is initialized automatically after first VT pass
+4. **Commit `.contracts/CONTRACTS-GUIDE.md`** and `registry.yaml` to version control
+5. Use "check contracts" to verify sync status
+6. Use "contract preflight" before implementing features
+7. **Implement VT-1 for each contract** as the first development step — this establishes the baseline
+8. Attestation is initialized automatically after first VT pass

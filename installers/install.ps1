@@ -331,6 +331,215 @@ try {
         }
     }
 
+    # --- Project Setup ---
+    Write-Host ''
+    Write-Host '  Project Setup' -ForegroundColor Cyan
+    Write-Host ''
+
+    $setupProject = $Auto
+    if (-not $Auto) {
+        try {
+            $resp = Read-Host '  Set up .contracts/ directory in this project? (Y/n)'
+            $setupProject = ($resp -match '^[Yy]$') -or ($resp -eq '')
+        } catch { $setupProject = $true }
+    }
+
+    if ($setupProject) {
+        # Gather project info
+        $projectName   = ''
+        $projectStack  = ''
+        $projectOwner  = ''
+        $projectConventions = '(Add your project conventions here — module layout, test location, naming rules, etc.)'
+
+        if (-not $Auto) {
+            # Auto-detect project name
+            $detectedName = ''
+            if (Test-Path 'package.json') {
+                try { $detectedName = (Get-Content 'package.json' -Raw | ConvertFrom-Json).name } catch {}
+            }
+            if (-not $detectedName -and (Get-Command git -ErrorAction SilentlyContinue)) {
+                try {
+                    $remote = git remote get-url origin 2>$null
+                    if ($remote) { $detectedName = ($remote -split '/')[-1] -replace '\.git$', '' }
+                } catch {}
+            }
+            if (-not $detectedName) { $detectedName = (Get-Location | Split-Path -Leaf) }
+
+            Write-Host "    Detected project name: $detectedName" -ForegroundColor Gray
+            $input = Read-Host "    Project name (Enter = $detectedName)"
+            $projectName = if ($input) { $input } else { $detectedName }
+
+            $input = Read-Host '    Primary stack/language (e.g., TypeScript, Go, Python)'
+            $projectStack = if ($input) { $input } else { '(not set)' }
+
+            $input = Read-Host '    Contracts owner/team (e.g., your name or team)'
+            $projectOwner = if ($input) { $input } else { '(not set)' }
+
+            $input = Read-Host '    Project conventions? (e.g., "features in src/features/, tests in __tests__/") or press Enter to skip'
+            if ($input) { $projectConventions = $input }
+        } else {
+            # Auto mode: detect what we can
+            if (Test-Path 'package.json') {
+                try { $projectName = (Get-Content 'package.json' -Raw | ConvertFrom-Json).name } catch {}
+            }
+            if (-not $projectName -and (Get-Command git -ErrorAction SilentlyContinue)) {
+                try {
+                    $remote = git remote get-url origin 2>$null
+                    if ($remote) { $projectName = ($remote -split '/')[-1] -replace '\.git$', '' }
+                } catch {}
+            }
+            if (-not $projectName) { $projectName = (Get-Location | Split-Path -Leaf) }
+            $projectStack = '(not set)'
+            $projectOwner = '(not set)'
+        }
+
+        # Create .contracts/ directory
+        $contractsDir = Join-Path (Get-Location) '.contracts'
+        if (-not (Test-Path $contractsDir)) {
+            New-Item -ItemType Directory -Path $contractsDir -Force | Out-Null
+        }
+
+        # Build skill paths table
+        $skillPathLines = @()
+        foreach ($a in $selected) {
+            $sp = Get-InstallPath $a
+            $skillPathLines += "| $($a.Name) | ``$sp`` |"
+        }
+        $skillPathsTable = @"
+| Agent | Skill Path |
+|-------|-----------|
+$($skillPathLines -join "`n")
+"@
+
+        # Build CONTRACTS-GUIDE.md
+        $today = Get-Date -Format 'yyyy-MM-dd'
+        $guideContent = @"
+# Contracts System — Project Guide
+
+> **Permanent project artifact.** Commit this file to version control.
+> This guide tells every developer and AI agent how the Contracts system is set up in this project.
+
+---
+
+## Project
+
+**Name:** $projectName
+**Stack:** $projectStack
+**Owner:** $projectOwner
+**Initialized:** $today
+
+---
+
+## Where to Find Things
+
+| What you need | Location |
+|---------------|----------|
+| All contracts (registry) | ``.contracts/registry.yaml`` |
+| A module's specification | ``<module-dir>/CONTRACT.md`` |
+| A module's technical mapping | ``<module-dir>/CONTRACT.yaml`` |
+| Contract templates | Skill: ``references/templates/`` |
+| Init workflow (AI hook) | Skill: ``references/assistant-hooks/init-contracts.md`` |
+| Preflight workflow (AI hook) | Skill: ``references/assistant-hooks/contract-preflight.md`` |
+| Review workflow (AI hook) | Skill: ``references/assistant-hooks/contract-review.md`` |
+| Validation script (Windows) | Skill: ``scripts/validate-contracts.ps1`` |
+
+## Skill Locations
+
+$skillPathsTable
+
+---
+
+## Registered Modules
+
+*(Run ``"init contracts"`` to discover and register modules.)*
+
+| Module | Path | Tier | Contract |
+|--------|------|------|----------|
+
+---
+
+## How Contracts Are Applied
+
+### Before any code change
+
+The AI runs a **contract preflight** automatically before touching any module:
+
+1. Locate ``CONTRACT.md`` in or above the target directory.
+2. Read spec + YAML, compare ``source_hash``. Hash mismatch → sync YAML first.
+3. Check attestation freshness and VT status.
+4. Summarize MUST / MUST NOT constraints (max 5 sentences).
+
+Say **``"contract preflight"``** to trigger manually at any time.
+
+### When you change a module spec
+
+1. Edit ``CONTRACT.md`` yourself — AI never modifies the spec.
+2. Tell the AI: ``"I've updated the contract for [module]"``.
+3. AI syncs ``CONTRACT.yaml``, resets attestation to ``low``, adds changelog entry.
+
+### When you add a new module
+
+Say **``"init contracts for [module-path]"``** or **``"create a contract for [module]"``**.
+AI analyzes the module, picks the right tier (core / standard / complex), drafts from the matching template, and presents it for your review.
+
+### When work is out of scope
+
+If the AI says "this isn't in the contract" — that is **intended behavior**.
+Options: update ``CONTRACT.md`` to include it, or tell the AI to mark it as Out of Scope.
+
+---
+
+## Quick Commands
+
+| Intent | Say to your AI |
+|--------|----------------|
+| Initialize contracts for this project | ``"init contracts"`` |
+| Check before implementing a feature | ``"contract preflight"`` |
+| Review scope after completing work | ``"contract review"`` |
+| Scan all contracts for drift | ``"check contracts"`` |
+| Sync all YAMLs from changed MDs | ``"sync contracts"`` |
+
+---
+
+## Project Conventions
+
+$projectConventions
+
+---
+
+## Contract Tiers
+
+| Tier | MD line limit | Typical complexity | Verification tests |
+|------|--------------|--------------------|--------------------|
+| ``core`` | 30 lines | < 100 LOC, foundational module | 1 |
+| ``standard`` | 50 lines | 100-500 LOC, feature module | 1-2 |
+| ``complex`` | 80 lines | > 500 LOC, multi-concern module | 2-3 |
+
+---
+
+*Contracts Skill — https://github.com/kombifyio/contracts-skill*
+"@
+
+        $guidePath = Join-Path $contractsDir 'CONTRACTS-GUIDE.md'
+        Set-Content -Path $guidePath -Value $guideContent -Encoding utf8
+        Write-Host "    Created .contracts/CONTRACTS-GUIDE.md" -ForegroundColor Green
+
+        # Create registry.yaml if it doesn't exist
+        $registryPath = Join-Path $contractsDir 'registry.yaml'
+        if (-not (Test-Path $registryPath)) {
+            $registryContent = @"
+# Contracts Registry
+# Maintained by the Contracts Skill. Run "init contracts" to populate.
+contracts: []
+"@
+            Set-Content -Path $registryPath -Value $registryContent -Encoding utf8
+            Write-Host "    Created .contracts/registry.yaml" -ForegroundColor Green
+        }
+
+        Write-Host ''
+        Write-Host '    Tip: Commit .contracts/ to version control.' -ForegroundColor Gray
+    }
+
     # Summary
     Write-Host ''
     $color = if ($successCount -eq $selected.Count) { 'Green' } else { 'Yellow' }

@@ -349,6 +349,210 @@ if ! $NO_UI; then
     fi
 fi
 
+# --- Project Setup ---
+echo ""
+echo -e "  ${CYAN}Project Setup${NC}"
+echo ""
+
+SETUP_PROJECT=false
+if $AUTO; then
+    SETUP_PROJECT=true
+else
+    read -rp "  Set up .contracts/ directory in this project? (Y/n): " resp
+    if [[ -z "$resp" || "$resp" =~ ^[Yy]$ ]]; then
+        SETUP_PROJECT=true
+    fi
+fi
+
+if $SETUP_PROJECT; then
+    # Gather project info
+    PROJECT_NAME=""
+    PROJECT_STACK="(not set)"
+    PROJECT_OWNER="(not set)"
+    PROJECT_CONVENTIONS="(Add your project conventions here — module layout, test location, naming rules, etc.)"
+
+    if ! $AUTO; then
+        # Auto-detect project name
+        DETECTED_NAME=""
+        if [[ -f "package.json" ]] && command -v node &>/dev/null; then
+            DETECTED_NAME=$(node -e "try{process.stdout.write(require('./package.json').name||'')}catch(e){}" 2>/dev/null)
+        fi
+        if [[ -z "$DETECTED_NAME" ]] && command -v git &>/dev/null; then
+            REMOTE=$(git remote get-url origin 2>/dev/null || true)
+            if [[ -n "$REMOTE" ]]; then
+                DETECTED_NAME=$(basename "$REMOTE" .git)
+            fi
+        fi
+        if [[ -z "$DETECTED_NAME" ]]; then
+            DETECTED_NAME=$(basename "$(pwd)")
+        fi
+
+        echo -e "    ${GRAY}Detected project name: $DETECTED_NAME${NC}"
+        read -rp "    Project name (Enter = $DETECTED_NAME): " input
+        PROJECT_NAME="${input:-$DETECTED_NAME}"
+
+        read -rp "    Primary stack/language (e.g., TypeScript, Go, Python): " input
+        [[ -n "$input" ]] && PROJECT_STACK="$input"
+
+        read -rp "    Contracts owner/team (e.g., your name or team): " input
+        [[ -n "$input" ]] && PROJECT_OWNER="$input"
+
+        read -rp "    Project conventions? (e.g., features in src/features/, tests in __tests__/) or Enter to skip: " input
+        [[ -n "$input" ]] && PROJECT_CONVENTIONS="$input"
+    else
+        # Auto-detect project name
+        if [[ -f "package.json" ]] && command -v node &>/dev/null; then
+            PROJECT_NAME=$(node -e "try{process.stdout.write(require('./package.json').name||'')}catch(e){}" 2>/dev/null)
+        fi
+        if [[ -z "$PROJECT_NAME" ]] && command -v git &>/dev/null; then
+            REMOTE=$(git remote get-url origin 2>/dev/null || true)
+            if [[ -n "$REMOTE" ]]; then
+                PROJECT_NAME=$(basename "$REMOTE" .git)
+            fi
+        fi
+        if [[ -z "$PROJECT_NAME" ]]; then
+            PROJECT_NAME=$(basename "$(pwd)")
+        fi
+    fi
+
+    # Create .contracts/ directory
+    mkdir -p .contracts
+
+    # Build skill paths table
+    SKILL_PATH_ROWS="| Agent | Skill Path |\n|-------|-----------|"
+    for i in "${!SELECTED_IDS[@]}"; do
+        id="${SELECTED_IDS[$i]}"
+        name="${SELECTED_NAMES[$i]}"
+        path=$(get_install_path "$id")
+        SKILL_PATH_ROWS="$SKILL_PATH_ROWS\n| $name | \`$path\` |"
+    done
+
+    TODAY=$(date '+%Y-%m-%d')
+
+    # Write CONTRACTS-GUIDE.md
+    cat > .contracts/CONTRACTS-GUIDE.md <<GUIDE
+# Contracts System — Project Guide
+
+> **Permanent project artifact.** Commit this file to version control.
+> This guide tells every developer and AI agent how the Contracts system is set up in this project.
+
+---
+
+## Project
+
+**Name:** $PROJECT_NAME
+**Stack:** $PROJECT_STACK
+**Owner:** $PROJECT_OWNER
+**Initialized:** $TODAY
+
+---
+
+## Where to Find Things
+
+| What you need | Location |
+|---------------|----------|
+| All contracts (registry) | \`.contracts/registry.yaml\` |
+| A module's specification | \`<module-dir>/CONTRACT.md\` |
+| A module's technical mapping | \`<module-dir>/CONTRACT.yaml\` |
+| Contract templates | Skill: \`references/templates/\` |
+| Init workflow (AI hook) | Skill: \`references/assistant-hooks/init-contracts.md\` |
+| Preflight workflow (AI hook) | Skill: \`references/assistant-hooks/contract-preflight.md\` |
+| Review workflow (AI hook) | Skill: \`references/assistant-hooks/contract-review.md\` |
+| Validation script | Skill: \`scripts/validate-contracts.ps1\` (Windows) |
+
+## Skill Locations
+
+$(echo -e "$SKILL_PATH_ROWS")
+
+---
+
+## Registered Modules
+
+*(Run \`"init contracts"\` to discover and register modules.)*
+
+| Module | Path | Tier | Contract |
+|--------|------|------|----------|
+
+---
+
+## How Contracts Are Applied
+
+### Before any code change
+
+The AI runs a **contract preflight** automatically before touching any module:
+
+1. Locate \`CONTRACT.md\` in or above the target directory.
+2. Read spec + YAML, compare \`source_hash\`. Hash mismatch → sync YAML first.
+3. Check attestation freshness and VT status.
+4. Summarize MUST / MUST NOT constraints (max 5 sentences).
+
+Say **\`"contract preflight"\`** to trigger manually at any time.
+
+### When you change a module spec
+
+1. Edit \`CONTRACT.md\` yourself — AI never modifies the spec.
+2. Tell the AI: \`"I've updated the contract for [module]"\`.
+3. AI syncs \`CONTRACT.yaml\`, resets attestation to \`low\`, adds changelog entry.
+
+### When you add a new module
+
+Say **\`"init contracts for [module-path]"\`** or **\`"create a contract for [module]"\`**.
+AI drafts from the matching template and presents it for your review.
+
+### When work is out of scope
+
+If the AI says "this isn't in the contract" — that is **intended behavior**.
+Options: update \`CONTRACT.md\` to include it, or tell the AI to mark it as Out of Scope.
+
+---
+
+## Quick Commands
+
+| Intent | Say to your AI |
+|--------|----------------|
+| Initialize contracts for this project | \`"init contracts"\` |
+| Check before implementing a feature | \`"contract preflight"\` |
+| Review scope after completing work | \`"contract review"\` |
+| Scan all contracts for drift | \`"check contracts"\` |
+| Sync all YAMLs from changed MDs | \`"sync contracts"\` |
+
+---
+
+## Project Conventions
+
+$PROJECT_CONVENTIONS
+
+---
+
+## Contract Tiers
+
+| Tier | MD line limit | Typical complexity | Verification tests |
+|------|--------------|--------------------|--------------------|
+| \`core\` | 30 lines | < 100 LOC, foundational module | 1 |
+| \`standard\` | 50 lines | 100-500 LOC, feature module | 1-2 |
+| \`complex\` | 80 lines | > 500 LOC, multi-concern module | 2-3 |
+
+---
+
+*Contracts Skill — https://github.com/kombifyio/contracts-skill*
+GUIDE
+
+    echo -e "    ${GREEN}Created .contracts/CONTRACTS-GUIDE.md${NC}"
+
+    # Create registry.yaml if it doesn't exist
+    if [[ ! -f ".contracts/registry.yaml" ]]; then
+        cat > .contracts/registry.yaml <<'REGISTRY'
+# Contracts Registry
+# Maintained by the Contracts Skill. Run "init contracts" to populate.
+contracts: []
+REGISTRY
+        echo -e "    ${GREEN}Created .contracts/registry.yaml${NC}"
+    fi
+
+    echo ""
+    echo -e "    ${GRAY}Tip: Commit .contracts/ to version control.${NC}"
+fi
+
 # --- Summary ---
 echo ""
 if [[ $SUCCESS -eq ${#SELECTED_IDS[@]} ]]; then

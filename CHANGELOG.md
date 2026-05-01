@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-05-01
+
+### Added
+
+- **Project reference guide (`CONTRACTS-GUIDE.md`)** — Both installers and "init contracts" now create `.contracts/CONTRACTS-GUIDE.md` in the project repo. This permanent, committable document tells every developer and AI agent where contracts live, how the system is applied, and what conventions the project uses. AI agents read it at the start of each session to avoid re-asking setup questions.
+- **Installer project setup phase** — Both `install.ps1` and `install.sh` now include a post-installation "Project Setup" section. After installing the skill, the installer asks: project name (with auto-detection from `package.json`, git remote, or directory name), primary stack/language, contracts owner/team, and any project conventions. Answers are written into `.contracts/CONTRACTS-GUIDE.md` and `.contracts/registry.yaml`.
+- **`references/templates/contracts-guide.md`** — A reusable template for the project-level guide used by both the installer and the "init contracts" AI flow.
+- **Step 0 in init-contracts.md** — "init contracts" now begins by gathering project context (project name, stack, owner, conventions) before scanning modules. If `.contracts/CONTRACTS-GUIDE.md` already exists, it reads it and skips questions that are already answered.
+- **Step 7 in init-contracts.md** — After creating contract files, "init contracts" now creates or updates `.contracts/CONTRACTS-GUIDE.md` with the discovered module table, skill paths, and project context. This step is mandatory.
+
+### Changed
+
+- **SKILL.md** — Added a note about the project guide. AI agents now check for `.contracts/CONTRACTS-GUIDE.md` as their first action when starting work in an unfamiliar project.
+- **init-contracts.md** — Post-initialization checklist updated: "Commit `.contracts/CONTRACTS-GUIDE.md` and `registry.yaml` to version control" added as step 4.
+
 ## [2.5.0] - 2026-04-11
 
 ### Added
