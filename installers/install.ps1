@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Installs the Contracts skill to detected AI coding assistants.
 
@@ -349,7 +349,7 @@ try {
         $projectName   = ''
         $projectStack  = ''
         $projectOwner  = ''
-        $projectConventions = '(Add your project conventions here — module layout, test location, naming rules, etc.)'
+        $projectConventions = '(Add your project conventions here â€” module layout, test location, naming rules, etc.)'
 
         if (-not $Auto) {
             # Auto-detect project name
@@ -366,17 +366,17 @@ try {
             if (-not $detectedName) { $detectedName = (Get-Location | Split-Path -Leaf) }
 
             Write-Host "    Detected project name: $detectedName" -ForegroundColor Gray
-            $input = Read-Host "    Project name (Enter = $detectedName)"
-            $projectName = if ($input) { $input } else { $detectedName }
+            $ans = Read-Host "    Project name (Enter = $detectedName)"
+            $projectName = if ($ans) { $ans } else { $detectedName }
 
-            $input = Read-Host '    Primary stack/language (e.g., TypeScript, Go, Python)'
-            $projectStack = if ($input) { $input } else { '(not set)' }
+            $ans = Read-Host '    Primary stack/language (e.g., TypeScript, Go, Python)'
+            $projectStack = if ($ans) { $ans } else { '(not set)' }
 
-            $input = Read-Host '    Contracts owner/team (e.g., your name or team)'
-            $projectOwner = if ($input) { $input } else { '(not set)' }
+            $ans = Read-Host '    Contracts owner/team (e.g., your name or team)'
+            $projectOwner = if ($ans) { $ans } else { '(not set)' }
 
-            $input = Read-Host '    Project conventions? (e.g., "features in src/features/, tests in __tests__/") or press Enter to skip'
-            if ($input) { $projectConventions = $input }
+            $ans = Read-Host '    Project conventions? (e.g., "features in src/features/, tests in __tests__/") or press Enter to skip'
+            if ($ans) { $projectConventions = $ans }
         } else {
             # Auto mode: detect what we can
             if (Test-Path 'package.json') {
@@ -414,7 +414,7 @@ $($skillPathLines -join "`n")
         # Build CONTRACTS-GUIDE.md
         $today = Get-Date -Format 'yyyy-MM-dd'
         $guideContent = @"
-# Contracts System — Project Guide
+# Contracts System â€” Project Guide
 
 > **Permanent project artifact.** Commit this file to version control.
 > This guide tells every developer and AI agent how the Contracts system is set up in this project.
@@ -465,7 +465,7 @@ $skillPathsTable
 The AI runs a **contract preflight** automatically before touching any module:
 
 1. Locate ``CONTRACT.md`` in or above the target directory.
-2. Read spec + YAML, compare ``source_hash``. Hash mismatch → sync YAML first.
+2. Read spec + YAML, compare ``source_hash``. Hash mismatch â†’ sync YAML first.
 3. Check attestation freshness and VT status.
 4. Summarize MUST / MUST NOT constraints (max 5 sentences).
 
@@ -473,7 +473,7 @@ Say **``"contract preflight"``** to trigger manually at any time.
 
 ### When you change a module spec
 
-1. Edit ``CONTRACT.md`` yourself — AI never modifies the spec.
+1. Edit ``CONTRACT.md`` yourself â€” AI never modifies the spec.
 2. Tell the AI: ``"I've updated the contract for [module]"``.
 3. AI syncs ``CONTRACT.yaml``, resets attestation to ``low``, adds changelog entry.
 
@@ -484,7 +484,7 @@ AI analyzes the module, picks the right tier (core / standard / complex), drafts
 
 ### When work is out of scope
 
-If the AI says "this isn't in the contract" — that is **intended behavior**.
+If the AI says "this isn't in the contract" â€” that is **intended behavior**.
 Options: update ``CONTRACT.md`` to include it, or tell the AI to mark it as Out of Scope.
 
 ---
@@ -517,7 +517,7 @@ $projectConventions
 
 ---
 
-*Contracts Skill — https://github.com/kombifyio/contracts-skill*
+*Contracts Skill â€” https://github.com/kombifyio/contracts-skill*
 "@
 
         $guidePath = Join-Path $contractsDir 'CONTRACTS-GUIDE.md'
