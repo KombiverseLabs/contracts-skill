@@ -137,8 +137,9 @@ Contracts are binding commitments, not suggestions. These rules prevent gaming:
 - **Initializing?** → [init-contracts.md](./references/assistant-hooks/init-contracts.md)
 - **Before coding?** → [contract-preflight.md](./references/assistant-hooks/contract-preflight.md)
 - **Scope change?** → [contract-review.md](./references/assistant-hooks/contract-review.md)
-- **New contract?** → [templates/](./references/templates/)
+- **Drafting a new contract?** → [templates/](./references/templates/) for the scaffold, [examples/](./references/examples/) for filled-in reference contracts
 - **Scripts** → [scripts/](./scripts/) (validate, compute-hash, run-vts)
+- **Project guide template** → [project-guide.md](./references/project-guide.md) (used by installer + init)
 
 Do NOT pre-load all references. Load only what the current task requires.
 When starting work in an unfamiliar project, check for `.contracts/CONTRACTS-GUIDE.md` — it is the fastest way to orient yourself without asking the user setup questions they've already answered.

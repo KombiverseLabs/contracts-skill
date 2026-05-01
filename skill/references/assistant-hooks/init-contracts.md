@@ -86,13 +86,14 @@ Ask: "Generate drafts for all, select specific, add unlisted, or skip?"
 ### Step 5: Generate and Review Drafts
 
 For each approved module:
-1. Use appropriate template (core/feature/integration/utility)
-2. Fill Purpose from code analysis (NOT just listing exports — describe the user problem)
-3. Fill Features from detected exports, map to test files
-4. Generate testable Success Criteria (Given/When/Then, not "works correctly")
-5. **Generate Verification Tests** (see Step 5b below)
-6. Mark as `<!-- DRAFT: Review and modify, then remove this line -->`
-7. Present draft to user for approval before creating files
+1. Use appropriate template from `references/templates/` (core/feature/integration/utility) as the scaffold
+2. Consult `references/examples/` for filled-in reference contracts that show the quality bar — especially Purpose phrasing, Constraints specificity, and VT assertion style
+3. Fill Purpose from code analysis (NOT just listing exports — describe the user problem)
+4. Fill Features from detected exports, map to test files
+5. Generate testable Success Criteria (Given/When/Then, not "works correctly")
+6. **Generate Verification Tests** (see Step 5b below)
+7. Mark as `<!-- DRAFT: Review and modify, then remove this line -->`
+8. Present draft to user for approval before creating files
 
 ### Step 5b: Generate Verification Tests
 
