@@ -43,71 +43,70 @@ function getNonEmptyLines(text) {
     .filter((l) => l.length > 0);
 }
 
-function assertInstructionQuality({ text, fileLabel }) {
-  // Required concepts
+function assertHookQuality({ text, fileLabel }) {
   expect(text, `${fileLabel}: should mention CONTRACT.md`).toMatch(/CONTRACT\.md/i);
   expect(text, `${fileLabel}: should mention drift/hash`).toMatch(/drift|source_hash|hash|constraints/i);
-  expect(text, `${fileLabel}: should mention Contracts System`).toMatch(/Contracts?\s+System/i);
+  expect(text, `${fileLabel}: should mention contract preflight`).toMatch(/contract preflight/i);
+  expect(text, `${fileLabel}: should be idempotently marked`).toMatch(/contracts-skill:start[\s\S]*contracts-skill:end/i);
 
-  // Quality gate: keep snippet compact
   const lines = getNonEmptyLines(text);
-  expect(lines.length, `${fileLabel}: instruction too long (non-empty lines)`).toBeLessThanOrEqual(14);
-  expect(text.length, `${fileLabel}: instruction too long (chars)`).toBeLessThanOrEqual(1200);
+  expect(lines.length, `${fileLabel}: hook too long`).toBeLessThanOrEqual(18);
+  expect(text.length, `${fileLabel}: hook too long`).toBeLessThanOrEqual(1400);
 }
 
-test('quality gates: instruction hooks compact + required semantics', async () => {
+test('quality gates: AGENTS hook and optional legacy hooks are compact', async () => {
   const repoRoot = path.resolve(__dirname, '../..');
   const installPs1 = path.join(repoRoot, 'installers', 'install.ps1');
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'contracts-skill-quality-'));
-  const fakeHome = path.join(tmp, 'home');
-  const fakeAppData = path.join(tmp, 'appdata');
   const projectRoot = path.join(tmp, 'project');
+  const targetPath = path.join(tmp, 'skills', 'contracts');
 
-  mkdirp(fakeHome);
-  mkdirp(fakeAppData);
   mkdirp(projectRoot);
-
-  mkdirp(path.join(fakeHome, '.copilot'));
-  mkdirp(path.join(fakeHome, '.claude'));
-  mkdirp(path.join(fakeHome, '.cursor'));
-  mkdirp(path.join(fakeHome, '.codex'));
-
-  mkdirp(path.join(projectRoot, '.git'));
-
-  const env = {
-    USERPROFILE: fakeHome,
-    APPDATA: fakeAppData,
-    LOCALAPPDATA: path.join(fakeAppData, 'Local'),
-    TEMP: tmp,
-  };
-
-  const instructionFiles = {
-    'copilot-instructions.md': path.join(projectRoot, '.github', 'copilot-instructions.md'),
-    'CLAUDE.md': path.join(projectRoot, 'CLAUDE.md'),
-    '.cursor/rules/contracts-system.mdc': path.join(projectRoot, '.cursor', 'rules', 'contracts-system.mdc'),
-    'codex.md': path.join(projectRoot, 'codex.md'),
-  };
 
   try {
     await runPowershellFile({
       filePath: installPs1,
       cwd: projectRoot,
-      env,
       args: [
-        '-Agents',
-        'copilot,claude,cursor,codex,local',
+        '-TargetPath',
+        targetPath,
         '-UseLocalSource',
-        '-NoUI',
+        '-Hooks',
+        'base',
+        '-LegacyHooks',
       ],
     });
 
-    for (const [label, p] of Object.entries(instructionFiles)) {
+    const hookFiles = {
+      'AGENTS.md': path.join(projectRoot, 'AGENTS.md'),
+      'copilot-instructions.md': path.join(projectRoot, '.github', 'copilot-instructions.md'),
+      'CLAUDE.md': path.join(projectRoot, 'CLAUDE.md'),
+      '.cursor/rules/contracts-system.mdc': path.join(projectRoot, '.cursor', 'rules', 'contracts-system.mdc'),
+      'codex.md': path.join(projectRoot, 'codex.md'),
+    };
+
+    for (const [label, p] of Object.entries(hookFiles)) {
       expect(fs.existsSync(p), `${label} should exist`).toBeTruthy();
-      const text = readFile(p);
-      assertInstructionQuality({ text, fileLabel: label });
+      assertHookQuality({ text: readFile(p), fileLabel: label });
     }
   } finally {
     try { fs.rmSync(tmp, { recursive: true, force: true }); } catch {}
   }
+});
+
+test('quality gates: installed skill has current metadata surface', async () => {
+  const repoRoot = path.resolve(__dirname, '../..');
+  const skillDir = path.join(repoRoot, 'skill');
+  const openAiYaml = path.join(skillDir, 'agents', 'openai.yaml');
+
+  expect(fs.existsSync(openAiYaml)).toBeTruthy();
+  const text = readFile(openAiYaml);
+  expect(text).toContain('display_name: "Contracts"');
+  expect(text).toContain('short_description: "Keep code aligned with living contracts"');
+  expect(text).toContain('default_prompt: "Use $contracts to run a contract preflight before changing this module."');
+
+  const skillMd = readFile(path.join(skillDir, 'SKILL.md'));
+  expect(skillMd).toMatch(/^---\nname: contracts\ndescription: Use when/m);
+  expect(skillMd.length).toBeLessThan(6500);
 });

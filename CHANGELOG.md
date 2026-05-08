@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-05-08
+
+### Changed
+
+- **Standards-first skill layout** — `skill/SKILL.md` is now shorter and trigger-oriented, detailed workflows live in references, and `skill/agents/openai.yaml` provides current skill metadata.
+- **Simplified installation** — Installers now copy `skill/` to an explicit target or compatibility profile without agent auto-detection, UI installation, project setup prompts, or `.contracts/` creation.
+- **Instruction hooks** — Installers now write idempotent `AGENTS.md` hooks by default, with `base`, `beads`, `auto`, and `none` modes plus optional legacy hook mirroring.
+- **Agent-led initialization** — Init helpers are read-only by default and all write modes require explicit `--apply --yes` approval.
+- **Beads mode** — Beads enforcement is now documented as an optional mode of the main `contracts` skill via `references/beads-enforcement.md`.
+
+### Removed
+
+- Removed the separate installable `skill-beads/` variant. Existing users should install `skill/` and use `--hooks beads` or `--hooks auto`.
+- Removed skill-internal README files; root docs now cover installation, usage, and contribution guidance.
+
 ## [2.6.0] - 2026-05-01
 
 ### Added

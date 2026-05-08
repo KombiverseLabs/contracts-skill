@@ -1,0 +1,4 @@
+interface:
+  display_name: "Contracts"
+  short_description: "Keep code aligned with living contracts"
+  default_prompt: "Use $contracts to run a contract preflight before changing this module."

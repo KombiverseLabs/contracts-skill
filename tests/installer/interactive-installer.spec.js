@@ -1,9 +1,3 @@
-/**
- * @fileoverview Integration tests for installer interactive and non-interactive modes.
- *
- * Tests validate the simplified numbered-list selection UI and flag-based modes.
- */
-
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const os = require('os');
@@ -14,10 +8,7 @@ function mkdirp(p) {
   fs.mkdirSync(p, { recursive: true });
 }
 
-/**
- * Run PowerShell script with optional stdin input.
- */
-function runPowershellWithInput({ filePath, args = [], cwd, env = {}, stdinInput = null }) {
+function runPowershellFile({ filePath, args = [], cwd, env = {} }) {
   return new Promise((resolve, reject) => {
     const ps = spawn(
       'powershell',
@@ -26,40 +17,22 @@ function runPowershellWithInput({ filePath, args = [], cwd, env = {}, stdinInput
         cwd,
         env: { ...process.env, ...env },
         windowsHide: true,
-        stdio: ['pipe', 'pipe', 'pipe']
       }
     );
 
     let out = '';
-    let errOut = '';
-
-    ps.stdout.on('data', (b) => {
-      out += b.toString('utf8');
-    });
-
-    ps.stderr.on('data', (b) => {
-      errOut += b.toString('utf8');
-    });
-
-    // Send stdin input after a short delay to let the prompt appear
-    if (stdinInput !== null) {
-      setTimeout(() => {
-        ps.stdin.write(stdinInput + '\r\n');
-        ps.stdin.end();
-      }, 2000);
-    }
+    ps.stdout.on('data', (b) => (out += b.toString('utf8')));
+    ps.stderr.on('data', (b) => (out += b.toString('utf8')));
 
     ps.on('error', reject);
     ps.on('exit', (code) => {
-      resolve({
-        output: out + errOut,
-        exitCode: code
-      });
+      if (code === 0) resolve(out);
+      else reject(new Error(`PowerShell exited ${code}. Output:\n${out}`));
     });
   });
 }
 
-test.describe('Non-Interactive Mode', () => {
+test.describe('Standards-first installer compatibility', () => {
   let repoRoot;
   let installPs1;
 
@@ -68,103 +41,62 @@ test.describe('Non-Interactive Mode', () => {
     installPs1 = path.join(repoRoot, 'installers', 'install.ps1');
   });
 
-  test('-Auto installs all detected agents', async () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'contracts-installer-test-'));
+  test('-Auto is accepted as a legacy no-op and uses the default Codex target', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'contracts-installer-default-'));
     const fakeHome = path.join(tmp, 'home');
     const projectRoot = path.join(tmp, 'project');
 
     mkdirp(fakeHome);
     mkdirp(projectRoot);
-    mkdirp(path.join(projectRoot, '.git'));
-    mkdirp(path.join(fakeHome, '.copilot'));
-    mkdirp(path.join(fakeHome, '.claude'));
 
     const env = {
       USERPROFILE: fakeHome,
+      HOME: fakeHome,
       TEMP: tmp,
     };
 
     try {
-      const ps = spawn(
-        'powershell',
-        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', installPs1,
-         '-Auto', '-UseLocalSource', '-NoUI'],
-        {
-          cwd: projectRoot,
-          env: { ...process.env, ...env },
-          windowsHide: true,
-        }
-      );
-
-      let output = '';
-      ps.stdout.on('data', (b) => (output += b.toString('utf8')));
-      ps.stderr.on('data', (b) => (output += b.toString('utf8')));
-
-      const exitCode = await new Promise((resolve) => {
-        ps.on('exit', resolve);
+      const output = await runPowershellFile({
+        filePath: installPs1,
+        cwd: projectRoot,
+        env,
+        args: ['-Auto', '-UseLocalSource', '-Hooks', 'none'],
       });
 
-      expect(exitCode).toBe(0);
-      expect(output).toMatch(/Done:\s+\d+\/\d+\s+agents?\s+installed/i);
-
-      // Verify installations happened
-      const copilotSkillPath = path.join(fakeHome, '.copilot', 'skills', 'contracts');
-      const claudeSkillPath = path.join(fakeHome, '.claude', 'skills', 'contracts');
-
-      expect(fs.existsSync(copilotSkillPath)).toBe(true);
-      expect(fs.existsSync(claudeSkillPath)).toBe(true);
+      expect(output).toMatch(/Installed Contracts skill/i);
+      expect(fs.existsSync(path.join(fakeHome, '.codex', 'skills', 'contracts', 'SKILL.md'))).toBe(true);
+      expect(fs.existsSync(path.join(fakeHome, '.claude', 'skills', 'contracts'))).toBe(false);
     } finally {
       fs.rmSync(tmp, { recursive: true, force: true });
     }
   });
 
-  test('-Agents installs specified agents only', async () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'contracts-installer-test-'));
+  test('-Profiles installs specified profiles only', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'contracts-installer-profiles-'));
     const fakeHome = path.join(tmp, 'home');
     const projectRoot = path.join(tmp, 'project');
 
     mkdirp(fakeHome);
     mkdirp(projectRoot);
-    mkdirp(path.join(projectRoot, '.git'));
-    mkdirp(path.join(fakeHome, '.copilot'));
-    mkdirp(path.join(fakeHome, '.claude'));
-    mkdirp(path.join(fakeHome, '.cursor'));
 
     const env = {
       USERPROFILE: fakeHome,
+      HOME: fakeHome,
       TEMP: tmp,
     };
 
     try {
-      const ps = spawn(
-        'powershell',
-        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', installPs1,
-         '-Agents', 'copilot,claude', '-UseLocalSource', '-NoUI'],
-        {
-          cwd: projectRoot,
-          env: { ...process.env, ...env },
-          windowsHide: true,
-        }
-      );
-
-      let output = '';
-      ps.stdout.on('data', (b) => (output += b.toString('utf8')));
-      ps.stderr.on('data', (b) => (output += b.toString('utf8')));
-
-      const exitCode = await new Promise((resolve) => {
-        ps.on('exit', resolve);
+      await runPowershellFile({
+        filePath: installPs1,
+        cwd: projectRoot,
+        env,
+        args: ['-Profiles', 'claude,cursor', '-UseLocalSource', '-Hooks', 'none'],
       });
 
-      expect(exitCode).toBe(0);
-
-      // Verify only specified agents got installed
-      const copilotSkillPath = path.join(fakeHome, '.copilot', 'skills', 'contracts');
-      const claudeSkillPath = path.join(fakeHome, '.claude', 'skills', 'contracts');
-      const cursorSkillPath = path.join(fakeHome, '.cursor', 'skills', 'contracts');
-
-      expect(fs.existsSync(copilotSkillPath)).toBe(true);
-      expect(fs.existsSync(claudeSkillPath)).toBe(true);
-      expect(fs.existsSync(cursorSkillPath)).toBe(false); // Not installed
+      expect(fs.existsSync(path.join(fakeHome, '.claude', 'skills', 'contracts', 'SKILL.md'))).toBe(true);
+      expect(fs.existsSync(path.join(fakeHome, '.cursor', 'skills', 'contracts', 'SKILL.md'))).toBe(true);
+      expect(fs.existsSync(path.join(fakeHome, '.codex', 'skills', 'contracts'))).toBe(false);
+      expect(fs.existsSync(path.join(projectRoot, '.agent', 'skills', 'contracts'))).toBe(false);
     } finally {
       fs.rmSync(tmp, { recursive: true, force: true });
     }

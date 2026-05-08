@@ -1,11 +1,14 @@
 # Installer / Hook Integration Tests
 
-These tests run the PowerShell installer in a sandbox (fake USERPROFILE + fake APPDATA) and validate:
-- Skill installation paths per agent
-- Project instruction hooks (.github/copilot-instructions.md, CLAUDE.md, etc.)
-- Presence of the new contract-preflight hook
-- Preflight drift detection behavior
-- Quality gates (snippets contain required semantics and stay short)
+These tests run the PowerShell installer in a sandbox and validate:
+- explicit target installs
+- compatibility profile installs without agent auto-detection
+- idempotent `AGENTS.md` hooks
+- Beads hook auto-selection
+- optional legacy hook mirroring
+- no installer-created `.contracts/` or UI project artifacts
+- init helper write gating
+- preflight drift detection behavior
 
 Run locally:
 - `npm test`

@@ -1,13 +1,9 @@
 # Assistant Hook: Contract Preflight (Before Work)
 
-**Trigger phrases:** "contract preflight", "before you start", "implement", "fix", "refactor", "add feature"
-
----
-
 ## Purpose
 
 Ensure every implementation stays aligned with module contracts.
-The assistant MUST perform this preflight **before** planning or editing code.
+Perform this before planning or editing code in a contracted module.
 
 ---
 
@@ -25,7 +21,7 @@ If no contract exists, say so and offer to create one.
 - Read `CONTRACT.md` (spec) and `CONTRACT.yaml` (mapping)
 - Compare `meta.source_hash` to current SHA256 of CONTRACT.md
 - If drift → **STOP** and sync YAML first
-- If hash is corrupted/empty → run recovery (see SKILL.md "Hash Recovery")
+- If hash is corrupted or empty, compute the normalized SHA256 and ask before replacing it
 
 ### 4. Attestation Check
 - Read `attestation` section from `CONTRACT.yaml`
@@ -93,7 +89,7 @@ After completing work on a contract-covered module:
 ## Helper Command
 
 ```powershell
-pwsh .github/skills/contracts/scripts/validate-contracts.ps1 -Path . -OutputFormat json
+pwsh <skill-dir>/scripts/validate-contracts.ps1 -Path . -OutputFormat json
 ```
 
 Then present a short summary (max 7 sentences) and proceed with implementation.

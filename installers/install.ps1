@@ -1,555 +1,253 @@
-﻿<#
+<#
 .SYNOPSIS
-    Installs the Contracts skill to detected AI coding assistants.
+    Installs the Contracts skill by copying the skill folder to a target path.
 
 .DESCRIPTION
-    Detects AI coding assistants (Copilot, Claude, Cursor, Codex) and installs
-    the Contracts skill for spec-driven development.
+    Standards-first installer for the Contracts skill. It does not detect IDEs,
+    install the UI, or create .contracts project files. It can optionally write a
+    compact instruction hook to AGENTS.md and legacy instruction files.
+
+.PARAMETER TargetPath
+    Explicit skill target directory. Defaults to $CODEX_HOME/skills/contracts,
+    or ~/.codex/skills/contracts when CODEX_HOME is not set.
+
+.PARAMETER Profiles
+    Comma-separated compatibility profiles: codex, claude, copilot, cursor, local.
 
 .PARAMETER Agents
-    Comma-separated list of agents (e.g., "copilot,claude"). Default: all detected.
+    Legacy alias for -Profiles.
 
-.PARAMETER Auto
-    Install to all detected agents without prompting.
+.PARAMETER Hooks
+    Instruction hook mode: auto, base, beads, none. Auto selects beads when .beads exists.
 
-.PARAMETER GitBranch
-    Git branch to install from (default: main).
-
-.PARAMETER NoUI
-    Skip Contracts Web UI installation.
-
-.PARAMETER UseLocalSource
-    Use skill from local repo (for development/testing).
-
-.PARAMETER SkillSourcePath
-    Path to a local skill folder (overrides download).
-
-.EXAMPLE
-    irm https://raw.githubusercontent.com/kombifyio/contracts-skill/main/installers/install.ps1 | iex
-
-.EXAMPLE
-    .\install.ps1 -Agents "copilot,claude" -Auto
+.PARAMETER LegacyHooks
+    Mirror the selected hook to CLAUDE.md, codex.md, Copilot, and Cursor files.
 #>
 
 & {
 [CmdletBinding()]
 param(
+    [string]$TargetPath = $null,
+    [string]$Profiles = $null,
     [string]$Agents = $null,
-    [switch]$Auto,
+    [ValidateSet('auto', 'base', 'beads', 'none')]
+    [string]$Hooks = 'auto',
+    [switch]$LegacyHooks,
     [string]$GitBranch = 'main',
-    [switch]$NoUI,
     [switch]$UseLocalSource,
-    [string]$SkillSourcePath = $null
+    [switch]$Local,
+    [string]$SkillSourcePath = $null,
+    [string]$Source = $null,
+    [switch]$Auto,
+    [switch]$NoUI
 )
 
 $ErrorActionPreference = 'Stop'
 
 $RepoOwner = 'kombifyio'
-$RepoName  = 'contracts-skill'
+$RepoName = 'contracts-skill'
 $SkillName = 'contracts'
-$HomeDir = if ($env:USERPROFILE) { $env:USERPROFILE } elseif ($env:HOME) { $env:HOME } else { [Environment]::GetFolderPath('UserProfile') }
 $TempRoot = [System.IO.Path]::GetTempPath()
+$HomeDir = if ($env:USERPROFILE) { $env:USERPROFILE } elseif ($env:HOME) { $env:HOME } else { [Environment]::GetFolderPath('UserProfile') }
 
-# --- Agent Configurations ---
-
-$AgentConfigs = @(
-    @{
-        Name = 'GitHub Copilot'
-        Id = 'copilot'
-        Paths = @(
-            $(if ($HomeDir) { Join-Path $HomeDir ".copilot/skills/$SkillName" })
-        )
-        DetectPaths = @(
-            $(if ($HomeDir) { Join-Path $HomeDir '.copilot' }),
-            $(if ($env:APPDATA)     { Join-Path $env:APPDATA 'Code/User/settings.json' })
-        )
-        InstructionFile = '.github/copilot-instructions.md'
-        InstructionSnippet = @"
-
-## Contracts System (MANDATORY)
-Before any code changes: locate CONTRACT.md in target module, read spec + metadata, verify source_hash, summarize constraints briefly, then proceed.
-"@
-    },
-    @{
-        Name = 'Claude Code'
-        Id = 'claude'
-        Paths = @(
-            $(if ($HomeDir) { Join-Path $HomeDir ".claude/skills/$SkillName" })
-        )
-        DetectPaths = @(
-            $(if ($HomeDir) { Join-Path $HomeDir '.claude' }),
-            $(if ($env:APPDATA)     { Join-Path $env:APPDATA 'Claude' })
-        )
-        InstructionFile = 'CLAUDE.md'
-        InstructionSnippet = @"
-
-## Contracts System
-Before any code changes, determine the target module(s) and locate the nearest CONTRACT.md.
-Read CONTRACT.md + CONTRACT.yaml and check drift (source_hash vs current hash); if drift exists, sync YAML first.
-Before editing, give the user a very short "Contract Notes" summary of MUST / MUST NOT constraints (max 5 sentences).
-CONTRACT.md is user-owned (never edit directly).
-When creating a new module, propose generating a matching contract via init-agent (--module).
-"@
-    },
-    @{
-        Name = 'Cursor'
-        Id = 'cursor'
-        Paths = @(
-            $(if ($HomeDir) { Join-Path $HomeDir ".cursor/skills/$SkillName" })
-        )
-        DetectPaths = @(
-            $(if ($HomeDir) { Join-Path $HomeDir '.cursor' }),
-            $(if ($env:APPDATA)     { Join-Path $env:APPDATA 'Cursor' })
-        )
-        InstructionFile = '.cursor/rules/contracts-system.mdc'
-        InstructionSnippet = @"
----
-description: "Contracts System preflight - MANDATORY before code changes"
-alwaysApply: true
----
-
-# Contracts System (MANDATORY)
-Before code changes: locate CONTRACT.md in target module, read spec + metadata, verify source_hash, summarize constraints briefly.
-"@
-    },
-    @{
-        Name = 'OpenAI Codex'
-        Id = 'codex'
-        Paths = @(
-            $(if ($HomeDir) { Join-Path $HomeDir ".codex/skills/$SkillName" })
-        )
-        DetectPaths = @(
-            $(if ($HomeDir) { Join-Path $HomeDir '.codex' })
-        )
-        InstructionFile = 'codex.md'
-        InstructionSnippet = @"
-
-## Contracts System (MANDATORY)
-Before any code changes: locate CONTRACT.md in target module, read spec + metadata, verify source_hash, summarize constraints briefly, then proceed.
-"@
-    },
-    @{
-        Name = 'Project Local'
-        Id = 'local'
-        Paths = @(
-            (Join-Path (Get-Location) ".agent/skills/$SkillName")
-        )
-        DetectPaths = @(
-            (Join-Path (Get-Location) '.git'),
-            (Join-Path (Get-Location) 'package.json')
-        )
-        InstructionFile = $null
-        InstructionSnippet = $null
-        AlwaysOffer = $true
+function Get-DefaultTarget {
+    if ($env:CODEX_HOME) {
+        return (Join-Path $env:CODEX_HOME "skills\$SkillName")
     }
-)
-
-# --- Helper Functions ---
-
-function Get-InstallPath($Agent) {
-    foreach ($p in $Agent.Paths) {
-        if (-not $p) { continue }
-        $parent = Split-Path $p -Parent
-        if ((Test-Path $parent) -or $Agent.AlwaysOffer) { return $p }
-    }
-    return $Agent.Paths[0]
+    return (Join-Path $HomeDir ".codex\skills\$SkillName")
 }
 
-function Test-AgentDetected($Agent) {
-    foreach ($p in $Agent.DetectPaths) {
-        if ($p -and (Test-Path $p)) { return $true }
+function Get-ProfileTarget([string]$Profile) {
+    switch ($Profile.ToLowerInvariant()) {
+        'codex'   { return (Get-DefaultTarget) }
+        'claude'  { return (Join-Path $HomeDir ".claude\skills\$SkillName") }
+        'copilot' { return (Join-Path $HomeDir ".copilot\skills\$SkillName") }
+        'cursor'  { return (Join-Path $HomeDir ".cursor\skills\$SkillName") }
+        'local'   { return (Join-Path (Get-Location).Path ".agent\skills\$SkillName") }
+        default   { throw "Unknown profile '$Profile'. Use codex, claude, copilot, cursor, or local." }
     }
-    return $false
 }
 
-function Get-SkillSource {
-    param([string]$TempDir)
+function Get-InstallTargets {
+    if ($TargetPath) {
+        return @((Resolve-TargetPath $TargetPath))
+    }
 
-    Write-Host '  Downloading skill...' -ForegroundColor Yellow
+    $profileText = if ($Profiles) { $Profiles } elseif ($Agents) { $Agents } else { $null }
+    if (-not $profileText) {
+        return @((Get-DefaultTarget))
+    }
 
+    $targets = @()
+    $seen = @{}
+    foreach ($raw in ($profileText -split ',')) {
+        $profile = $raw.Trim()
+        if (-not $profile) { continue }
+        $target = Get-ProfileTarget $profile
+        $key = $target.ToLowerInvariant()
+        if (-not $seen.ContainsKey($key)) {
+            $seen[$key] = $true
+            $targets += $target
+        }
+    }
+    if ($targets.Count -eq 0) { throw 'No valid install profiles were provided.' }
+    return $targets
+}
+
+function Resolve-TargetPath([string]$PathText) {
+    if ([System.IO.Path]::IsPathRooted($PathText)) {
+        return [System.IO.Path]::GetFullPath($PathText)
+    }
+    return [System.IO.Path]::GetFullPath((Join-Path (Get-Location).Path $PathText))
+}
+
+function Get-SkillSource([string]$TempDir) {
+    $explicitSource = if ($SkillSourcePath) { $SkillSourcePath } elseif ($Source) { $Source } else { $null }
+    if ($explicitSource) {
+        $resolved = (Resolve-Path $explicitSource).Path
+        if (-not (Test-Path (Join-Path $resolved 'SKILL.md'))) {
+            throw "Skill source does not contain SKILL.md: $resolved"
+        }
+        return $resolved
+    }
+
+    if ($UseLocalSource -or $Local) {
+        $repoRoot = Split-Path -Parent $PSScriptRoot
+        $localSkill = Join-Path $repoRoot 'skill'
+        if (-not (Test-Path (Join-Path $localSkill 'SKILL.md'))) {
+            throw "Local skill folder not found: $localSkill"
+        }
+        return $localSkill
+    }
+
+    Write-Host 'Downloading Contracts skill...' -ForegroundColor Cyan
     if (Get-Command git -ErrorAction SilentlyContinue) {
-        try {
-            git clone --quiet --depth 1 --branch $GitBranch "https://github.com/$RepoOwner/$RepoName.git" $TempDir 2>&1 | Out-Null
-            if ($LASTEXITCODE -eq 0 -and (Test-Path $TempDir)) {
-                Write-Host '  Downloaded via git' -ForegroundColor Green
-                return Join-Path $TempDir 'skill'
-            }
-        } catch { }
+        git clone --quiet --depth 1 --branch $GitBranch "https://github.com/$RepoOwner/$RepoName.git" $TempDir 2>$null
+        if ($LASTEXITCODE -eq 0 -and (Test-Path (Join-Path $TempDir 'skill\SKILL.md'))) {
+            return (Join-Path $TempDir 'skill')
+        }
     }
 
-    $zipUrl = "https://github.com/$RepoOwner/$RepoName/archive/refs/heads/$GitBranch.zip"
     $zipPath = Join-Path $TempRoot 'contracts-skill.zip'
+    $zipUrl = "https://github.com/$RepoOwner/$RepoName/archive/refs/heads/$GitBranch.zip"
     Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing -ErrorAction Stop
     Expand-Archive -Path $zipPath -DestinationPath $TempDir -Force
     Remove-Item $zipPath -ErrorAction SilentlyContinue
     $extracted = Get-ChildItem $TempDir -Directory | Select-Object -First 1
-    Write-Host '  Downloaded via ZIP' -ForegroundColor Green
-    return Join-Path $extracted.FullName 'skill'
+    $skillDir = Join-Path $extracted.FullName 'skill'
+    if (-not (Test-Path (Join-Path $skillDir 'SKILL.md'))) {
+        throw "Downloaded archive does not contain skill/SKILL.md"
+    }
+    return $skillDir
 }
 
-# --- Main ---
-
-Write-Host ''
-Write-Host '  Contracts Skill Installer' -ForegroundColor Cyan
-Write-Host '  Spec-Driven Development for AI Assistants' -ForegroundColor Cyan
-Write-Host ''
-
-# Detect agents
-Write-Host '  Scanning for AI coding assistants...' -ForegroundColor Cyan
-Write-Host ''
-
-$detected = @()
-$installed = @()
-
-foreach ($agent in $AgentConfigs) {
-    $installPath = Get-InstallPath $agent
-    $skillFile = if ($installPath) { Join-Path $installPath 'SKILL.md' } else { $null }
-    $isInstalled = $skillFile -and (Test-Path $skillFile)
-    $isDetected = (Test-AgentDetected $agent) -or $agent.AlwaysOffer
-
-    $status = if ($isInstalled) { 'INSTALLED'; $installed += $agent }
-              elseif ($isDetected) { 'DETECTED'; $detected += $agent }
-              else { 'NOT FOUND' }
-
-    $color = switch ($status) { 'INSTALLED' { 'Green' } 'DETECTED' { 'Yellow' } default { 'Gray' } }
-    Write-Host "    $($agent.Name): [$status]" -ForegroundColor $color
+function Copy-Skill([string]$SourceDir, [string]$TargetDir) {
+    $parent = Split-Path $TargetDir -Parent
+    if (-not (Test-Path $parent)) {
+        New-Item -ItemType Directory -Path $parent -Force | Out-Null
+    }
+    if (Test-Path $TargetDir) {
+        Remove-Item -LiteralPath $TargetDir -Recurse -Force
+    }
+    New-Item -ItemType Directory -Path $TargetDir -Force | Out-Null
+    Copy-Item -Path (Join-Path $SourceDir '*') -Destination $TargetDir -Recurse -Force
+    if (-not (Test-Path (Join-Path $TargetDir 'SKILL.md'))) {
+        throw "Install failed: SKILL.md missing at $TargetDir"
+    }
 }
-Write-Host ''
 
-# Select agents
-$selected = @()
+function Get-HookMode {
+    if ($Hooks -eq 'auto') {
+        if (Test-Path (Join-Path (Get-Location).Path '.beads')) { return 'beads' }
+        return 'base'
+    }
+    return $Hooks
+}
 
-if ($Agents) {
-    $ids = $Agents -split ',' | ForEach-Object { $_.Trim().ToLower() }
-    $selected = @($detected | Where-Object { $ids -contains $_.Id })
-} elseif ($Auto) {
-    $selected = $detected
-} else {
-    if ($detected.Count -eq 0) {
-        Write-Host '  No new agents to install to.' -ForegroundColor Yellow
-        return
+function Set-ContractsHook([string]$FilePath, [string]$HookText) {
+    $start = '<!-- contracts-skill:start -->'
+    $end = '<!-- contracts-skill:end -->'
+    $block = "$start`n$HookText`n$end"
+
+    $dir = Split-Path $FilePath -Parent
+    if ($dir -and -not (Test-Path $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
 
-    for ($i = 0; $i -lt $detected.Count; $i++) {
-        Write-Host "    [$($i + 1)] $($detected[$i].Name)" -ForegroundColor White
-    }
-    Write-Host "    [A] All detected" -ForegroundColor White
-    Write-Host ''
-
-    $resp = Read-Host '  Select (e.g., 1,2 or A)'
-    if ($resp -match '^[Aa]$') {
-        $selected = $detected
+    if (Test-Path $FilePath) {
+        $content = Get-Content $FilePath -Raw
+        $pattern = [regex]::Escape($start) + '[\s\S]*?' + [regex]::Escape($end)
+        if ($content -match $pattern) {
+            $content = [regex]::Replace($content, $pattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $block }, 1)
+        } else {
+            $content = $content.TrimEnd() + "`n`n$block`n"
+        }
     } else {
-        $indices = $resp -split ',' | ForEach-Object { $_.Trim() }
-        foreach ($idx in $indices) {
-            if ($idx -match '^\d+$') {
-                $n = [int]$idx - 1
-                if ($n -ge 0 -and $n -lt $detected.Count) { $selected += $detected[$n] }
-            }
+        $content = "$block`n"
+    }
+
+    Set-Content -Path $FilePath -Value $content -Encoding utf8
+}
+
+function Install-Hooks([string]$SkillSource) {
+    $mode = Get-HookMode
+    if ($mode -eq 'none') { return }
+
+    $template = Join-Path $SkillSource "references\instruction-hooks\$mode.md"
+    if (-not (Test-Path $template)) {
+        throw "Hook template not found: $template"
+    }
+    $hookText = (Get-Content $template -Raw).Trim()
+
+    $projectRoot = (Get-Location).Path
+    Set-ContractsHook -FilePath (Join-Path $projectRoot 'AGENTS.md') -HookText $hookText
+
+    if ($LegacyHooks) {
+        $legacyFiles = @(
+            'CLAUDE.md',
+            'codex.md',
+            '.github\copilot-instructions.md',
+            '.cursor\rules\contracts-system.mdc'
+        )
+        foreach ($file in $legacyFiles) {
+            Set-ContractsHook -FilePath (Join-Path $projectRoot $file) -HookText $hookText
         }
     }
+
+    Write-Host "Installed $mode contract hook -> AGENTS.md" -ForegroundColor Green
 }
 
-if ($selected.Count -eq 0) {
-    Write-Host '  No agents selected.' -ForegroundColor Yellow
-    return
+Write-Host ''
+Write-Host 'Contracts Skill Installer' -ForegroundColor Cyan
+Write-Host ''
+
+if ($Auto) {
+    Write-Host 'Note: -Auto is accepted for compatibility and no longer changes target selection.' -ForegroundColor DarkGray
+}
+if ($NoUI) {
+    Write-Host 'Note: -NoUI is accepted for compatibility; UI is not installed by this installer.' -ForegroundColor DarkGray
 }
 
-# Get skill source
-$tempDir = Join-Path $TempRoot ("contracts-skill-{0:yyyyMMddHHmmss}" -f (Get-Date))
+$tempDir = Join-Path $TempRoot ("contracts-skill-{0:yyyyMMddHHmmssfff}" -f (Get-Date))
 
 try {
-    $skillSource = $null
-    if ($SkillSourcePath) {
-        $skillSource = (Resolve-Path $SkillSourcePath).Path
-    } elseif ($UseLocalSource) {
-        $repoRoot = Split-Path -Parent $PSScriptRoot
-        $skillSource = Join-Path $repoRoot 'skill'
-        if (-not (Test-Path $skillSource)) { throw "Local skill folder not found: $skillSource" }
-    } else {
-        $skillSource = Get-SkillSource -TempDir $tempDir
+    $skillSource = Get-SkillSource -TempDir $tempDir
+    $targets = Get-InstallTargets
+
+    foreach ($target in $targets) {
+        Copy-Skill -SourceDir $skillSource -TargetDir $target
+        Write-Host "Installed Contracts skill -> $target" -ForegroundColor Green
     }
 
+    Install-Hooks -SkillSource $skillSource
+
     Write-Host ''
-    Write-Host "  Installing to $($selected.Count) agent(s)..." -ForegroundColor Cyan
-
-    $successCount = 0
-    foreach ($agent in $selected) {
-        $targetPath = Get-InstallPath $agent
-        Write-Host "    $($agent.Name)..." -NoNewline
-
-        $parent = Split-Path $targetPath -Parent
-        if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
-        if (Test-Path $targetPath) { Remove-Item -Recurse -Force $targetPath }
-        Copy-Item -Path $skillSource -Destination $targetPath -Recurse -Force
-
-        if (Test-Path (Join-Path $targetPath 'SKILL.md')) {
-            Write-Host ' OK' -ForegroundColor Green
-            $successCount++
-
-            # Inject instruction hook
-            if ($agent.InstructionFile -and $agent.InstructionSnippet) {
-                $instrPath = Join-Path (Get-Location) $agent.InstructionFile
-                if (Test-Path $instrPath) {
-                    $content = Get-Content $instrPath -Raw
-                    if ($content -notmatch 'Contracts System') {
-                        Add-Content -Path $instrPath -Value $agent.InstructionSnippet -Encoding utf8
-                        Write-Host "      -> Updated $($agent.InstructionFile)" -ForegroundColor Gray
-                    }
-                } else {
-                    $dir = Split-Path $instrPath -Parent
-                    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-                    Set-Content -Path $instrPath -Value $agent.InstructionSnippet.Trim() -Encoding utf8
-                    Write-Host "      -> Created $($agent.InstructionFile)" -ForegroundColor Gray
-                }
-            }
-        } else {
-            Write-Host ' FAILED' -ForegroundColor Red
-        }
-    }
-
-    # Install minimal-ui
-    if (-not $NoUI) {
-        $uiSource = Join-Path $skillSource 'ui/minimal-ui'
-        if (Test-Path $uiSource) {
-            Write-Host ''
-            $installUI = $Auto
-            if (-not $Auto) {
-                try {
-                    $resp = Read-Host '  Install Contracts Web UI? (y/N)'
-                    $installUI = $resp -match '^[Yy]'
-                } catch { }
-            }
-
-            if ($installUI) {
-                $uiTarget = Join-Path (Get-Location) 'contracts-ui'
-                if (Test-Path $uiTarget) { Remove-Item -Recurse -Force $uiTarget }
-                Copy-Item -Path $uiSource -Destination $uiTarget -Recurse -Force
-                Write-Host '    Installed Contracts UI -> ./contracts-ui' -ForegroundColor Green
-                Write-Host '    Start: ./contracts-ui/start.ps1' -ForegroundColor Gray
-            }
-        }
-    }
-
-    # --- Project Setup ---
-    Write-Host ''
-    Write-Host '  Project Setup' -ForegroundColor Cyan
-    Write-Host ''
-
-    $setupProject = $Auto
-    if (-not $Auto) {
-        try {
-            $resp = Read-Host '  Set up .contracts/ directory in this project? (Y/n)'
-            $setupProject = ($resp -match '^[Yy]$') -or ($resp -eq '')
-        } catch { $setupProject = $true }
-    }
-
-    if ($setupProject) {
-        # Gather project info
-        $projectName   = ''
-        $projectStack  = ''
-        $projectOwner  = ''
-        $projectConventions = '(Add your project conventions here â€” module layout, test location, naming rules, etc.)'
-
-        if (-not $Auto) {
-            # Auto-detect project name
-            $detectedName = ''
-            if (Test-Path 'package.json') {
-                try { $detectedName = (Get-Content 'package.json' -Raw | ConvertFrom-Json).name } catch {}
-            }
-            if (-not $detectedName -and (Get-Command git -ErrorAction SilentlyContinue)) {
-                try {
-                    $remote = git remote get-url origin 2>$null
-                    if ($remote) { $detectedName = ($remote -split '/')[-1] -replace '\.git$', '' }
-                } catch {}
-            }
-            if (-not $detectedName) { $detectedName = (Get-Location | Split-Path -Leaf) }
-
-            Write-Host "    Detected project name: $detectedName" -ForegroundColor Gray
-            $ans = Read-Host "    Project name (Enter = $detectedName)"
-            $projectName = if ($ans) { $ans } else { $detectedName }
-
-            $ans = Read-Host '    Primary stack/language (e.g., TypeScript, Go, Python)'
-            $projectStack = if ($ans) { $ans } else { '(not set)' }
-
-            $ans = Read-Host '    Contracts owner/team (e.g., your name or team)'
-            $projectOwner = if ($ans) { $ans } else { '(not set)' }
-
-            $ans = Read-Host '    Project conventions? (e.g., "features in src/features/, tests in __tests__/") or press Enter to skip'
-            if ($ans) { $projectConventions = $ans }
-        } else {
-            # Auto mode: detect what we can
-            if (Test-Path 'package.json') {
-                try { $projectName = (Get-Content 'package.json' -Raw | ConvertFrom-Json).name } catch {}
-            }
-            if (-not $projectName -and (Get-Command git -ErrorAction SilentlyContinue)) {
-                try {
-                    $remote = git remote get-url origin 2>$null
-                    if ($remote) { $projectName = ($remote -split '/')[-1] -replace '\.git$', '' }
-                } catch {}
-            }
-            if (-not $projectName) { $projectName = (Get-Location | Split-Path -Leaf) }
-            $projectStack = '(not set)'
-            $projectOwner = '(not set)'
-        }
-
-        # Create .contracts/ directory
-        $contractsDir = Join-Path (Get-Location) '.contracts'
-        if (-not (Test-Path $contractsDir)) {
-            New-Item -ItemType Directory -Path $contractsDir -Force | Out-Null
-        }
-
-        # Build skill paths table
-        $skillPathLines = @()
-        foreach ($a in $selected) {
-            $sp = Get-InstallPath $a
-            $skillPathLines += "| $($a.Name) | ``$sp`` |"
-        }
-        $skillPathsTable = @"
-| Agent | Skill Path |
-|-------|-----------|
-$($skillPathLines -join "`n")
-"@
-
-        # Build CONTRACTS-GUIDE.md
-        $today = Get-Date -Format 'yyyy-MM-dd'
-        $guideContent = @"
-# Contracts System â€” Project Guide
-
-> **Permanent project artifact.** Commit this file to version control.
-> This guide tells every developer and AI agent how the Contracts system is set up in this project.
-
----
-
-## Project
-
-**Name:** $projectName
-**Stack:** $projectStack
-**Owner:** $projectOwner
-**Initialized:** $today
-
----
-
-## Where to Find Things
-
-| What you need | Location |
-|---------------|----------|
-| All contracts (registry) | ``.contracts/registry.yaml`` |
-| A module's specification | ``<module-dir>/CONTRACT.md`` |
-| A module's technical mapping | ``<module-dir>/CONTRACT.yaml`` |
-| Contract templates | Skill: ``references/templates/`` |
-| Init workflow (AI hook) | Skill: ``references/assistant-hooks/init-contracts.md`` |
-| Preflight workflow (AI hook) | Skill: ``references/assistant-hooks/contract-preflight.md`` |
-| Review workflow (AI hook) | Skill: ``references/assistant-hooks/contract-review.md`` |
-| Validation script (Windows) | Skill: ``scripts/validate-contracts.ps1`` |
-
-## Skill Locations
-
-$skillPathsTable
-
----
-
-## Registered Modules
-
-*(Run ``"init contracts"`` to discover and register modules.)*
-
-| Module | Path | Tier | Contract |
-|--------|------|------|----------|
-
----
-
-## How Contracts Are Applied
-
-### Before any code change
-
-The AI runs a **contract preflight** automatically before touching any module:
-
-1. Locate ``CONTRACT.md`` in or above the target directory.
-2. Read spec + YAML, compare ``source_hash``. Hash mismatch â†’ sync YAML first.
-3. Check attestation freshness and VT status.
-4. Summarize MUST / MUST NOT constraints (max 5 sentences).
-
-Say **``"contract preflight"``** to trigger manually at any time.
-
-### When you change a module spec
-
-1. Edit ``CONTRACT.md`` yourself â€” AI never modifies the spec.
-2. Tell the AI: ``"I've updated the contract for [module]"``.
-3. AI syncs ``CONTRACT.yaml``, resets attestation to ``low``, adds changelog entry.
-
-### When you add a new module
-
-Say **``"init contracts for [module-path]"``** or **``"create a contract for [module]"``**.
-AI analyzes the module, picks the right tier (core / standard / complex), drafts from the matching template, and presents it for your review.
-
-### When work is out of scope
-
-If the AI says "this isn't in the contract" â€” that is **intended behavior**.
-Options: update ``CONTRACT.md`` to include it, or tell the AI to mark it as Out of Scope.
-
----
-
-## Quick Commands
-
-| Intent | Say to your AI |
-|--------|----------------|
-| Initialize contracts for this project | ``"init contracts"`` |
-| Check before implementing a feature | ``"contract preflight"`` |
-| Review scope after completing work | ``"contract review"`` |
-| Scan all contracts for drift | ``"check contracts"`` |
-| Sync all YAMLs from changed MDs | ``"sync contracts"`` |
-
----
-
-## Project Conventions
-
-$projectConventions
-
----
-
-## Contract Tiers
-
-| Tier | MD line limit | Typical complexity | Verification tests |
-|------|--------------|--------------------|--------------------|
-| ``core`` | 30 lines | < 100 LOC, foundational module | 1 |
-| ``standard`` | 50 lines | 100-500 LOC, feature module | 1-2 |
-| ``complex`` | 80 lines | > 500 LOC, multi-concern module | 2-3 |
-
----
-
-*Contracts Skill â€” https://github.com/kombifyio/contracts-skill*
-"@
-
-        $guidePath = Join-Path $contractsDir 'CONTRACTS-GUIDE.md'
-        Set-Content -Path $guidePath -Value $guideContent -Encoding utf8
-        Write-Host "    Created .contracts/CONTRACTS-GUIDE.md" -ForegroundColor Green
-
-        # Create registry.yaml if it doesn't exist
-        $registryPath = Join-Path $contractsDir 'registry.yaml'
-        if (-not (Test-Path $registryPath)) {
-            $registryContent = @"
-# Contracts Registry
-# Maintained by the Contracts Skill. Run "init contracts" to populate.
-contracts: []
-"@
-            Set-Content -Path $registryPath -Value $registryContent -Encoding utf8
-            Write-Host "    Created .contracts/registry.yaml" -ForegroundColor Green
-        }
-
-        Write-Host ''
-        Write-Host '    Tip: Commit .contracts/ to version control.' -ForegroundColor Gray
-    }
-
-    # Summary
-    Write-Host ''
-    $color = if ($successCount -eq $selected.Count) { 'Green' } else { 'Yellow' }
-    Write-Host "  Done: $successCount/$($selected.Count) agents installed." -ForegroundColor $color
-    Write-Host ''
-    Write-Host '  Next: ask your AI "Initialize contracts for this project"' -ForegroundColor Yellow
-    Write-Host ''
+    Write-Host 'Done. Say "init contracts" to set up contracts for a project.' -ForegroundColor Yellow
 }
 finally {
-    if (Test-Path $tempDir) { Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue }
+    if (Test-Path $tempDir) {
+        Remove-Item -LiteralPath $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
 
 } @args

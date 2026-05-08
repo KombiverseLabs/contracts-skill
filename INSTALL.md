@@ -1,135 +1,122 @@
 # Installation Guide
 
-> **For AI agents**: Follow these instructions step by step to install the Contracts Skill.
-> **For humans**: Copy the bootstrap prompt from the [README](./README.md#install-via-ai-agent) and paste it to your AI assistant.
+The Contracts skill uses standards-first installation: clone or download this repo, copy `skill/` to a skill directory, and optionally install a short project instruction hook.
 
-**Repository:** `https://github.com/kombifyio/contracts-skill`
+## One-Line Install
 
----
-
-## Option A: Run the Installer Script (Recommended)
-
-The installer auto-detects AI agents (Copilot, Claude, Cursor, Codex), lets the user choose targets, copies skill files, and injects instruction hooks.
-
-### Detect the User's OS
-
-Check the operating system. Then run the matching command:
-
-### Windows / PowerShell
+PowerShell:
 
 ```powershell
 irm https://raw.githubusercontent.com/kombifyio/contracts-skill/main/installers/install.ps1 | iex
 ```
 
-Non-interactive (auto-detect and install to all agents):
-
-```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/kombifyio/contracts-skill/main/installers/install.ps1))) -Auto
-```
-
-### macOS / Linux / Bash
+Bash:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/kombifyio/contracts-skill/main/installers/install.sh | bash
 ```
 
-Non-interactive:
+Default target:
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/kombifyio/contracts-skill/main/installers/install.sh | bash -s -- --auto
+- `$CODEX_HOME/skills/contracts` when `CODEX_HOME` is set
+- otherwise `~/.codex/skills/contracts`
+
+## Explicit Target
+
+PowerShell:
+
+```powershell
+.\installers\install.ps1 -TargetPath "$env:USERPROFILE\.codex\skills\contracts"
 ```
 
----
+Bash:
 
-## Option B: Manual Installation (If Scripts Cannot Be Run)
+```bash
+./installers/install.sh --target ~/.codex/skills/contracts
+```
 
-Use this when the agent has no terminal access or the installer scripts fail.
+## Compatibility Profiles
 
-### Step 1: Clone the Repository
+Profiles are path aliases. They do not depend on agent detection.
+
+| Profile | Target |
+|---------|--------|
+| `codex` | `$CODEX_HOME/skills/contracts` or `~/.codex/skills/contracts` |
+| `claude` | `~/.claude/skills/contracts` |
+| `copilot` | `~/.copilot/skills/contracts` |
+| `cursor` | `~/.cursor/skills/contracts` |
+| `local` | `./.agent/skills/contracts` |
+
+PowerShell:
+
+```powershell
+.\installers\install.ps1 -Profiles "codex,local"
+```
+
+Bash:
+
+```bash
+./installers/install.sh --profiles codex,local
+```
+
+Legacy `-Agents` / `--agents` maps to profiles.
+
+## Hooks
+
+By default, the installer writes a compact Contracts hook to `AGENTS.md` in the current project.
+
+Modes:
+
+- `auto`: use Beads hook when `.beads/` exists, otherwise base hook
+- `base`: standard contract preflight hook
+- `beads`: Beads-enforced contract preflight hook
+- `none`: do not write hooks
+
+PowerShell:
+
+```powershell
+.\installers\install.ps1 -Hooks auto
+.\installers\install.ps1 -Hooks beads -LegacyHooks
+```
+
+Bash:
+
+```bash
+./installers/install.sh --hooks auto
+./installers/install.sh --hooks beads --legacy-hooks
+```
+
+`-LegacyHooks` / `--legacy-hooks` mirrors the same hook to `CLAUDE.md`, `codex.md`, `.github/copilot-instructions.md`, and `.cursor/rules/contracts-system.mdc`.
+
+The installer does not create `.contracts/`, does not install `contracts-ui/`, and does not ask project setup questions. Say `init contracts` to let the agent initialize project contracts after installation.
+
+## Manual Installation
 
 ```bash
 git clone --depth 1 https://github.com/kombifyio/contracts-skill.git /tmp/contracts-skill
+mkdir -p ~/.codex/skills/contracts
+cp -R /tmp/contracts-skill/skill/. ~/.codex/skills/contracts/
+test -f ~/.codex/skills/contracts/SKILL.md && echo OK
 ```
 
-If `git` is unavailable, download and extract the ZIP:
-
-```
-https://github.com/kombifyio/contracts-skill/archive/refs/heads/main.zip
-```
-
-### Step 2: Copy the `skill/` Directory
-
-Copy the **contents** of `skill/` to the appropriate agent skill folder:
-
-| Agent | Target Path |
-|-------|-------------|
-| GitHub Copilot | `~/.copilot/skills/contracts/` |
-| Claude Code | `~/.claude/skills/contracts/` |
-| Cursor | `~/.cursor/skills/contracts/` |
-| OpenAI Codex | `~/.codex/skills/contracts/` |
-| Project-local (any agent) | `./.agent/skills/contracts/` |
-
-On Windows, `~` is `%USERPROFILE%` (e.g., `C:\Users\<name>`).
-
-Example (Copilot on macOS/Linux):
-
-```bash
-mkdir -p ~/.copilot/skills/contracts
-cp -r /tmp/contracts-skill/skill/* ~/.copilot/skills/contracts/
-```
-
-Example (Copilot on Windows PowerShell):
+PowerShell:
 
 ```powershell
-$target = Join-Path $env:USERPROFILE ".copilot\skills\contracts"
+git clone --depth 1 https://github.com/kombifyio/contracts-skill.git "$env:TEMP\contracts-skill"
+$target = Join-Path $env:USERPROFILE ".codex\skills\contracts"
 New-Item -ItemType Directory -Path $target -Force | Out-Null
-Copy-Item -Path "C:\temp\contracts-skill\skill\*" -Destination $target -Recurse -Force
+Copy-Item -Path "$env:TEMP\contracts-skill\skill\*" -Destination $target -Recurse -Force
+Test-Path (Join-Path $target "SKILL.md")
 ```
 
-Install to multiple agents by copying to each target path.
+## Development Install
 
-### Step 3: Verify Installation
+From this repository:
 
-Confirm `SKILL.md` exists at the target path:
+```powershell
+.\installers\install.ps1 -UseLocalSource -TargetPath "$env:TEMP\contracts-skill-test" -Hooks none
+```
 
 ```bash
-test -f ~/.copilot/skills/contracts/SKILL.md && echo "OK" || echo "MISSING"
+./installers/install.sh --local --target /tmp/contracts-skill-test --hooks none
 ```
-
-### Step 4: Clean Up
-
-```bash
-rm -rf /tmp/contracts-skill
-```
-
----
-
-## Post-Installation
-
-After successful installation, tell the user:
-
-> **Contracts Skill installed successfully.** Say "init contracts" to set up contracts for your project.
-
----
-
-## Choosing a Variant
-
-The repository contains two variants:
-
-| Variant | Source Directory | When to Use |
-|---------|----------------|-------------|
-| **Base** (default) | `skill/` | Any project — advisory enforcement via instructions |
-| **Beads-Enforced** | `skill-beads/` | Projects using [Beads](https://github.com/steveyegge/beads) — structural enforcement via dependency blocking |
-
-The installer uses the base variant by default. For the Beads variant, copy `skill-beads/` instead of `skill/` to the target path.
-
----
-
-## Troubleshooting
-
-| Problem | Solution |
-|---------|----------|
-| `git clone` fails (access denied) | This is a **public** repository. Check network/proxy settings. |
-| Installer exits without detecting agents | Run with explicit agent: `--agents copilot` (bash) or `-Agents "copilot"` (PS1) |
-| Skill not detected after install | Restart the editor. Verify `SKILL.md` exists in the target skill folder. |
-| Permission denied on `~/.copilot/` | Create the parent directory first: `mkdir -p ~/.copilot/skills/` |

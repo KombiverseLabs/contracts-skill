@@ -9,13 +9,13 @@ function mkdirp(p) {
   fs.mkdirSync(p, { recursive: true });
 }
 
+function readFile(p) {
+  return fs.readFileSync(p, 'utf8');
+}
+
 function writeFile(p, content) {
   mkdirp(path.dirname(p));
   fs.writeFileSync(p, content, 'utf8');
-}
-
-function readFile(p) {
-  return fs.readFileSync(p, 'utf8');
 }
 
 function sha256File(filePath) {
@@ -48,32 +48,67 @@ function runPowershellFile({ filePath, args = [], cwd, env = {} }) {
   });
 }
 
-test('offline install: multi-agent + instruction hooks', async () => {
+test('offline install: explicit target + idempotent AGENTS hook only', async () => {
   const repoRoot = path.resolve(__dirname, '../..');
   const installPs1 = path.join(repoRoot, 'installers', 'install.ps1');
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'contracts-skill-installer-'));
+  const projectRoot = path.join(tmp, 'project');
+  const targetPath = path.join(tmp, 'skills', 'contracts');
+
+  mkdirp(projectRoot);
+
+  try {
+    for (let i = 0; i < 2; i++) {
+      await runPowershellFile({
+        filePath: installPs1,
+        cwd: projectRoot,
+        args: [
+          '-TargetPath',
+          targetPath,
+          '-UseLocalSource',
+          '-Hooks',
+          'base',
+        ],
+      });
+    }
+
+    expect(fs.existsSync(path.join(targetPath, 'SKILL.md'))).toBeTruthy();
+    expect(fs.existsSync(path.join(targetPath, 'agents', 'openai.yaml'))).toBeTruthy();
+    expect(fs.existsSync(path.join(targetPath, 'references', 'instruction-hooks', 'base.md'))).toBeTruthy();
+
+    const agentsPath = path.join(projectRoot, 'AGENTS.md');
+    expect(fs.existsSync(agentsPath)).toBeTruthy();
+    const agentsText = readFile(agentsPath);
+    expect(agentsText).toMatch(/contracts-skill:start/);
+    expect(agentsText).toMatch(/CONTRACT\.md/);
+    expect(agentsText).toMatch(/contract preflight/i);
+    expect((agentsText.match(/contracts-skill:start/g) || []).length).toBe(1);
+
+    expect(fs.existsSync(path.join(projectRoot, '.contracts'))).toBeFalsy();
+    expect(fs.existsSync(path.join(projectRoot, 'contracts-ui'))).toBeFalsy();
+    expect(fs.existsSync(path.join(projectRoot, 'CLAUDE.md'))).toBeFalsy();
+    expect(fs.existsSync(path.join(projectRoot, 'codex.md'))).toBeFalsy();
+    expect(fs.existsSync(path.join(projectRoot, '.github', 'copilot-instructions.md'))).toBeFalsy();
+  } finally {
+    try { fs.rmSync(tmp, { recursive: true, force: true }); } catch {}
+  }
+});
+
+test('offline install: profile aliases install without agent auto-detection', async () => {
+  const repoRoot = path.resolve(__dirname, '../..');
+  const installPs1 = path.join(repoRoot, 'installers', 'install.ps1');
+
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'contracts-skill-profiles-'));
   const fakeHome = path.join(tmp, 'home');
-  const fakeAppData = path.join(tmp, 'appdata');
   const projectRoot = path.join(tmp, 'project');
 
   mkdirp(fakeHome);
-  mkdirp(fakeAppData);
   mkdirp(projectRoot);
-
-  // Mark agents as "detected" (installer uses these paths)
-  mkdirp(path.join(fakeHome, '.copilot'));
-  mkdirp(path.join(fakeHome, '.claude'));
-  mkdirp(path.join(fakeHome, '.cursor'));
-  mkdirp(path.join(fakeHome, '.codex'));
-
-  // Mark project as a project (for project-local agent)
-  mkdirp(path.join(projectRoot, '.git'));
 
   const env = {
     USERPROFILE: fakeHome,
-    APPDATA: fakeAppData,
-    LOCALAPPDATA: path.join(fakeAppData, 'Local'),
+    HOME: fakeHome,
     TEMP: tmp,
   };
 
@@ -84,51 +119,62 @@ test('offline install: multi-agent + instruction hooks', async () => {
       env,
       args: [
         '-Agents',
-        'copilot,claude,cursor,codex,local',
+        'codex,local',
         '-UseLocalSource',
-        '-NoUI',
+        '-Hooks',
+        'none',
       ],
     });
 
-    // Instruction hooks written into the project
-    const copilotInstr = path.join(projectRoot, '.github', 'copilot-instructions.md');
-    const claudeInstr = path.join(projectRoot, 'CLAUDE.md');
-    const cursorInstr = path.join(projectRoot, '.cursor', 'rules', 'contracts-system.mdc');
-    const codexInstr = path.join(projectRoot, 'codex.md');
+    expect(fs.existsSync(path.join(fakeHome, '.codex', 'skills', 'contracts', 'SKILL.md'))).toBeTruthy();
+    expect(fs.existsSync(path.join(projectRoot, '.agent', 'skills', 'contracts', 'SKILL.md'))).toBeTruthy();
+    expect(fs.existsSync(path.join(fakeHome, '.claude', 'skills', 'contracts'))).toBeFalsy();
+    expect(fs.existsSync(path.join(projectRoot, 'AGENTS.md'))).toBeFalsy();
+  } finally {
+    try { fs.rmSync(tmp, { recursive: true, force: true }); } catch {}
+  }
+});
 
-    for (const p of [copilotInstr, claudeInstr, cursorInstr, codexInstr]) {
-      expect(fs.existsSync(p), `${p} should exist`).toBeTruthy();
-      const txt = readFile(p);
-      expect(txt).toMatch(/Contracts?\s+System/i);
-      expect(txt).toMatch(/CONTRACT\.md/i);
-      expect(txt).toMatch(/source_hash|constraints/i);
-    }
+test('offline install: beads auto hook and legacy mirrors', async () => {
+  const repoRoot = path.resolve(__dirname, '../..');
+  const installPs1 = path.join(repoRoot, 'installers', 'install.ps1');
 
-    // Skill installed into each agent home
-    const installedSkillPaths = [
-      path.join(fakeHome, '.copilot', 'skills', 'contracts'),
-      path.join(fakeHome, '.claude', 'skills', 'contracts'),
-      path.join(fakeHome, '.cursor', 'skills', 'contracts'),
-      path.join(fakeHome, '.codex', 'skills', 'contracts'),
-      path.join(projectRoot, '.agent', 'skills', 'contracts'),
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'contracts-skill-hooks-'));
+  const projectRoot = path.join(tmp, 'project');
+  const targetPath = path.join(tmp, 'skills', 'contracts');
+
+  mkdirp(path.join(projectRoot, '.beads'));
+
+  try {
+    await runPowershellFile({
+      filePath: installPs1,
+      cwd: projectRoot,
+      args: [
+        '-TargetPath',
+        targetPath,
+        '-UseLocalSource',
+        '-Hooks',
+        'auto',
+        '-LegacyHooks',
+      ],
+    });
+
+    const agentsText = readFile(path.join(projectRoot, 'AGENTS.md'));
+    expect(agentsText).toMatch(/Beads/i);
+    expect(agentsText).toMatch(/bd\s+list|bd\s+create/i);
+
+    const legacyFiles = [
+      path.join(projectRoot, 'CLAUDE.md'),
+      path.join(projectRoot, 'codex.md'),
+      path.join(projectRoot, '.github', 'copilot-instructions.md'),
+      path.join(projectRoot, '.cursor', 'rules', 'contracts-system.mdc'),
     ];
 
-    for (const p of installedSkillPaths) {
-      expect(fs.existsSync(path.join(p, 'SKILL.md')), `${p}/SKILL.md should exist`).toBeTruthy();
-      expect(fs.existsSync(path.join(p, 'references', 'assistant-hooks', 'contract-preflight.md'))).toBeTruthy();
-      const skillMd = readFile(path.join(p, 'SKILL.md'));
-      expect(skillMd).toMatch(/contract preflight/i);
-    }
-
-    // Cleanup (test verifies we can fully remove installed artifacts)
-    for (const p of installedSkillPaths) {
-      fs.rmSync(p, { recursive: true, force: true });
-      expect(fs.existsSync(p)).toBeFalsy();
-    }
-
-    for (const p of [copilotInstr, claudeInstr, cursorInstr, codexInstr]) {
-      fs.rmSync(p, { force: true });
-      expect(fs.existsSync(p)).toBeFalsy();
+    for (const p of legacyFiles) {
+      expect(fs.existsSync(p), `${p} should exist`).toBeTruthy();
+      const text = readFile(p);
+      expect(text).toMatch(/contracts-skill:start/);
+      expect(text).toMatch(/Beads/i);
     }
   } finally {
     try { fs.rmSync(tmp, { recursive: true, force: true }); } catch {}
@@ -200,7 +246,6 @@ test('preflight: finds nearest contract + detects drift', async () => {
     expect(res1.modules[0].constraints.must).toContain('Keep API stable');
     expect(res1.modules[0].constraints.must_not).toContain('Log secrets');
 
-    // Introduce drift
     writeFile(mdPath, readFile(mdPath) + '\n- MUST: Add unit tests\n');
 
     const out2 = await runPowershellFile({

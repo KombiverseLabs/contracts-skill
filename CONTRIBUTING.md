@@ -1,123 +1,85 @@
 # Contributing to Contracts Skill
 
-Thank you for your interest in contributing! This document provides guidelines for contributing to the Contracts Skill project.
-
-## Reporting Bugs
-
-1. Check existing issues first
-2. Use the bug report template
-3. Include:
-   - OS and PowerShell version
-   - AI assistant being used (Copilot, Claude, Cursor, etc.)
-   - Steps to reproduce
-   - Expected vs actual behavior
-
-## Suggesting Features
-
-1. Open an issue with the feature request template
-2. Describe the use case
-3. Explain how it improves the skill
-
 ## Pull Requests
 
-### Setup
-
-```bash
-# Fork and clone
-git clone https://github.com/kombifyio/contracts-skill.git
-cd contracts-skill
-
-# Create a branch
-git checkout -b feature/your-feature-name
-```
-
-### Guidelines
-
-- **Keep changes focused** — one feature/fix per PR
-- **Follow existing patterns** — match the code style
-- **Update documentation** — if you change behavior, update docs
-- **Test your changes** — run the validation scripts
-
-### Commit Messages
-
-Use conventional commits:
-
-```
-feat: add support for Python projects
-fix: correct hash computation on Windows
-docs: update installation instructions
-chore: update dependencies
-```
-
-### PR Checklist
-
-- [ ] I've read the CONTRIBUTING.md
-- [ ] My code follows the existing style
-- [ ] I've updated relevant documentation
-- [ ] I've tested on Windows PowerShell
-- [ ] I've tested on Bash (if applicable)
+- Keep changes focused.
+- Update docs when behavior changes.
+- Keep `skill/SKILL.md` concise and move detailed workflows to `skill/references/`.
+- Do not add skill-internal README files; put user-facing docs at the repository root.
+- Preserve the established GitHub Actions CI/CD setup unless the maintainer explicitly changes it.
 
 ## Project Structure
 
-```
+```text
 contracts-skill/
-├── README.md              # Main documentation
-├── CONTRIBUTING.md        # This file
-├── LICENSE                # MIT license
-│
-├── skill/                 # Base variant (advisory enforcement)
-│   ├── SKILL.md          # Skill definition
-│   ├── references/       # Templates and assistant hooks
-│   ├── scripts/          # PowerShell & Bash validation tools
-│   ├── ai/init-agent/    # Semantic project analyzer (Node.js)
-│   └── ui/minimal-ui/   # Contracts Web UI (Node.js)
-│
-├── skill-beads/           # Beads-enforced variant
-│   ├── SKILL.md          # Skill definition with Beads integration
-│   └── references/       # Preflight & init hooks with Beads lifecycle
-│
-├── installers/            # One-liner installers (PS1, Bash)
-└── examples/              # Sample project with contracts
+├── skill/
+│   ├── SKILL.md
+│   ├── agents/openai.yaml
+│   ├── references/
+│   │   ├── assistant-hooks/
+│   │   ├── instruction-hooks/
+│   │   ├── templates/
+│   │   ├── examples/
+│   │   └── beads-enforcement.md
+│   ├── scripts/
+│   ├── ai/init-agent/
+│   └── ui/minimal-ui/
+├── installers/
+├── examples/
+└── .github/workflows/
 ```
 
-## Testing
+Beads is an optional enforcement mode of `skill/`, not a separate installable skill.
 
-### Manual Testing
+## Local Setup
 
-1. Install the skill to a test project
-2. Run initialization
-3. Create/modify contracts
-4. Verify sync behavior with your AI assistant
+Maintainer checkouts include the npm/Playwright harness:
 
-### Public Repo Validation
+```bash
+npm ci
+```
 
-This public repository intentionally excludes the internal npm/Playwright test harness. For changes made here, run the validation commands below. Maintainers run the fuller internal suite before publishing.
+## Validation
+
+Run the same core checks CI runs:
+
+```bash
+python .github/scripts/quick_validate.py skill
+```
+
+PowerShell syntax:
+
+```powershell
+$paths = @(
+  './installers/install.ps1',
+  './skill/scripts/init-contracts.ps1'
+)
+foreach ($p in $paths) {
+  $content = Get-Content $p -Raw
+  [scriptblock]::Create($content) | Out-Null
+}
+```
+
+Bash syntax:
 
 ```bash
 bash -n installers/install.sh
+bash -n skill/scripts/init-contracts.sh
 ```
 
-```powershell
-$content = Get-Content installers/install.ps1 -Raw
-[scriptblock]::Create($content) | Out-Null
-```
-
-### Contract Script Testing
+Contract validation:
 
 ```powershell
-# Validate contract structure
 pwsh skill/scripts/validate-contracts.ps1 -Path "examples/sample-project"
-
-# Preflight check
-pwsh skill/scripts/contract-preflight.ps1 -Path "examples/sample-project" -Changed
 ```
 
-## Code of Conduct
+UI visual regression, when the Playwright harness is present:
 
-- Be respectful and inclusive
-- Focus on constructive feedback
-- Help others learn
+```bash
+npm run test:installer
+npm run test:ui
+```
 
-## Thank You
+## Release Notes
 
-Your contributions make this project better for everyone.
+Update `CHANGELOG.md` under `[Unreleased]` for user-visible changes.

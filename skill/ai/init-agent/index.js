@@ -16,11 +16,12 @@
  *   # Dry-run (show what would be created)
  *   node index.js --path . --dry-run
  * 
- *   # Apply after confirmation
- *   node index.js --path . --apply
+ *   # Apply after explicit confirmation
+ *   node index.js --path . --apply --yes
  * 
- *   # Create contract for specific module
- *   node index.js --path ./src/auth --module
+ *   # Draft or apply a specific module
+ *   node index.js --path . --module ./src/auth
+ *   node index.js --path . --module ./src/auth --apply --yes
  */
 
 const fs = require('fs');
@@ -274,6 +275,7 @@ async function recommendMode(root, options = {}) {
     
     drafts.push({
       module: rec,
+      project: analysis.project,
       mdContent: draft.markdown,
       yamlContent: yaml,
       mdPath: contractMd,
@@ -333,6 +335,10 @@ async function dryRunMode(root) {
 }
 
 async function applyMode(root, options = {}) {
+  if (!options.yes) {
+    throw new Error('Apply mode requires --yes after user approval. Run --dry-run first to review drafts.');
+  }
+
   const drafts = await recommendMode(root, { quiet: true });
   
   if (drafts.length === 0) {
@@ -340,7 +346,7 @@ async function applyMode(root, options = {}) {
     return;
   }
   
-  // If not forced, show what will be created and ask for confirmation
+  // If not forced, show what will be created before writing.
   if (!options.force) {
     log('📋 The following contracts will be created:', 'cyan');
     log('');
@@ -353,12 +359,6 @@ async function applyMode(root, options = {}) {
     }
     
     log('\n⚠️  Note: This will create/modify files in your project.', 'yellow');
-    
-    if (!options.yes) {
-      // In non-interactive environments, we can't ask
-      log('\nUse --yes to confirm or --force to overwrite existing contracts.', 'cyan');
-      return;
-    }
   }
   
   // Create files
@@ -387,6 +387,7 @@ async function applyMode(root, options = {}) {
   
   // Create or update registry
   await updateRegistry(root, drafts);
+  await updateProjectGuide(root, drafts);
   
   log(`\n✨ Successfully created ${created.length} contract pair(s)\n`, 'cyan');
   log('Next steps:', 'yellow');
@@ -486,7 +487,70 @@ ${contractsYaml}
   log(`✅ Updated: ${path.relative(root, registryPath)}`, 'green');
 }
 
-async function singleModuleMode(root, modulePath) {
+async function updateProjectGuide(root, drafts) {
+  const registryDir = path.join(root, '.contracts');
+  const guidePath = path.join(registryDir, 'CONTRACTS-GUIDE.md');
+  const projectInfo = drafts[0]?.project || analyzeProject(root).project;
+  const today = new Date().toISOString().slice(0, 10);
+
+  const existingContracts = findExistingContracts(root);
+  const rows = existingContracts.map((contract) => {
+    const rel = contract.relative.replace(/\\/g, '/');
+    const matchingDraft = drafts.find((draft) => draft.module.path.replace(/\\/g, '/') === rel);
+    const name = matchingDraft?.module.name || path.basename(rel);
+    const tier = matchingDraft?.module.tier || 'standard';
+    return `| ${name} | \`${rel}\` | ${tier} | \`${rel}/CONTRACT.md\` |`;
+  });
+
+  const moduleTable = rows.length > 0
+    ? ['| Module | Path | Tier | Contract |', '|--------|------|------|----------|', ...rows].join('\n')
+    : '| Module | Path | Tier | Contract |\n|--------|------|------|----------|';
+
+  const guideContent = `# Contracts System - Project Guide
+
+> Commit this file. It gives developers and AI agents the project-local contract map and conventions.
+
+## Project
+
+**Name:** ${projectInfo.name || path.basename(root)}
+**Stack:** ${projectInfo.type || '(not set)'}
+**Owner:** (not set)
+**Initialized:** ${today}
+
+## Where to Find Things
+
+| What | Location |
+|------|----------|
+| Registry | \`.contracts/registry.yaml\` |
+| Module spec | \`<module-dir>/CONTRACT.md\` |
+| Module mapping | \`<module-dir>/CONTRACT.yaml\` |
+| Contract templates | Contracts skill \`references/templates/\` |
+| Preflight workflow | Contracts skill \`references/assistant-hooks/contract-preflight.md\` |
+
+## Registered Modules
+
+${moduleTable}
+
+## How Contracts Are Applied
+
+Before changing code, run contract preflight: locate the nearest \`CONTRACT.md\`, read it with \`CONTRACT.yaml\`, verify \`meta.source_hash\`, and summarize relevant MUST/MUST NOT constraints. If drift exists, sync YAML before implementation.
+
+When \`CONTRACT.md\` changes, update \`CONTRACT.yaml\`, reset attestation confidence, and add a changelog entry.
+
+## Project Conventions
+
+(Add module layout, test location, naming, and ownership conventions here.)
+`;
+
+  if (!fs.existsSync(registryDir)) {
+    fs.mkdirSync(registryDir, { recursive: true });
+  }
+
+  fs.writeFileSync(guidePath, guideContent, 'utf8');
+  log(`✅ Updated: ${path.relative(root, guidePath)}`, 'green');
+}
+
+async function singleModuleMode(root, modulePath, options = {}) {
   const fullPath = path.resolve(root, modulePath);
   
   if (!fs.existsSync(fullPath)) {
@@ -530,8 +594,23 @@ async function singleModuleMode(root, modulePath) {
   const mdPath = path.join(fullPath, 'CONTRACT.md');
   const yamlPath = path.join(fullPath, 'CONTRACT.yaml');
   
+  if (!options.apply) {
+    log(`Draft contract for ${dirName}`, 'cyan');
+    log('');
+    log(`--- ${relPath}/CONTRACT.md ---\n`, 'yellow');
+    log(draft.markdown);
+    log('\n--- YAML ---\n', 'yellow');
+    log(yaml);
+    log('\nRun with --module <path> --apply --yes to write these files.', 'cyan');
+    return;
+  }
+
+  if (!options.yes) {
+    throw new Error('Module apply mode requires --yes after user approval. Run --module without --apply to review the draft.');
+  }
+
   // Check existing
-  if (fs.existsSync(mdPath)) {
+  if (fs.existsSync(mdPath) && !options.force) {
     log(`⚠️  CONTRACT.md already exists at ${relPath}`, 'yellow');
     log('Use --force to overwrite', 'gray');
     return;
@@ -556,7 +635,7 @@ function showHelp() {
   log('  --recommend      Generate contract drafts for recommended modules');
   log('  --dry-run        Show what would be created without writing files');
   log('  --apply          Write contract files to disk (requires --yes)');
-  log('  --module <path>  Create contract for specific module path');
+  log('  --module <path>  Draft contract for specific module path');
   log('  --force          Overwrite existing contracts');
   log('  --yes            Skip confirmation prompts');
   log('  --help           Show this help message');
@@ -566,7 +645,8 @@ function showHelp() {
   log('  node index.js --path . --recommend');
   log('  node index.js --path . --dry-run');
   log('  node index.js --path . --apply --yes');
-  log('  node index.js --module ./src/auth --yes');
+  log('  node index.js --module ./src/auth');
+  log('  node index.js --module ./src/auth --apply --yes');
 }
 
 async function main() {
@@ -612,7 +692,7 @@ async function main() {
   
   // Route to appropriate mode
   if (options.module) {
-    await singleModuleMode(root, options.module);
+    await singleModuleMode(root, options.module, options);
   } else if (options.apply) {
     await applyMode(root, options);
   } else if (options.dryRun) {

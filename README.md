@@ -1,243 +1,139 @@
 # Contracts Skill
 
-> **Spec-driven development with living contracts for AI-assisted coding.**
+Spec-driven development with living contracts for AI-assisted coding.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version: 2.5.0](https://img.shields.io/badge/Version-2.5.0-blue.svg)](#)
-[![Works with: Copilot](https://img.shields.io/badge/Works%20with-GitHub%20Copilot-blue)](https://github.com/features/copilot)
-[![Works with: Claude](https://img.shields.io/badge/Works%20with-Claude-orange)](https://claude.ai)
-[![Works with: Cursor](https://img.shields.io/badge/Works%20with-Cursor-purple)](https://cursor.sh)
-[![Works with: Codex](https://img.shields.io/badge/Works%20with-OpenAI%20Codex-green)](https://github.com/openai/codex)
+[![Works with: Skills](https://img.shields.io/badge/Works%20with-Agent%20Skills-blue)](#installation)
 
-Keep your AI coding assistant aligned with your specifications. Never let implementations drift from requirements again.
+Contracts keep code changes aligned with durable module specs:
 
-This public repository is intentionally a slim distribution export. Maintainer-only dev tooling such as the npm manifest, Playwright suite, and git hooks is not published here.
+- `CONTRACT.md` is the human-owned specification.
+- `CONTRACT.yaml` is the AI-maintained technical mapping for hashes, status, VTs, acceptance tests, and attestation.
+- A contract preflight checks drift and constraints before implementation.
 
----
+## Installation
 
-## Install via AI Agent
+Recommended: install to a standard skill directory, then optionally add the project hook.
 
-Copy this prompt and paste it to your AI assistant (Copilot, Claude, Cursor, Codex — any agent with terminal access):
-
-> Install the "Contracts Skill" for spec-driven development from the public repo https://github.com/kombifyio/contracts-skill — read the INSTALL.md at the repo root and follow it step by step. Detect my OS, run the matching installer, and confirm what was installed.
-
-That's it. The agent clones the repo, runs the installer, and sets everything up. No manual steps required.
-
-<details>
-<summary><b>Alternative: paste this if your agent has no web/terminal access</b></summary>
-
-> Install the "Contracts Skill" by cloning https://github.com/kombifyio/contracts-skill (depth 1). Copy the `skill/` directory to `~/.copilot/skills/contracts/` (for Copilot), `~/.claude/skills/contracts/` (for Claude), `~/.cursor/skills/contracts/` (for Cursor), or `~/.codex/skills/contracts/` (for Codex). Verify `SKILL.md` exists at the target path. Then say: "Contracts Skill installed. Say 'init contracts' to get started."
-
-</details>
-
-For manual installation or troubleshooting, see [INSTALL.md](./INSTALL.md).
-
----
-
-## Two Variants
-
-| Variant | Directory | Enforcement | Best For |
-|---------|-----------|-------------|----------|
-| **Base** | `skill/` | Instruction-based (advisory) | Any project, no extra dependencies |
-| **Beads-Enforced** | `skill-beads/` | Dependency-blocking via [Beads](https://github.com/steveyegge/beads) | Projects using Beads for task management |
-
-Both variants share the same scripts, templates, AI analyzer, and UI. They differ only in how preflight checks are enforced.
-
----
-
-## Quick Start
-
-### 1. Install
-
-**Easiest:** Paste the [bootstrap prompt](#install-via-ai-agent) to your AI agent — it handles everything.
-
-**Or run manually:**
+PowerShell:
 
 ```powershell
-# PowerShell (Windows/macOS/Linux)
 irm https://raw.githubusercontent.com/kombifyio/contracts-skill/main/installers/install.ps1 | iex
 ```
 
+Bash:
+
 ```bash
-# Bash
 curl -fsSL https://raw.githubusercontent.com/kombifyio/contracts-skill/main/installers/install.sh | bash
 ```
 
-The installer will:
-- Detect your AI assistants (Copilot, Claude, Cursor, Codex)
-- Let you choose which to configure
-- Inject instruction hooks into your project
-- Optionally install the Contracts Web UI
+Default target:
 
-### 2. Initialize contracts
+- `$CODEX_HOME/skills/contracts` when `CODEX_HOME` is set
+- otherwise `~/.codex/skills/contracts`
 
-Ask your AI assistant:
-> "Initialize contracts for this project"
-
-Or run directly:
-```bash
-node .github/skills/contracts/ai/init-agent/index.js --path . --analyze
-```
-
-### 3. Use contracts
-
-Each module gets:
-- `CONTRACT.md` — Human-owned specification (you write this)
-- `CONTRACT.yaml` — AI-maintained metadata (drift detection, feature status, verification tests, attestation)
-
-Your AI will now **check contracts before making changes**, verify alignment, and track implementation health.
-
----
-
-## How It Works
-
-1. You define requirements in `CONTRACT.md` (constraints, features, success criteria, verification tests)
-2. AI generates `CONTRACT.yaml` with a SHA256 hash of your spec
-3. Before any code change, the AI reads the contract, checks attestation, and verifies VT status
-4. If the spec changed (hash mismatch), AI stops and syncs before proceeding
-5. Every feature maps to a test file; missing tests trigger warnings
-6. **Verification Tests** prove the module actually works through golden-path assertions
-7. **Attestation** tracks which contract version was verified and when re-verification is due
-
-### With Beads (Enforced Variant)
-
-When using `skill-beads/`, the workflow adds structural enforcement:
-
-1. Agent creates a feature task in Beads
-2. Feature task depends on a PREFLIGHT task (priority 0)
-3. Agent must check contracts and close PREFLIGHT with a summary
-4. Only then does the feature task unblock
-
-| Without Beads | With Beads |
-|--------------|------------|
-| Instructions can be ignored | Preflight task **blocks** feature work |
-| No enforcement mechanism | Agent cannot proceed until preflight done |
-| Hope-based compliance | Audit trail of contract checks |
-
----
-
-## Key Features
-
-### Verification Tests (Contract-Level TDD)
-
-Each contract defines 1-3 **Verification Tests (VTs)** — high-leverage tests that prove the module actually works, not just that it compiles. One smart test beats ten shallow tests.
-
-```markdown
-## Verification Tests
-- [x] **VT-1: Chat produces verified factual response**
-  - Do: Login → open chat → send "What is the capital of France?"
-  - Assert: Response text contains "Paris"
-```
-
-**The philosophy**: Assert on **actual output content** (not just status codes). A single VT implicitly validates every component in the chain. If ANY core feature breaks, the test fails.
-
-| Tier | VTs | Focus |
-|------|-----|-------|
-| core | 1 | Round-trip correctness |
-| standard | 1-2 | Golden path + key edge case |
-| complex | 2-3 | Golden path + error resilience + secondary flow |
-
-### Contract Commitment (Long-Term Binding)
-
-Contracts are not session-scoped suggestions — they are **persistent commitments**. The attestation mechanism ensures contracts remain binding across sessions:
-
-- **Attestation**: Records which contract version was implemented against, VT results, and confidence level
-- **Confidence Score**: `high` (all VTs passing) / `medium` (some failing) / `low` (VTs not implemented)
-- **Re-Verification Cadence**: Stale attestations (>30 days) trigger preflight warnings
-- **Binding Rule**: A feature cannot be marked `implemented` without VT-1 passing
-
----
-
-## What Gets Created
-
-```text
-your-project/
-├── .contracts/
-│   └── registry.yaml          # Central index of all contracts
-└── src/
-    └── core/
-        └── auth/
-            ├── CONTRACT.md     # Human-owned spec (features, constraints, VTs)
-            ├── CONTRACT.yaml   # AI-maintained metadata (status, attestation)
-            └── ...
-```
-
----
-
-## Contracts UI (optional)
-
-If installed into `./contracts-ui/`:
-
-```bash
-# Start the UI server (live read/write mode)
-./contracts-ui/start.ps1   # PowerShell
-./contracts-ui/start.sh    # Bash
-
-# Or open static snapshot (read-only)
-Start-Process contracts-ui/index.html  # Windows PowerShell
-open contracts-ui/index.html           # macOS
-xdg-open contracts-ui/index.html       # Linux
-```
-
----
-
-## Validation & CI
+Explicit target:
 
 ```powershell
-# Validate all contracts (drift detection, structure, test coverage, VT status)
-pwsh .github/skills/contracts/scripts/validate-contracts.ps1 -Path .
-
-# Preflight check for changed files
-pwsh .github/skills/contracts/scripts/contract-preflight.ps1 -Path . -Changed
-
-# CI: GitHub Actions
+.\installers\install.ps1 -TargetPath "$env:USERPROFILE\.codex\skills\contracts"
 ```
 
-```yaml
-- name: Validate Contracts
-  run: pwsh .github/skills/contracts/scripts/validate-contracts.ps1 -OutputFormat github-actions
+```bash
+./installers/install.sh --target ~/.codex/skills/contracts
 ```
 
-The public distribution repo validates contracts and installer syntax. The internal npm/Playwright UI suite is run in the maintainer source repo before export and is intentionally not part of this public package.
+Compatibility profiles:
 
----
+```powershell
+.\installers\install.ps1 -Profiles "codex,local"
+```
+
+```bash
+./installers/install.sh --profiles codex,local
+```
+
+Profiles map to `codex`, `claude`, `copilot`, `cursor`, and `local`. Legacy `-Agents` / `--agents` is accepted as an alias for profiles; the installer no longer auto-detects IDEs or agents.
+
+## Instruction Hooks
+
+The installer writes a compact hook to the current project's `AGENTS.md` by default:
+
+```bash
+./installers/install.sh --hooks base
+./installers/install.sh --hooks beads
+./installers/install.sh --hooks none
+```
+
+`--hooks auto` is the default. It uses the Beads hook when `.beads/` exists, otherwise the base hook.
+
+To also mirror the same hook into legacy files (`CLAUDE.md`, `codex.md`, `.github/copilot-instructions.md`, `.cursor/rules/contracts-system.mdc`):
+
+```bash
+./installers/install.sh --legacy-hooks
+```
+
+Hooks are idempotent and wrapped in `contracts-skill:start` / `contracts-skill:end` markers.
+
+## Usage
+
+Ask the agent:
+
+> init contracts
+
+The workflow is agent-led:
+
+1. Read `.contracts/CONTRACTS-GUIDE.md` if it exists.
+2. Inspect manifests, source layout, tests, exports, and existing contracts.
+3. Recommend contract locations.
+4. Draft `CONTRACT.md`, `CONTRACT.yaml`, registry, and project guide changes.
+5. Write files only after explicit user approval.
+
+Before code changes, ask:
+
+> contract preflight
+
+The agent finds the nearest `CONTRACT.md`, compares `CONTRACT.yaml` `meta.source_hash`, checks constraints, VT status, acceptance tests, attestation, and affected dependents, then summarizes the relevant contract notes.
+
+## Beads Mode
+
+Beads is now an optional enforcement mode of the main `contracts` skill, not a separate installable skill. In projects with `.beads/` and the `bd` CLI, use `--hooks beads` or `--hooks auto`. The skill loads `references/beads-enforcement.md` for the Beads task lifecycle.
+
+## Validation
+
+```powershell
+pwsh skill/scripts/validate-contracts.ps1 -Path ./examples/sample-project
+pwsh skill/scripts/contract-preflight.ps1 -Path . -Changed
+```
+
+The optional init helper is read-only by default:
+
+```bash
+node skill/ai/init-agent/index.js --path . --analyze
+node skill/ai/init-agent/index.js --path . --dry-run
+node skill/ai/init-agent/index.js --path . --apply --yes
+```
+
+`--apply` refuses to write without `--yes`.
 
 ## Repository Structure
 
-```
+```text
 contracts-skill/
-├── skill/                    # Base variant (advisory enforcement)
-│   ├── SKILL.md              # Skill definition
+├── skill/
+│   ├── SKILL.md
+│   ├── agents/openai.yaml
 │   ├── references/
-│   │   ├── assistant-hooks/  # Preflight & init hooks
-│   │   └── templates/        # CONTRACT.md templates per tier
-│   ├── scripts/              # PowerShell & Bash validation tools
-│   ├── ai/init-agent/        # Semantic project analyzer (Node.js)
-│   └── ui/minimal-ui/        # Contracts Web UI (Node.js)
-├── skill-beads/              # Beads-enforced variant
-│   ├── SKILL.md              # Skill definition with Beads integration
-│   └── references/
-│       └── assistant-hooks/  # Preflight & init hooks with Beads lifecycle
-├── examples/                 # Sample project with contracts
-└── installers/               # One-liner installers (PS1, Bash)
+│   │   ├── assistant-hooks/
+│   │   ├── instruction-hooks/
+│   │   ├── templates/
+│   │   ├── examples/
+│   │   └── beads-enforcement.md
+│   ├── scripts/
+│   ├── ai/init-agent/
+│   └── ui/minimal-ui/
+├── installers/
+└── examples/
 ```
-
----
-
-## References
-
-- [Base Skill Specification](skill/SKILL.md)
-- [Beads-Enforced Specification](skill-beads/SKILL.md)
-- [Contract Templates](skill/references/templates/)
-- [Beads](https://github.com/steveyegge/beads) — Persistent task memory for agents
-
----
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
-
----
 
 ## License
 

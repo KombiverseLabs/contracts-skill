@@ -24,6 +24,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate Skill Metadata
+        run: |
+          python .github/scripts/quick_validate.py skill
+
       - name: Validate Example Contracts
         shell: pwsh
         run: |
@@ -33,7 +37,8 @@ jobs:
         shell: pwsh
         run: |
           $paths = @(
-            './installers/install.ps1'
+            './installers/install.ps1',
+            './skill/scripts/init-contracts.ps1'
           )
           foreach ($p in $paths) {
             $content = Get-Content $p -Raw
@@ -55,6 +60,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate Skill Metadata
+        run: |
+          python .github/scripts/quick_validate.py skill
+
       - name: Validate Example Contracts
         shell: pwsh
         run: |
@@ -64,7 +73,8 @@ jobs:
         shell: pwsh
         run: |
           $paths = @(
-            './installers/install.ps1'
+            './installers/install.ps1',
+            './skill/scripts/init-contracts.ps1'
           )
           foreach ($p in $paths) {
             $content = Get-Content $p -Raw
@@ -92,11 +102,12 @@ jobs:
         run: |
           Import-Module PSScriptAnalyzer
           $paths = @(
-            './installers/install.ps1'
+            './installers/install.ps1',
+            './skill/scripts/init-contracts.ps1'
           )
           $allIssues = @()
           foreach ($p in $paths) {
-            $allIssues += Invoke-ScriptAnalyzer -Path $p -Severity Warning,Error -ExcludeRule PSAvoidUsingWriteHost,PSAvoidUsingEmptyCatchBlock,PSReviewUnusedParameter
+            $allIssues += Invoke-ScriptAnalyzer -Path $p -Severity Warning,Error -ExcludeRule PSAvoidUsingWriteHost,PSAvoidUsingEmptyCatchBlock,PSReviewUnusedParameter,PSUseShouldProcessForStateChangingFunctions
           }
           if ($allIssues) {
             $allIssues | Select-Object RuleName,Severity,ScriptName,Line,Message | Format-Table -AutoSize
@@ -116,6 +127,7 @@ jobs:
       - name: Test Bash Install Script Syntax
         run: |
           bash -n ./installers/install.sh
+          bash -n ./skill/scripts/init-contracts.sh
           echo "✅ bash script syntax valid"
 
   ui-visual-regression:

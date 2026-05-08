@@ -20,10 +20,10 @@
     Output format: console (default) or json.
 
 .EXAMPLE
-    pwsh .github/skills/contracts/scripts/contract-preflight.ps1 -Path . -Changed
+    pwsh skill/scripts/contract-preflight.ps1 -Path . -Changed
 
 .EXAMPLE
-    pwsh .github/skills/contracts/scripts/contract-preflight.ps1 -Path . -Files src/core/auth/index.ts -OutputFormat json
+    pwsh skill/scripts/contract-preflight.ps1 -Path . -Files src/core/auth/index.ts -OutputFormat json
 #>
 
 [CmdletBinding()]
