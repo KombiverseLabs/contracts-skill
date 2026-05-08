@@ -57,18 +57,18 @@ function Get-DefaultTarget {
     return (Join-Path $HomeDir ".codex\skills\$SkillName")
 }
 
-function Get-ProfileTarget([string]$Profile) {
-    switch ($Profile.ToLowerInvariant()) {
+function Get-ProfileTarget([string]$ProfileName) {
+    switch ($ProfileName.ToLowerInvariant()) {
         'codex'   { return (Get-DefaultTarget) }
         'claude'  { return (Join-Path $HomeDir ".claude\skills\$SkillName") }
         'copilot' { return (Join-Path $HomeDir ".copilot\skills\$SkillName") }
         'cursor'  { return (Join-Path $HomeDir ".cursor\skills\$SkillName") }
         'local'   { return (Join-Path (Get-Location).Path ".agent\skills\$SkillName") }
-        default   { throw "Unknown profile '$Profile'. Use codex, claude, copilot, cursor, or local." }
+        default   { throw "Unknown profile '$ProfileName'. Use codex, claude, copilot, cursor, or local." }
     }
 }
 
-function Get-InstallTargets {
+function Get-InstallTarget {
     if ($TargetPath) {
         return @((Resolve-TargetPath $TargetPath))
     }
@@ -81,9 +81,9 @@ function Get-InstallTargets {
     $targets = @()
     $seen = @{}
     foreach ($raw in ($profileText -split ',')) {
-        $profile = $raw.Trim()
-        if (-not $profile) { continue }
-        $target = Get-ProfileTarget $profile
+        $profileName = $raw.Trim()
+        if (-not $profileName) { continue }
+        $target = Get-ProfileTarget $profileName
         $key = $target.ToLowerInvariant()
         if (-not $seen.ContainsKey($key)) {
             $seen[$key] = $true
@@ -189,7 +189,7 @@ function Set-ContractsHook([string]$FilePath, [string]$HookText) {
     Set-Content -Path $FilePath -Value $content -Encoding utf8
 }
 
-function Install-Hooks([string]$SkillSource) {
+function Install-Hook([string]$SkillSource) {
     $mode = Get-HookMode
     if ($mode -eq 'none') { return }
 
@@ -232,14 +232,14 @@ $tempDir = Join-Path $TempRoot ("contracts-skill-{0:yyyyMMddHHmmssfff}" -f (Get-
 
 try {
     $skillSource = Get-SkillSource -TempDir $tempDir
-    $targets = Get-InstallTargets
+    $targets = Get-InstallTarget
 
     foreach ($target in $targets) {
         Copy-Skill -SourceDir $skillSource -TargetDir $target
         Write-Host "Installed Contracts skill -> $target" -ForegroundColor Green
     }
 
-    Install-Hooks -SkillSource $skillSource
+    Install-Hook -SkillSource $skillSource
 
     Write-Host ''
     Write-Host 'Done. Say "init contracts" to set up contracts for a project.' -ForegroundColor Yellow
