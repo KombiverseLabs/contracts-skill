@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.1] - 2026-05-08
+
+### Added
+
+- Added a README thanks note for the Beads framework.
+
+### Changed
+
+- Simplified the README installation section around one PowerShell and one Bash one-liner, with advanced installer flags moved to `INSTALL.md`.
+- Clarified contract-review guidance so contract edits remain approval-led and Beads review summaries do not depend on unsupported comment behavior.
+
 ## [2.7.0] - 2026-05-08
 
 ### Changed

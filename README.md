@@ -13,7 +13,7 @@ Contracts keep code changes aligned with durable module specs:
 
 ## Installation
 
-Recommended: install to a standard skill directory, then optionally add the project hook.
+Run one installer from the project where you want the Contracts hook:
 
 PowerShell:
 
@@ -27,52 +27,7 @@ Bash:
 curl -fsSL https://raw.githubusercontent.com/kombifyio/contracts-skill/main/installers/install.sh | bash
 ```
 
-Default target:
-
-- `$CODEX_HOME/skills/contracts` when `CODEX_HOME` is set
-- otherwise `~/.codex/skills/contracts`
-
-Explicit target:
-
-```powershell
-.\installers\install.ps1 -TargetPath "$env:USERPROFILE\.codex\skills\contracts"
-```
-
-```bash
-./installers/install.sh --target ~/.codex/skills/contracts
-```
-
-Compatibility profiles:
-
-```powershell
-.\installers\install.ps1 -Profiles "codex,local"
-```
-
-```bash
-./installers/install.sh --profiles codex,local
-```
-
-Profiles map to `codex`, `claude`, `copilot`, `cursor`, and `local`. Legacy `-Agents` / `--agents` is accepted as an alias for profiles; the installer no longer auto-detects IDEs or agents.
-
-## Instruction Hooks
-
-The installer writes a compact hook to the current project's `AGENTS.md` by default:
-
-```bash
-./installers/install.sh --hooks base
-./installers/install.sh --hooks beads
-./installers/install.sh --hooks none
-```
-
-`--hooks auto` is the default. It uses the Beads hook when `.beads/` exists, otherwise the base hook.
-
-To also mirror the same hook into legacy files (`CLAUDE.md`, `codex.md`, `.github/copilot-instructions.md`, `.cursor/rules/contracts-system.mdc`):
-
-```bash
-./installers/install.sh --legacy-hooks
-```
-
-Hooks are idempotent and wrapped in `contracts-skill:start` / `contracts-skill:end` markers.
+This installs to `$CODEX_HOME/skills/contracts` when set, otherwise `~/.codex/skills/contracts`, and writes an idempotent `AGENTS.md` hook in the current project. Advanced options for explicit targets, compatibility profiles, hook modes, legacy hook mirrors, and local-source installs remain available in [INSTALL.md](INSTALL.md).
 
 ## Usage
 
@@ -134,6 +89,10 @@ contracts-skill/
 ├── installers/
 └── examples/
 ```
+
+## Thanks
+
+Special thanks to [Beads](https://github.com/gastownhall/beads), the `bd` framework for agent-friendly issue tracking and task graphs. It is a great framework and one we genuinely enjoy using for AI-assisted development workflows.
 
 ## License
 

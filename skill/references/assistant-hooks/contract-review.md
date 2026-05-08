@@ -59,8 +59,8 @@ CONTRACT REVIEW: [module name]
 If scope was exceeded or contract is stale:
 1. Generate a diff showing proposed additions to `CONTRACT.md`
 2. Present to user: "Add these to the contract? Or mark as out-of-scope?"
-3. On approval → user edits CONTRACT.md → AI syncs YAML → reset attestation
-4. On rejection → add to `## Out of Scope` if section exists
+3. On approval → update or draft `CONTRACT.md` changes, sync `CONTRACT.yaml`, reset attestation, and validate hashes
+4. On rejection → add to `## Out of Scope` only if the user approves that contract edit
 
 ---
 
@@ -68,7 +68,7 @@ If scope was exceeded or contract is stale:
 
 If Beads is available (`bd` CLI + `.beads/` directory):
 1. Create a review task: `bd create "CONTRACT REVIEW: [module]" -p 0 --tag contracts`
-2. Attach review summary as comment
+2. Include the review summary in the task design or close note
 3. If update needed → create subtask for the contract update
 4. Close review task with findings
 
