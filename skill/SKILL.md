@@ -1,6 +1,6 @@
 ---
 name: contracts
-description: Use when creating, changing, reviewing, or initializing modules that use living CONTRACT.md/CONTRACT.yaml specs; before code changes that need contract preflight, drift checks, verification tests, acceptance tests, contract sync, or optional Beads-enforced preflight.
+description: Use when creating, changing, reviewing, locking, or initializing modules that use living CONTRACT.md/CONTRACT.yaml specs; before code changes that need contract preflight, drift checks, verification tests, acceptance tests, contract sync, optional contract read-only locking, or optional Beads-enforced preflight.
 ---
 
 # Contracts
@@ -29,6 +29,7 @@ Use `scripts/contract-preflight.ps1` or `scripts/contract-preflight.sh` when fil
 ## Contract Rules
 
 - Treat `CONTRACT.md` as user authority.
+- If `CONTRACT.md` is locked/read-only, propose contract edits as drafts or diffs and do not unlock or edit it without explicit user approval.
 - Keep `CONTRACT.yaml` synced whenever `CONTRACT.md` changes.
 - Never fabricate VT results, feature status, hashes, or attestation.
 - A feature is not `implemented` unless its verification path is real and VT-1 is passing.
@@ -47,6 +48,10 @@ For `init contracts`, use an agent-led flow:
 
 The deterministic Node helper under `ai/init-agent/` can analyze and draft from source structure, but it is optional support for the agent workflow. Any CLI apply mode must require `--apply --yes`.
 
+## Contract Locking
+
+After human approval, projects may lock `CONTRACT.md` as a read-only guardrail for agents. Use `scripts/lock-contracts.*` and `scripts/unlock-contracts.*` for this StackKit-standard workflow, and read `references/contract-locking.md` before unlocking or changing a locked contract.
+
 ## Verification
 
 - Run `scripts/validate-contracts.ps1 -Path <project>` to check drift and contract structure.
@@ -62,6 +67,7 @@ If the project has Beads (`.beads/` and `bd` CLI), use Beads as an enforcement m
 - `references/assistant-hooks/contract-preflight.md`: detailed preflight checks.
 - `references/assistant-hooks/init-contracts.md`: agent-led project initialization.
 - `references/assistant-hooks/contract-review.md`: scope and drift review after or during work.
+- `references/contract-locking.md`: optional read-only locking for approved `CONTRACT.md` files.
 - `references/beads-enforcement.md`: Beads task lifecycle and hook behavior.
 - `references/instruction-hooks/`: installable hook snippets for `AGENTS.md` and legacy instruction files.
 - `references/templates/`: empty contract scaffolds.

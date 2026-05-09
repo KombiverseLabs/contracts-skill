@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-05-09
+
+### Added
+
+- Added StackKit-standard contract lock scripts in `skill/scripts/` for locking and unlocking approved `CONTRACT.md` files on Bash and PowerShell.
+- Added `references/contract-locking.md` with platform semantics for Linux, macOS, and Windows.
+
+### Changed
+
+- Updated skill guidance so locked/read-only `CONTRACT.md` files are treated as human-owned and changed only through explicit approval.
+
 ## [2.7.1] - 2026-05-08
 
 ### Added

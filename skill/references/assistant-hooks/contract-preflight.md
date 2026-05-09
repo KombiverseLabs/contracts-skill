@@ -22,6 +22,7 @@ If no contract exists, say so and offer to create one.
 - Compare `meta.source_hash` to current SHA256 of CONTRACT.md
 - If drift → **STOP** and sync YAML first
 - If hash is corrupted or empty, compute the normalized SHA256 and ask before replacing it
+- If `CONTRACT.md` is locked/read-only, treat contract text as human-owned: do not unlock or edit it without explicit approval
 
 ### 4. Attestation Check
 - Read `attestation` section from `CONTRACT.yaml`

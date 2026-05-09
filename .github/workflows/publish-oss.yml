@@ -71,13 +71,19 @@ jobs:
         run: |
           bash -n ./installers/install.sh
           bash -n ./skill/scripts/init-contracts.sh
+          bash -n ./skill/scripts/lock-contracts.sh
+          bash -n ./skill/scripts/unlock-contracts.sh
           echo "✅ Bash scripts valid"
 
       - name: Check PowerShell syntax
         shell: pwsh
         run: |
-          $paths = @('./installers/install.ps1')
-          $paths += './skill/scripts/init-contracts.ps1'
+          $paths = @(
+            './installers/install.ps1',
+            './skill/scripts/init-contracts.ps1',
+            './skill/scripts/lock-contracts.ps1',
+            './skill/scripts/unlock-contracts.ps1'
+          )
           foreach ($p in $paths) {
             $content = Get-Content $p -Raw
             [scriptblock]::Create($content) | Out-Null

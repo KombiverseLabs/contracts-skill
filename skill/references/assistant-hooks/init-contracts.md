@@ -20,6 +20,7 @@ Initialization is agent-led. Scripts may assist analysis, but the agent owns dis
    - `.contracts/CONTRACTS-GUIDE.md` from `references/project-guide.md`
 6. Show the draft or diff to the user.
 7. Write files only after explicit approval.
+8. If the project uses contract locking, lock approved `CONTRACT.md` files after writing and YAML sync.
 
 ## Optional CLI Helper
 
@@ -50,9 +51,11 @@ Use `references/examples/` to match the expected quality level.
 
 - Monorepos: recommend package-level contracts first, then module contracts inside high-risk packages.
 - Existing contracts: report coverage gaps, do not overwrite unless the user approves.
+- Locked contracts: propose diffs first, then unlock only after explicit approval.
 - Non-standard structures: rank likely modules by source volume, entry points, tests, and public APIs.
 - Beads projects: read `references/beads-enforcement.md` before creating preflight tasks.
+- Locking projects: read `references/contract-locking.md` before changing approved contracts.
 
 ## After Writing
 
-Tell the user to review each `CONTRACT.md`, remove draft markers when satisfied, and commit `.contracts/` plus contract files. Recommend implementing VT-1 for each new contract before broad feature work.
+Tell the user to review each `CONTRACT.md`, remove draft markers when satisfied, and commit `.contracts/` plus contract files. Recommend implementing VT-1 for each new contract before broad feature work. If contract locking is enabled, run the lock script after human approval.

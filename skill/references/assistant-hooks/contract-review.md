@@ -59,8 +59,10 @@ CONTRACT REVIEW: [module name]
 If scope was exceeded or contract is stale:
 1. Generate a diff showing proposed additions to `CONTRACT.md`
 2. Present to user: "Add these to the contract? Or mark as out-of-scope?"
-3. On approval → update or draft `CONTRACT.md` changes, sync `CONTRACT.yaml`, reset attestation, and validate hashes
-4. On rejection → add to `## Out of Scope` only if the user approves that contract edit
+3. If `CONTRACT.md` is locked/read-only, unlock only after explicit approval for this contract edit
+4. On approval → update or draft `CONTRACT.md` changes, sync `CONTRACT.yaml`, reset attestation, and validate hashes
+5. On rejection → add to `## Out of Scope` only if the user approves that contract edit
+6. Re-lock `CONTRACT.md` when contract locking is enabled
 
 ---
 

@@ -49,6 +49,17 @@ Before code changes, ask:
 
 The agent finds the nearest `CONTRACT.md`, compares `CONTRACT.yaml` `meta.source_hash`, checks constraints, VT status, acceptance tests, attestation, and affected dependents, then summarizes the relevant contract notes.
 
+## Contract Lock Mode
+
+Approved `CONTRACT.md` files can be locked as read-only guardrails for agents:
+
+```bash
+skill/scripts/lock-contracts.sh --path .
+skill/scripts/unlock-contracts.sh --file src/core/auth/CONTRACT.md
+```
+
+PowerShell equivalents are available as `skill/scripts/lock-contracts.ps1` and `skill/scripts/unlock-contracts.ps1`. `CONTRACT.yaml` stays writable by default for hash, VT, and attestation syncs.
+
 ## Beads Mode
 
 Beads is now an optional enforcement mode of the main `contracts` skill, not a separate installable skill. In projects with `.beads/` and the `bd` CLI, use `--hooks beads` or `--hooks auto`. The skill loads `references/beads-enforcement.md` for the Beads task lifecycle.
@@ -82,6 +93,7 @@ contracts-skill/
 │   │   ├── instruction-hooks/
 │   │   ├── templates/
 │   │   ├── examples/
+│   │   ├── contract-locking.md
 │   │   └── beads-enforcement.md
 │   ├── scripts/
 │   ├── ai/init-agent/

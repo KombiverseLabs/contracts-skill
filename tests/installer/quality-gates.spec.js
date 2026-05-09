@@ -108,5 +108,16 @@ test('quality gates: installed skill has current metadata surface', async () => 
 
   const skillMd = readFile(path.join(skillDir, 'SKILL.md'));
   expect(skillMd).toMatch(/^---\nname: contracts\ndescription: Use when/m);
+  expect(skillMd).toMatch(/contract read-only locking/i);
   expect(skillMd.length).toBeLessThan(6500);
+
+  for (const rel of [
+    path.join('references', 'contract-locking.md'),
+    path.join('scripts', 'lock-contracts.ps1'),
+    path.join('scripts', 'unlock-contracts.ps1'),
+    path.join('scripts', 'lock-contracts.sh'),
+    path.join('scripts', 'unlock-contracts.sh'),
+  ]) {
+    expect(fs.existsSync(path.join(skillDir, rel)), `${rel} should exist`).toBeTruthy();
+  }
 });

@@ -26,6 +26,7 @@
 | Preflight workflow (AI hook) | Skill: `references/assistant-hooks/contract-preflight.md` |
 | Review workflow (AI hook) | Skill: `references/assistant-hooks/contract-review.md` |
 | Validation script (Windows) | Skill: `scripts/validate-contracts.ps1` |
+| Contract lock scripts | Skill: `scripts/lock-contracts.*`, `scripts/unlock-contracts.*` |
 
 Skill is installed at:
 
@@ -56,9 +57,10 @@ Say **`"contract preflight"`** to trigger manually at any time.
 
 ### When you change a module spec
 
-1. Edit `CONTRACT.md` yourself — AI never modifies the spec.
+1. Edit `CONTRACT.md` yourself or approve a proposed diff.
 2. Tell the AI: `"I've updated the contract for [module]"`.
 3. AI syncs `CONTRACT.yaml`, resets attestation to `low`, adds changelog entry.
+4. If contract locking is enabled, lock `CONTRACT.md` again after approval and YAML sync.
 
 ### When you add a new module
 

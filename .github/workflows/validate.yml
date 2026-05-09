@@ -38,7 +38,9 @@ jobs:
         run: |
           $paths = @(
             './installers/install.ps1',
-            './skill/scripts/init-contracts.ps1'
+            './skill/scripts/init-contracts.ps1',
+            './skill/scripts/lock-contracts.ps1',
+            './skill/scripts/unlock-contracts.ps1'
           )
           foreach ($p in $paths) {
             $content = Get-Content $p -Raw
@@ -74,7 +76,9 @@ jobs:
         run: |
           $paths = @(
             './installers/install.ps1',
-            './skill/scripts/init-contracts.ps1'
+            './skill/scripts/init-contracts.ps1',
+            './skill/scripts/lock-contracts.ps1',
+            './skill/scripts/unlock-contracts.ps1'
           )
           foreach ($p in $paths) {
             $content = Get-Content $p -Raw
@@ -103,7 +107,9 @@ jobs:
           Import-Module PSScriptAnalyzer
           $paths = @(
             './installers/install.ps1',
-            './skill/scripts/init-contracts.ps1'
+            './skill/scripts/init-contracts.ps1',
+            './skill/scripts/lock-contracts.ps1',
+            './skill/scripts/unlock-contracts.ps1'
           )
           $allIssues = @()
           foreach ($p in $paths) {
@@ -128,6 +134,8 @@ jobs:
         run: |
           bash -n ./installers/install.sh
           bash -n ./skill/scripts/init-contracts.sh
+          bash -n ./skill/scripts/lock-contracts.sh
+          bash -n ./skill/scripts/unlock-contracts.sh
           echo "✅ bash script syntax valid"
 
   ui-visual-regression:
