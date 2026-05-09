@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.8.1] - 2026-05-09
+
+### Fixed
+
+- Made the skill metadata quality gate tolerant of CRLF checkouts on Windows.
+
 ## [2.8.0] - 2026-05-09
 
 ### Added

@@ -107,7 +107,7 @@ test('quality gates: installed skill has current metadata surface', async () => 
   expect(text).toContain('default_prompt: "Use $contracts to run a contract preflight before changing this module."');
 
   const skillMd = readFile(path.join(skillDir, 'SKILL.md'));
-  expect(skillMd).toMatch(/^---\nname: contracts\ndescription: Use when/m);
+  expect(skillMd).toMatch(/^---\r?\nname: contracts\r?\ndescription: Use when/m);
   expect(skillMd).toMatch(/contract read-only locking/i);
   expect(skillMd.length).toBeLessThan(6500);
 
