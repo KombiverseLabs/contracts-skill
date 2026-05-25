@@ -12,16 +12,39 @@ module:
   type: feature                   # core | feature | integration | utility
   path: "./"                      # Relative path from project root
 
+lifecycle:
+  status: specified               # specified | clarified | planned | test-first | implemented | verified | attested
+  specify: true
+  clarify: false
+  plan: false
+  test_first: false
+  implement: false
+  verify: false
+  attest: false
+
 features:
-  - id: ""                        # Kebab-case identifier
+  - id: "F-001"                   # Stable feature identifier from CONTRACT.md
     description: ""               # Brief description from CONTRACT.md
     status: planned               # planned | in-progress | implemented | deprecated
     entry_point: ""               # Main file: "./index.ts"
     tests: ""                     # Test file: "./index.test.ts"
+    verifies: ["REQ-001"]
+
+requirements:
+  - id: "REQ-001"
+    level: MUST                    # MUST | MUST NOT | SHOULD | MAY
+    text: ""                       # Requirement text from CONTRACT.md
+    covered_by: ["VT-001", "AC-001"]
 
 constraints:
-  must: []                        # List of MUST requirements
-  must_not: []                    # List of MUST NOT requirements
+  must:
+    - id: "REQ-001"
+      text: ""
+      covered_by: ["VT-001", "AC-001"]
+  must_not:
+    - id: "REQ-002"
+      text: ""
+      covered_by: ["VT-001"]
 
 relationships:
   depends_on: []                  # Paths to CONTRACT.yaml files this depends on
@@ -32,10 +55,17 @@ validation:
   test_pattern: "*.test.ts"       # Glob pattern for test files
   custom_script: null             # Optional validation script path
 
+acceptance_criteria:
+  - id: "AC-001"
+    description: ""               # Given/when/then or measurable criterion
+    verifies: ["REQ-001"]
+    test_file: ""
+
 verification_tests:
-  - id: "VT-1"
+  - id: "VT-001"
     name: ""                      # Descriptive name from CONTRACT.md
     status: defined               # defined | implemented | passing | failing
+    verifies: ["REQ-001"]
     test_file: ""                 # Path to test file once implemented
     test_command: ""              # Command to run this VT (e.g. "npx vitest run auth.vt.test.ts")
     assertion_type: content       # content | exit_code | regex | json_path
@@ -44,14 +74,23 @@ verification_tests:
     last_result: null             # pass | fail
 
 acceptance_tests:                 # REQUIRED — at least one measurable "done" criterion
-  - name: "All VTs pass"
+  - id: "AT-001"
+    name: "All VTs pass"
     type: vt_pass                 # vt_pass | command | http | arena_score
-    target: "all"                 # "all" or specific VT IDs: "VT-1,VT-2"
+    target: "all"                 # "all" or specific VT IDs: "VT-001,VT-002"
+    verifies: ["REQ-001"]
     passed: false
   # - name: "Build succeeds"
   #   type: command
   #   target: "npm run build"
   #   passed: false
+
+tdd:
+  red_verified: false             # Set true only after expected failing test is observed
+  green_verified: false           # Set true only after passing implementation is observed
+  last_red_run: null
+  last_green_run: null
+  test_plan: []                   # Commands or test files proving test-first workflow
 
 attestation:
   contract_version: "1.0"        # CONTRACT.md version at time of attestation

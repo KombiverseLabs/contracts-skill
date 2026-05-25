@@ -585,23 +585,26 @@ function generateContractDraft(moduleInfo, projectInfo) {
   const testPattern = moduleInfo.hasTests ? moduleInfo.name + '.test.*' : 'TODO';
   const features = moduleInfo.exports
     .slice(0, 5)
-    .map(exp => `- [ ] ${exp}: [describe behavior] → Test: ${testPattern}`);
+    .map((exp, index) => {
+      const n = String(index + 1).padStart(3, '0');
+      return `- [ ] [F-${n}] ${exp}: [describe behavior] -> Test: ${testPattern} -> Verifies: [REQ-${n}]`;
+    });
 
   if (features.length === 0) {
-    features.push(`- [ ] [Core capability]: [describe behavior] → Test: ${testPattern}`);
+    features.push(`- [ ] [F-001] [Core capability]: [describe behavior] -> Test: ${testPattern} -> Verifies: [REQ-001]`);
   }
 
   // Constraints: type-specific, testable
   const constraints = [];
   if (moduleInfo.type === 'core') {
-    constraints.push('- MUST: Maintain backward compatibility for public API exports');
-    constraints.push('- MUST NOT: Introduce breaking changes without version bump');
+    constraints.push('- MUST [REQ-001]: Maintain backward compatibility for public API exports');
+    constraints.push('- MUST NOT [REQ-002]: Introduce breaking changes without version bump');
   } else if (moduleInfo.type === 'integration') {
-    constraints.push('- MUST: Handle API errors and timeouts gracefully');
-    constraints.push('- MUST NOT: Expose credentials in logs or error messages');
+    constraints.push('- MUST [REQ-001]: Handle API errors and timeouts gracefully');
+    constraints.push('- MUST NOT [REQ-002]: Expose credentials in logs or error messages');
   } else {
-    constraints.push('- MUST: [define testable requirement]');
-    constraints.push('- MUST NOT: [define anti-pattern to prevent]');
+    constraints.push('- MUST [REQ-001]: [define testable requirement]');
+    constraints.push('- MUST NOT [REQ-002]: [define anti-pattern to prevent]');
   }
 
   // Success criteria: testable Given/When/Then format
@@ -625,6 +628,13 @@ ${constraints.join('\n')}
 ## Success Criteria
 ${successCriteria}
 
+## Out of Scope
+- [Responsibility that belongs outside this module]
+
+## Acceptance Tests
+- [ ] [AT-001] All verification tests pass -> Verifies: [REQ-001]
+- [ ] [AT-002] Build succeeds
+
 ## Verification Tests
 ${verificationTests}
 `;
@@ -645,17 +655,17 @@ function generateTestableSuccessCriteria(moduleInfo) {
 
   if (moduleInfo.exports.length > 0) {
     const mainExport = moduleInfo.exports[0];
-    criteria.push(`- [ ] Given valid input, when ${mainExport}() is called, then [expected outcome]`);
-    criteria.push(`- [ ] Given invalid input, when ${mainExport}() is called, then [expected error handling]`);
+    criteria.push(`- [ ] [AC-001] Given valid input, when ${mainExport}() is called, then [expected outcome] -> Verifies: [REQ-001]`);
+    criteria.push(`- [ ] [AC-004] Given invalid input, when ${mainExport}() is called, then [expected error handling] -> Verifies: [REQ-002]`);
   }
 
   if (moduleInfo.type === 'integration') {
-    criteria.push('- [ ] Given API timeout, when requesting, then retries with backoff');
-    criteria.push('- [ ] Given service unavailable, then degrades gracefully');
+    criteria.push('- [ ] [AC-001] Given API timeout, when requesting, then retries with backoff -> Verifies: [REQ-001]');
+    criteria.push('- [ ] [AC-004] Given service unavailable, then degrades gracefully -> Verifies: [REQ-001]');
   }
 
   if (criteria.length === 0) {
-    criteria.push('- [ ] Given [context], when [action], then [expected outcome]');
+    criteria.push('- [ ] [AC-001] Given [context], when [action], then [expected outcome] -> Verifies: [REQ-001]');
   }
 
   criteria.push('<!-- Define: what would a failing test look like for each criterion? -->');
@@ -673,41 +683,47 @@ function generateVerificationTests(moduleInfo, displayName) {
   const tests = [];
   const mainExport = moduleInfo.exports.length > 0 ? moduleInfo.exports[0] : '[main function]';
 
-  // VT-1: Golden path (always)
+  // VT-001: Golden path (always)
   if (moduleInfo.type === 'core') {
-    tests.push(`- [ ] **VT-1: ${displayName} round-trip correctness**`);
+    tests.push(`- [ ] **VT-001: ${displayName} round-trip correctness**`);
     tests.push(`  - Do: Call ${mainExport}() with known input → capture output`);
     tests.push(`  - Assert: [exact expected value — proves correctness, not just execution]`);
+    tests.push(`  - Verifies: [REQ-001]`);
   } else if (moduleInfo.type === 'integration') {
-    tests.push(`- [ ] **VT-1: ${displayName} real round-trip**`);
+    tests.push(`- [ ] **VT-001: ${displayName} real round-trip**`);
     tests.push(`  - Do: Call ${mainExport}() with test credentials → capture response`);
     tests.push(`  - Assert: [response contains domain-specific content — not just status code]`);
+    tests.push(`  - Verifies: [REQ-001]`);
   } else if (moduleInfo.type === 'utility') {
-    tests.push(`- [ ] **VT-1: ${displayName} composite correctness**`);
+    tests.push(`- [ ] **VT-001: ${displayName} composite correctness**`);
     tests.push(`  - Do: Call ${mainExport}() with edge-case input exercising multiple paths`);
     tests.push(`  - Assert: [exact expected output — literal value comparison]`);
+    tests.push(`  - Verifies: [REQ-001]`);
   } else {
     // feature type
-    tests.push(`- [ ] **VT-1: ${displayName} golden-path scenario**`);
+    tests.push(`- [ ] **VT-001: ${displayName} golden-path scenario**`);
     tests.push(`  - Do: [setup → trigger primary action → observe result]`);
     tests.push(`  - Assert: [exact output content — text, value, or state to check]`);
+    tests.push(`  - Verifies: [REQ-001]`);
   }
 
-  // VT-2: Edge case (standard and complex tiers)
+  // VT-002: Edge case (standard and complex tiers)
   if (moduleInfo.tier !== 'core') {
     tests.push('');
     if (moduleInfo.type === 'integration') {
-      tests.push(`- [ ] **VT-2: ${displayName} failure resilience**`);
+      tests.push(`- [ ] **VT-002: ${displayName} failure resilience**`);
       tests.push(`  - Do: [trigger timeout/error condition]`);
       tests.push(`  - Assert: [specific fallback output — not generic error]`);
+      tests.push(`  - Verifies: [REQ-002]`);
     } else {
-      tests.push(`- [ ] **VT-2: ${displayName} critical edge case**`);
+      tests.push(`- [ ] **VT-002: ${displayName} critical edge case**`);
       tests.push(`  - Do: [trigger most important failure mode]`);
       tests.push(`  - Assert: [specific expected output for this edge case]`);
+      tests.push(`  - Verifies: [REQ-002]`);
     }
   }
 
-  tests.push('<!-- Review: "If VT-1 passes, am I confident this module works?" If not, strengthen the assertion. -->');
+  tests.push('<!-- Review: "If VT-001 passes, am I confident this module works?" If not, strengthen the assertion. -->');
 
   return tests.join('\n');
 }

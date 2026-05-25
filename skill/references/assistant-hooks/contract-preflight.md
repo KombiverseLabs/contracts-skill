@@ -31,12 +31,23 @@ If no contract exists, say so and offer to create one.
 - **Low confidence**: If `attestation.confidence` is `low` → Flag: "Contract has low confidence — VTs not yet implemented or failing."
 - If no attestation exists yet → note this as a gap, proceed but flag at end
 
+### 4a. Lifecycle and TDD Gate
+- Read `lifecycle` and `tdd` from `CONTRACT.yaml`.
+- If lifecycle is missing → warn: "Contract has no SDD lifecycle metadata."
+- If planned implementation starts before `specify`, `clarify`, and `plan` are true → **STOP**: "Contract is not specified, clarified, and planned."
+- If a feature is marked `implemented` but `tdd.red_verified` or `tdd.green_verified` is false → **STOP**: "Implemented feature lacks test-first evidence."
+
+### 4b. Traceability Check
+- Confirm new or migrated contracts use `F-*`, `REQ-*`, `AC-*`, and `VT-*` IDs.
+- Every `REQ-*` must be linked through `verifies` or `covered_by` to at least one `VT-*` or `AC-*`.
+- Missing IDs or uncovered requirements are warnings during preflight and should be fixed before expanding scope.
+
 ### 5. Verification Test Status
 - Check `verification_tests` in `CONTRACT.yaml`
 - Report status of each VT: `defined` | `implemented` | `passing` | `failing`
 - If any VT is `failing` → **warn**: "VT-X is failing — this may indicate broken functionality"
 - If VTs are only `defined` (no test file exists) → **warn**: "VTs are defined but not yet implemented — contract is not fully verified"
-- If features are marked `implemented` but VT-1 is not `passing` → **STOP**: "Feature marked as implemented but VT-1 is not passing. Verify or fix before proceeding."
+- If features are marked `implemented` but VT-001 is not `passing` → **STOP**: "Feature marked as implemented but VT-001 is not passing. Verify or fix before proceeding."
 
 ### 6. Acceptance Test Check
 - Check `acceptance_tests` section in `CONTRACT.yaml`
@@ -61,6 +72,8 @@ If no contract exists, say so and offer to create one.
 ### 10. Return Contract Notes (max 7 sentences)
 Summarize:
 - MUST and MUST NOT constraints affecting the requested change
+- lifecycle status and traceability gaps
+- TDD red/green gate status
 - Attestation status (current / stale / missing)
 - Verification test status (all passing / some failing / not implemented)
 - Acceptance test status (defined / missing)

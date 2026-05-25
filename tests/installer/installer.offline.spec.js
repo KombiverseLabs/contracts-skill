@@ -220,15 +220,65 @@ test('preflight: finds nearest contract + detects drift', async () => {
     '  name: "Authentication"',
     '  type: "core"',
     '  path: "src/core/auth"',
+    'lifecycle:',
+    '  status: planned',
+    '  specify: true',
+    '  clarify: true',
+    '  plan: true',
+    '  test_first: false',
+    '  implement: false',
+    '  verify: false',
+    '  attest: false',
     'features: []',
+    'requirements:',
+    '  - id: "REQ-001"',
+    '    text: "Keep API stable"',
+    '    covered_by: ["VT-001", "AC-001"]',
     'constraints:',
-    '  must: []',
+    '  must:',
+    '    - id: "REQ-001"',
+    '      text: "Keep API stable"',
+    '      covered_by: ["VT-001", "AC-001"]',
     '  must_not: []',
+    'acceptance_criteria:',
+    '  - id: "AC-001"',
+    '    description: "Given a target file, when preflight runs, then it reports contract status."',
+    '    verifies: ["REQ-001"]',
     'relationships:',
     '  depends_on: []',
     '  consumed_by: []',
     'validation:',
     '  exports: []',
+    'verification_tests:',
+    '  - id: "VT-001"',
+    '    name: "Preflight reports contract status"',
+    '    status: defined',
+    '    verifies: ["REQ-001"]',
+    '    test_file: ""',
+    '    test_command: ""',
+    '    assertion_type: content',
+    '    expected_output: ""',
+    '    last_run: null',
+    '    last_result: null',
+    'acceptance_tests:',
+    '  - id: "AT-001"',
+    '    name: "All VTs pass"',
+    '    type: vt_pass',
+    '    target: "all"',
+    '    verifies: ["REQ-001"]',
+    '    passed: false',
+    'tdd:',
+    '  red_verified: false',
+    '  green_verified: false',
+    '  last_red_run: null',
+    '  last_green_run: null',
+    'attestation:',
+    '  contract_version: "1.0"',
+    '  last_verified: null',
+    '  verification_tests_pass: false',
+    '  features_implemented: []',
+    '  confidence: low',
+    '  next_review: null',
     'changelog: []',
     '',
   ].join('\n'));
@@ -245,6 +295,11 @@ test('preflight: finds nearest contract + detects drift', async () => {
     expect(res1.modules[0].drift.status).toBe('ok');
     expect(res1.modules[0].constraints.must).toContain('Keep API stable');
     expect(res1.modules[0].constraints.must_not).toContain('Log secrets');
+    expect(res1.modules[0].lifecycle.status).toBe('planned');
+    expect(res1.modules[0].tdd.red_verified).toBe(false);
+    expect(res1.modules[0].verification_tests.total).toBe(1);
+    expect(res1.modules[0].acceptance_tests.total).toBe(1);
+    expect(res1.modules[0].traceability.gaps).toEqual([]);
 
     writeFile(mdPath, readFile(mdPath) + '\n- MUST: Add unit tests\n');
 
@@ -255,6 +310,93 @@ test('preflight: finds nearest contract + detects drift', async () => {
     });
     const res2 = JSON.parse(out2);
     expect(res2.modules[0].drift.status).toBe('mismatch');
+  } finally {
+    try { fs.rmSync(tmp, { recursive: true, force: true }); } catch {}
+  }
+});
+
+test('validate-contracts: reports missing traceability IDs and uncovered requirements', async () => {
+  const repoRoot = path.resolve(__dirname, '../..');
+  const validatePs1 = path.join(repoRoot, 'skill', 'scripts', 'validate-contracts.ps1');
+
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'contracts-skill-traceability-'));
+  const projectRoot = path.join(tmp, 'project');
+  const modDir = path.join(projectRoot, 'src', 'billing');
+
+  mkdirp(modDir);
+
+  const mdPath = path.join(modDir, 'CONTRACT.md');
+  const yamlPath = path.join(modDir, 'CONTRACT.yaml');
+
+  writeFile(mdPath, [
+    '# Billing',
+    '',
+    '## Purpose',
+    'Handles charges.',
+    '',
+    '## Core Features',
+    '- [ ] Charge customer',
+    '',
+    '## Constraints',
+    '- MUST [REQ-001]: Validate amount before charging',
+    '',
+    '## Success Criteria',
+    '- [ ] Given valid amount, when charging, then return receipt',
+    '',
+    '## Verification Tests',
+    '- [ ] **VT-001: Charge creates receipt**',
+    '  - Do: Charge test customer',
+    '  - Assert: Receipt contains amount',
+    '',
+  ].join('\n'));
+
+  const hash = sha256File(mdPath);
+  writeFile(yamlPath, [
+    'meta:',
+    `  source_hash: "${hash}"`,
+    '  last_sync: "2026-01-31T00:00:00Z"',
+    '  tier: standard',
+    '  version: "1.0"',
+    'module:',
+    '  name: "billing"',
+    '  type: "feature"',
+    '  path: "src/billing"',
+    'features:',
+    '  - id: ""',
+    '    description: "Charge customer"',
+    '    status: planned',
+    'constraints:',
+    '  must: []',
+    '  must_not: []',
+    'relationships:',
+    '  depends_on: []',
+    '  consumed_by: []',
+    'validation:',
+    '  exports: []',
+    'verification_tests:',
+    '  - id: "VT-001"',
+    '    name: "Charge creates receipt"',
+    '    status: defined',
+    'acceptance_tests:',
+    '  - name: "All VTs pass"',
+    '    type: vt_pass',
+    '    target: "all"',
+    '    passed: false',
+    'attestation:',
+    '  confidence: low',
+    'changelog: []',
+    '',
+  ].join('\n'));
+
+  try {
+    const out = await runPowershellFile({
+      filePath: validatePs1,
+      cwd: projectRoot,
+      args: ['-Path', projectRoot],
+    });
+
+    expect(out).toMatch(/missing feature id/i);
+    expect(out).toMatch(/REQ-001.*not covered/i);
   } finally {
     try { fs.rmSync(tmp, { recursive: true, force: true }); } catch {}
   }

@@ -20,6 +20,10 @@ contracts-skill/
 │   │   ├── instruction-hooks/
 │   │   ├── templates/
 │   │   ├── examples/
+│   │   ├── project-guide.md
+│   │   ├── constitution.md
+│   │   ├── spec-driven-methodology.md
+│   │   ├── contract-locking.md
 │   │   └── beads-enforcement.md
 │   ├── scripts/
 │   ├── ai/init-agent/

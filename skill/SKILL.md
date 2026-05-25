@@ -11,6 +11,8 @@ Each contracted module has:
 - `CONTRACT.md`: user-owned intent and constraints. Do not edit unless the user asks for a draft or approves the change.
 - `CONTRACT.yaml`: AI-maintained technical mapping, status, hashes, verification tests, acceptance tests, and attestation.
 
+Lifecycle: Specify -> Clarify -> Plan -> Test First -> Implement -> Verify -> Attest.
+
 ## Core Workflow
 
 Before changing code in a contracted module:
@@ -21,8 +23,8 @@ Before changing code in a contracted module:
 4. Read `CONTRACT.md` and `CONTRACT.yaml`.
 5. Compare `CONTRACT.yaml` `meta.source_hash` with the current SHA256 of `CONTRACT.md`.
 6. Stop and sync YAML first if drift exists.
-7. Check MUST/MUST NOT constraints, out-of-scope items, VT status, acceptance tests, attestation, and dependent contracts.
-8. Report brief contract notes, then proceed only if the planned work fits the contract.
+7. Check lifecycle status, traceability IDs, MUST/MUST NOT constraints, out-of-scope items, TDD gate, VT status, acceptance tests, attestation, and dependent contracts.
+8. Report brief contract notes, then proceed only if the planned work fits the contract and the lifecycle is at least specified, clarified, and planned.
 
 Use `scripts/contract-preflight.ps1` or `scripts/contract-preflight.sh` when file-level input or git-diff input is available.
 
@@ -32,8 +34,10 @@ Use `scripts/contract-preflight.ps1` or `scripts/contract-preflight.sh` when fil
 - If `CONTRACT.md` is locked/read-only, propose contract edits as drafts or diffs and do not unlock or edit it without explicit user approval.
 - Keep `CONTRACT.yaml` synced whenever `CONTRACT.md` changes.
 - Never fabricate VT results, feature status, hashes, or attestation.
-- A feature is not `implemented` unless its verification path is real and VT-1 is passing.
+- A feature is not `implemented` unless its verification path is real, test-first evidence exists, and VT-001 is passing.
 - Every contract needs at least one measurable acceptance test.
+- New or migrated contracts use stable traceability IDs: F-001, REQ-001, AC-001, AT-001, and VT-001.
+- Scope changes update `CONTRACT.md` first, then sync YAML, then resume TDD.
 - If requested work exceeds the contract, stop and ask whether to update the contract or mark it out of scope.
 
 ## Creating Or Initializing Contracts
@@ -64,6 +68,8 @@ If the project has Beads (`.beads/` and `bd` CLI), use Beads as an enforcement m
 
 ## Load When Needed
 
+- `references/spec-driven-methodology.md`: Spec-Kit-inspired SDD/TDD lifecycle, constitution, and traceability rules.
+- `references/constitution.md`: project constitution template for `.contracts/CONSTITUTION.md`.
 - `references/assistant-hooks/contract-preflight.md`: detailed preflight checks.
 - `references/assistant-hooks/init-contracts.md`: agent-led project initialization.
 - `references/assistant-hooks/contract-review.md`: scope and drift review after or during work.

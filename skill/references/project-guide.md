@@ -19,8 +19,10 @@
 | What you need | Location |
 |---------------|----------|
 | All contracts (registry) | `.contracts/registry.yaml` |
+| Project constitution | `.contracts/CONSTITUTION.md` |
 | A module's specification | `<module-dir>/CONTRACT.md` |
 | A module's technical mapping | `<module-dir>/CONTRACT.yaml` |
+| SDD/TDD lifecycle | Skill: `references/spec-driven-methodology.md` |
 | Contract templates | Skill: `references/templates/` |
 | Init workflow (AI hook) | Skill: `references/assistant-hooks/init-contracts.md` |
 | Preflight workflow (AI hook) | Skill: `references/assistant-hooks/contract-preflight.md` |
@@ -50,8 +52,8 @@ The AI runs a **contract preflight** automatically before touching any module:
 
 1. Locate `CONTRACT.md` in or above the target directory.
 2. Read spec + YAML, compare `source_hash`. Hash mismatch → sync YAML first, then continue.
-3. Check attestation freshness and VT status.
-4. Summarize MUST / MUST NOT constraints (max 5 sentences).
+3. Check lifecycle status, traceability, TDD evidence, attestation freshness, and VT status.
+4. Summarize MUST / MUST NOT constraints and any blocking gaps (max 7 sentences).
 
 Say **`"contract preflight"`** to trigger manually at any time.
 
@@ -81,10 +83,25 @@ You have two options:
 | Intent | Say to your AI |
 |--------|----------------|
 | Initialize contracts for this project | `"init contracts"` |
+| Clarify contract quality before planning | `"clarify contract"` |
+| Build YAML and TDD plan from the spec | `"plan contract"` |
 | Check before implementing a feature | `"contract preflight"` |
 | Review scope after completing work | `"contract review"` |
 | Scan all contracts for drift | `"check contracts"` |
 | Sync all YAMLs from changed MDs | `"sync contracts"` |
+
+## SDD/TDD Lifecycle
+
+Contracted work follows: Specify -> Clarify -> Plan -> Test First -> Implement -> Verify -> Attest.
+
+New or migrated contracts use stable traceability IDs:
+- Features: `F-001`
+- Requirements: `REQ-001`
+- Acceptance criteria: `AC-001`
+- Acceptance tests (gates): `AT-001`
+- Verification tests: `VT-001`
+
+Every `REQ-*` is linked to at least one `VT-*`, `AC-*`, or `AT-*` in `CONTRACT.yaml`. Implementation starts only after the contract is specified, clarified, and planned. Features are marked `implemented` only after red/green TDD evidence and passing VTs are recorded.
 
 ---
 

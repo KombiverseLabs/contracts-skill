@@ -109,9 +109,12 @@ test('quality gates: installed skill has current metadata surface', async () => 
   const skillMd = readFile(path.join(skillDir, 'SKILL.md'));
   expect(skillMd).toMatch(/^---\r?\nname: contracts\r?\ndescription: Use when/m);
   expect(skillMd).toMatch(/contract read-only locking/i);
+  expect(skillMd).toMatch(/Specify -> Clarify -> Plan -> Test First -> Implement -> Verify -> Attest/);
   expect(skillMd.length).toBeLessThan(6500);
 
   for (const rel of [
+    path.join('references', 'spec-driven-methodology.md'),
+    path.join('references', 'constitution.md'),
     path.join('references', 'contract-locking.md'),
     path.join('scripts', 'lock-contracts.ps1'),
     path.join('scripts', 'unlock-contracts.ps1'),
@@ -120,4 +123,17 @@ test('quality gates: installed skill has current metadata surface', async () => 
   ]) {
     expect(fs.existsSync(path.join(skillDir, rel)), `${rel} should exist`).toBeTruthy();
   }
+
+  const featureTemplate = readFile(path.join(skillDir, 'references', 'templates', 'feature.md'));
+  expect(featureTemplate).toContain('[F-001]');
+  expect(featureTemplate).toContain('MUST [REQ-001]');
+  expect(featureTemplate).toContain('[AC-001]');
+  expect(featureTemplate).toContain('VT-001');
+
+  const yamlTemplate = readFile(path.join(skillDir, 'references', 'templates', 'CONTRACT.yaml.template'));
+  expect(yamlTemplate).toMatch(/^lifecycle:/m);
+  expect(yamlTemplate).toMatch(/^requirements:/m);
+  expect(yamlTemplate).toMatch(/^acceptance_criteria:/m);
+  expect(yamlTemplate).toMatch(/^tdd:/m);
+  expect(yamlTemplate).toContain('red_verified: false');
 });

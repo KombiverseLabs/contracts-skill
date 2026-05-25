@@ -5,17 +5,17 @@
 [1-2 sentences: the responsibility this module owns]
 
 ## Core Features
-- [ ] Feature 1: [Essential capability] → Test: [file or "TODO"]
-- [ ] Feature 2: [Essential capability] → Test: [file or "TODO"]
+- [ ] [F-001] [Essential capability] -> Test: [file or "TODO"] -> Verifies: [REQ-001]
+- [ ] [F-002] [Essential capability] -> Test: [file or "TODO"] -> Verifies: [REQ-002]
 
 ## Constraints
-- MUST: [Critical requirement]
-- MUST NOT: [What this module should never do]
+- MUST [REQ-001]: [Critical requirement]
+- MUST NOT [REQ-002]: [What this module should never do]
 
 ## Success Criteria
 <!-- GOOD: "Hashing completes in <10ms for inputs up to 1MB" -->
 <!-- BAD: "Module functions correctly" (untestable) -->
-- [ ] [Specific, measurable criterion]
+- [ ] [AC-001] [Specific, measurable criterion] -> Verifies: [REQ-001]
 
 ## Out of Scope
 <!-- What this module does NOT do. Prevents scope creep. -->
@@ -23,9 +23,9 @@
 
 ## Acceptance Tests
 <!-- REQUIRED. Define what "done" means — at least one measurable criterion. -->
-- [ ] All verification tests pass
-- [ ] Build succeeds
-- [ ] [Additional measurable done-criterion]
+- [ ] [AT-001] All verification tests pass -> Verifies: [REQ-001]
+- [ ] [AT-002] Build succeeds
+- [ ] [AT-003] [Additional measurable done-criterion]
 
 ## Verification Tests
 <!--
@@ -45,6 +45,7 @@
   - What would break if this module silently returned wrong values?
   - The assertion must verify CORRECTNESS of output, not just presence
 -->
-- [ ] **VT-1: [Round-trip verification name]**
+- [ ] **VT-001: [Round-trip verification name]**
   - Do: [feed known input → capture final output]
   - Assert: [exact expected value — proves correctness, not just execution]
+  - Verifies: [REQ-001]

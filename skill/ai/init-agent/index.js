@@ -55,7 +55,27 @@ function makeYaml(name, type, relPath, hash, exports = []) {
   // Determine tier based on type
   const tier = type === 'core' ? 'core' : (type === 'complex' ? 'complex' : 'standard');
   
-  // Build exports section
+  const primaryFeature = exports[0] || 'core-capability';
+  const featureName = primaryFeature.replace(/([A-Z])/g, ' $1').replace(/[-_]/g, ' ').trim() || 'Core capability';
+
+  const featuresYaml = exports.length > 0
+    ? exports.slice(0, 5).map((e, index) => {
+        const id = `F-${String(index + 1).padStart(3, '0')}`;
+        const req = `REQ-${String(index + 1).padStart(3, '0')}`;
+        return `  - id: "${id}"
+    description: "${e}: describe behavior"
+    status: planned
+    entry_point: ""
+    tests: ""
+    verifies: ["${req}"]`;
+      }).join('\n')
+    : `  - id: "F-001"
+    description: "${featureName}: describe behavior"
+    status: planned
+    entry_point: ""
+    tests: ""
+    verifies: ["REQ-001"]`;
+
   const exportsYaml = exports.length > 0 
     ? exports.map(e => `    - "${e}"`).join('\n')
     : '    # Add public API exports here';
@@ -74,11 +94,38 @@ module:
   type: "${type}"
   path: "${relPath.replace(/\\/g, '/')}"
 
-features: []
+lifecycle:
+  status: planned
+  specify: true
+  clarify: true
+  plan: true
+  test_first: false
+  implement: false
+  verify: false
+  attest: false
+
+features:
+${featuresYaml}
+
+requirements:
+  - id: "REQ-001"
+    level: MUST
+    text: "Define a testable requirement for this module"
+    covered_by: ["VT-001", "AC-001"]
+  - id: "REQ-002"
+    level: MUST NOT
+    text: "Define an anti-pattern this module must prevent"
+    covered_by: ["VT-001", "AC-001"]
 
 constraints:
-  must: []
-  must_not: []
+  must:
+    - id: "REQ-001"
+      text: "Define a testable requirement for this module"
+      covered_by: ["VT-001", "AC-001"]
+  must_not:
+    - id: "REQ-002"
+      text: "Define an anti-pattern this module must prevent"
+      covered_by: ["VT-001", "AC-001"]
 
 relationships:
   depends_on: []
@@ -90,11 +137,46 @@ ${exportsYaml}
   test_pattern: "*.test.*"
   custom_script: null
 
+acceptance_criteria:
+  - id: "AC-001"
+    description: "Given the primary contract scenario, when it runs, then expected content, value, or state is observed."
+    verifies: ["REQ-001"]
+    test_file: ""
+
+verification_tests:
+  - id: "VT-001"
+    name: "${name} primary verification"
+    status: defined
+    verifies: ["REQ-001"]
+    test_file: ""
+    test_command: ""
+    assertion_type: content
+    expected_output: ""
+    last_run: null
+    last_result: null
+
 acceptance_tests:
-  - name: "All VTs pass"
+  - id: "AT-001"
+    name: "All VTs pass"
     type: vt_pass
     target: "all"
+    verifies: ["REQ-001"]
     passed: false
+
+tdd:
+  red_verified: false
+  green_verified: false
+  last_red_run: null
+  last_green_run: null
+  test_plan: []
+
+attestation:
+  contract_version: "1.0"
+  last_verified: null
+  verification_tests_pass: false
+  features_implemented: []
+  confidence: low
+  next_review: null
 
 changelog:
   - date: "${shortDate}"
@@ -387,6 +469,7 @@ async function applyMode(root, options = {}) {
   
   // Create or update registry
   await updateRegistry(root, drafts);
+  await updateProjectConstitution(root);
   await updateProjectGuide(root, drafts);
   
   log(`\n✨ Successfully created ${created.length} contract pair(s)\n`, 'cyan');
@@ -522,8 +605,10 @@ async function updateProjectGuide(root, drafts) {
 | What | Location |
 |------|----------|
 | Registry | \`.contracts/registry.yaml\` |
+| Constitution | \`.contracts/CONSTITUTION.md\` |
 | Module spec | \`<module-dir>/CONTRACT.md\` |
 | Module mapping | \`<module-dir>/CONTRACT.yaml\` |
+| SDD/TDD lifecycle | Contracts skill \`references/spec-driven-methodology.md\` |
 | Contract templates | Contracts skill \`references/templates/\` |
 | Preflight workflow | Contracts skill \`references/assistant-hooks/contract-preflight.md\` |
 
@@ -533,9 +618,13 @@ ${moduleTable}
 
 ## How Contracts Are Applied
 
-Before changing code, run contract preflight: locate the nearest \`CONTRACT.md\`, read it with \`CONTRACT.yaml\`, verify \`meta.source_hash\`, and summarize relevant MUST/MUST NOT constraints. If drift exists, sync YAML before implementation.
+Before changing code, run contract preflight: locate the nearest \`CONTRACT.md\`, read it with \`CONTRACT.yaml\`, verify \`meta.source_hash\`, and summarize lifecycle, traceability, TDD gate, and relevant MUST/MUST NOT constraints. If drift exists, sync YAML before implementation.
 
 When \`CONTRACT.md\` changes, update \`CONTRACT.yaml\`, reset attestation confidence, and add a changelog entry.
+
+Lifecycle: Specify -> Clarify -> Plan -> Test First -> Implement -> Verify -> Attest.
+
+New or migrated contracts use \`F-001\`, \`REQ-001\`, \`AC-001\`, \`AT-001\`, and \`VT-001\` IDs. Every \`REQ-*\` must be covered by at least one VT, AC, or AT before implementation.
 
 ## Project Conventions
 
@@ -548,6 +637,44 @@ When \`CONTRACT.md\` changes, update \`CONTRACT.yaml\`, reset attestation confid
 
   fs.writeFileSync(guidePath, guideContent, 'utf8');
   log(`✅ Updated: ${path.relative(root, guidePath)}`, 'green');
+}
+
+async function updateProjectConstitution(root) {
+  const registryDir = path.join(root, '.contracts');
+  const constitutionPath = path.join(registryDir, 'CONSTITUTION.md');
+
+  if (!fs.existsSync(registryDir)) {
+    fs.mkdirSync(registryDir, { recursive: true });
+  }
+
+  if (fs.existsSync(constitutionPath)) {
+    return;
+  }
+
+  const content = `# Contract Constitution
+
+This project uses contracts as the durable source of truth for AI-assisted development.
+
+## Principles
+
+1. CONTRACT.md is human-owned intent. Agents may draft changes, but humans approve them.
+2. CONTRACT.yaml is the machine-readable mapping for lifecycle, traceability, tests, and attestation.
+3. Scope changes update CONTRACT.md first, then sync YAML, then resume TDD.
+4. TDD is required for contracted behavior: red test first, minimal implementation, green verification.
+5. Verification tests assert content, values, or state, not only successful execution.
+6. Attestation records only real command results.
+
+## Lifecycle
+
+Specify -> Clarify -> Plan -> Test First -> Implement -> Verify -> Attest
+
+## Traceability
+
+Use F-001, REQ-001, AC-001, AT-001, and VT-001 IDs. Every requirement must be covered by at least one verification or acceptance path.
+`;
+
+  fs.writeFileSync(constitutionPath, content, 'utf8');
+  log(`✅ Updated: ${path.relative(root, constitutionPath)}`, 'green');
 }
 
 async function singleModuleMode(root, modulePath, options = {}) {

@@ -1,40 +1,81 @@
 # CONTRACT.yaml - Technical specification derived from CONTRACT.md
 
 meta:
-  source_hash: "sha256:87af90c5bda2f729a26577d78016b37f69c3455e673354a22528b22217667d31"
-  last_sync: "2026-02-28T12:00:00Z"
+  source_hash: "sha256:e834f70e81a8c37e3ca1fc3fd3b26b485a4458b43d540b7dfc06fb277e9b98c0"
+  last_sync: "2026-05-09T12:00:00Z"
   tier: standard
-  version: "1.1"
+  version: "1.2"
 
 module:
   name: "dashboard"
   type: "feature"
   path: "src/features/dashboard"
 
+lifecycle:
+  status: planned
+  specify: true
+  clarify: true
+  plan: true
+  test_first: false
+  implement: false
+  verify: false
+  attest: false
+
 features:
-  - id: "profile-widget"
+  - id: "F-001"
     description: "User profile summary widget"
     status: planned
-
-  - id: "activity-feed"
+    verifies: ["REQ-001"]
+  - id: "F-002"
     description: "Recent activity feed"
     status: planned
-
-  - id: "quick-actions"
+    verifies: ["REQ-002", "REQ-003"]
+  - id: "F-003"
     description: "Quick action buttons"
     status: planned
-
-  - id: "notifications"
+    verifies: ["REQ-003"]
+  - id: "F-004"
     description: "Notification center"
     status: planned
+    verifies: ["REQ-004"]
+
+requirements:
+  - id: "REQ-001"
+    level: MUST
+    text: "Load within 2 seconds on 3G connection"
+
+    covered_by: ["VT-001", "AC-001", "AC-002"]
+  - id: "REQ-002"
+    level: MUST
+    text: "Be fully responsive (mobile, tablet, desktop)"
+
+    covered_by: ["AC-002"]
+  - id: "REQ-003"
+    level: MUST
+    text: "Gracefully handle missing data"
+
+    covered_by: ["VT-002", "AC-003"]
+  - id: "REQ-004"
+    level: MUST NOT
+    text: "Make more than 3 API calls on initial load"
+
+    covered_by: ["AC-003"]
 
 constraints:
   must:
-    - "Load within 2 seconds on 3G connection"
-    - "Be fully responsive (mobile, tablet, desktop)"
-    - "Gracefully handle missing data"
+    - id: "REQ-001"
+      text: "Load within 2 seconds on 3G connection"
+      covered_by: ["VT-001", "AC-001", "AC-002"]
+    - id: "REQ-002"
+      text: "Be fully responsive (mobile, tablet, desktop)"
+      covered_by: ["AC-002"]
+    - id: "REQ-003"
+      text: "Gracefully handle missing data"
+      covered_by: ["VT-002", "AC-003"]
   must_not:
-    - "Make more than 3 API calls on initial load"
+    - id: "REQ-004"
+      text: "Make more than 3 API calls on initial load"
+      covered_by: ["AC-003"]
 
 relationships:
   depends_on:
@@ -46,23 +87,59 @@ validation:
   test_pattern: "*.test.tsx"
   custom_script: null
 
+acceptance_criteria:
+  - id: "AC-001"
+    description: "Given authenticated user, when dashboard loads, then displays personalized content within 2 seconds"
+    verifies: ["REQ-001"]
+    test_file: ""
+  - id: "AC-002"
+    description: "Given 3G connection, when dashboard loads, then all widgets render within 2 seconds"
+    verifies: ["REQ-001", "REQ-002"]
+    test_file: ""
+  - id: "AC-003"
+    description: "All verification tests pass"
+    verifies: ["REQ-003", "REQ-004"]
+    test_file: ""
+
 verification_tests:
-  - id: "VT-1"
+  - id: "VT-001"
     name: "Dashboard shows correct user identity after login"
     status: defined
+    verifies: ["REQ-001"]
     test_file: ""
+    test_command: ""
+    assertion_type: content
+    expected_output: ""
     last_run: null
     last_result: null
-
-  - id: "VT-2"
+  - id: "VT-002"
     name: "Dashboard handles missing data gracefully"
     status: defined
+    verifies: ["REQ-003"]
     test_file: ""
+    test_command: ""
+    assertion_type: content
+    expected_output: ""
     last_run: null
     last_result: null
 
+acceptance_tests:
+  - id: "AT-001"
+    name: "All VTs pass"
+    type: vt_pass
+    target: "all"
+    verifies: ["REQ-001", "REQ-003"]
+    passed: false
+
+tdd:
+  red_verified: false
+  green_verified: false
+  last_red_run: null
+  last_green_run: null
+  test_plan: []
+
 attestation:
-  contract_version: "1.1"
+  contract_version: "1.2"
   last_verified: null
   verification_tests_pass: false
   features_implemented: []
@@ -70,6 +147,10 @@ attestation:
   next_review: null
 
 changelog:
+  - date: "2026-05-09"
+    version: "1.2"
+    change: "Migrated to SDD/TDD traceability IDs and lifecycle metadata"
+    author: "system"
   - date: "2026-02-28"
     version: "1.1"
     change: "Added verification tests and attestation; updated success criteria"

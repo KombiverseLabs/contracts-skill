@@ -79,6 +79,46 @@ find_contract_dir() {
   echo ""
 }
 
+yaml_section() {
+  local file="$1" section="$2"
+  [[ -f "$file" ]] || return 0
+  awk -v sec="$section" '
+    $0 ~ "^" sec ":" {in_section=1; next}
+    in_section && $0 ~ "^[A-Za-z_][A-Za-z0-9_]*:" {exit}
+    in_section {print}
+  ' "$file"
+}
+
+yaml_bool() {
+  local body="$1" key="$2"
+  local val
+  val="$(printf '%s\n' "$body" | awk -v k="$key" '$1 ~ "^" k ":" {print $2; exit}')"
+  [[ "$val" == "true" ]] && echo "true" || echo "false"
+}
+
+traceability_gaps_json() {
+  local md="$1" yaml="$2"
+  local gaps=()
+  if awk 'BEGIN{n=0;bad=0} /^##[[:space:]]+Core Features/{n=1;next} /^##[[:space:]]+/{n=0} n && $0 ~ /^- \[[ xX]\]/ && $0 !~ /\[F-[0-9][0-9][0-9]\]/ {bad=1} END{exit bad ? 0 : 1}' "$md"; then
+    gaps+=("missing feature id")
+  fi
+  if [[ -f "$yaml" ]]; then
+    while IFS= read -r req; do
+      [[ -z "$req" ]] && continue
+      in_verifies=$(grep -Eq "verifies:.*$req" "$yaml" && echo true || echo false)
+      has_coverage=$(grep -q "$req" "$yaml" && grep -Eq "covered_by:.*(VT-[0-9]{3}|AT-[0-9]{3}|AC-[0-9]{3})" "$yaml" && echo true || echo false)
+      if [[ "$in_verifies" != "true" && "$has_coverage" != "true" ]]; then
+        gaps+=("$req not covered")
+      fi
+    done < <(grep -Eho 'REQ-[0-9]{3}' "$md" "$yaml" | sort -u)
+  fi
+  if [[ ${#gaps[@]} -eq 0 ]]; then
+    echo '[]'
+  else
+    printf '%s\n' "${gaps[@]}" | jq -R . | jq -sc '.'
+  fi
+}
+
 # Build unique contract dirs
 declare -A SEEN=()
 DIRS=()
@@ -104,8 +144,19 @@ if [[ "$OUTPUT" == "json" ]]; then
   for cdir in "${DIRS[@]}"; do
     rel="${cdir#"$ROOT_ABS"/}"
     name="$(grep -m1 '^# ' "$cdir/CONTRACT.md" | sed 's/^# //')"
-    must="$(awk 'BEGIN{n=0} /^##[[:space:]]+Constraints/{n=1;next} /^##[[:space:]]+/{n=0} n && $0 ~ /^- MUST:/{sub(/^- MUST:[[:space:]]*/,"",$0); print $0}' "$cdir/CONTRACT.md")"
-    mustnot="$(awk 'BEGIN{n=0} /^##[[:space:]]+Constraints/{n=1;next} /^##[[:space:]]+/{n=0} n && $0 ~ /^- MUST NOT:/{sub(/^- MUST NOT:[[:space:]]*/,"",$0); print $0}' "$cdir/CONTRACT.md")"
+    yaml="$cdir/CONTRACT.yaml"
+    lifecycle_body="$(yaml_section "$yaml" "lifecycle")"
+    tdd_body="$(yaml_section "$yaml" "tdd")"
+    vt_body="$(yaml_section "$yaml" "verification_tests")"
+    at_body="$(yaml_section "$yaml" "acceptance_tests")"
+    lifecycle_status="$(printf '%s\n' "$lifecycle_body" | awk '$1=="status:" {gsub(/"/,"",$2); print $2; exit}')"
+    [[ -n "$lifecycle_status" ]] || lifecycle_status="missing"
+    vt_total="$(printf '%s\n' "$vt_body" | grep -Ec '^[[:space:]]*-[[:space:]]+(id|name):' || true)"
+    at_total="$(printf '%s\n' "$at_body" | grep -Ec '^[[:space:]]*-[[:space:]]+(id|name):' || true)"
+    gaps_json="$(traceability_gaps_json "$cdir/CONTRACT.md" "$yaml")"
+
+    must="$(awk 'BEGIN{n=0} /^##[[:space:]]+Constraints/{n=1;next} /^##[[:space:]]+/{n=0} n && $0 ~ /^- MUST([[:space:]]+\[REQ-[0-9][0-9][0-9]\])?:/{sub(/^- MUST([[:space:]]+\[REQ-[0-9][0-9][0-9]\])?:[[:space:]]*/,"",$0); print $0}' "$cdir/CONTRACT.md")"
+    mustnot="$(awk 'BEGIN{n=0} /^##[[:space:]]+Constraints/{n=1;next} /^##[[:space:]]+/{n=0} n && $0 ~ /^- MUST NOT([[:space:]]+\[REQ-[0-9][0-9][0-9]\])?:/{sub(/^- MUST NOT([[:space:]]+\[REQ-[0-9][0-9][0-9]\])?:[[:space:]]*/,"",$0); print $0}' "$cdir/CONTRACT.md")"
 
     must_json="[]"
     if [[ -n "$must" ]]; then
@@ -119,9 +170,15 @@ if [[ "$OUTPUT" == "json" ]]; then
     mod_json="$(jq -nc \
       --arg path "$rel" \
       --arg name "${name:-$rel}" \
+      --arg lifecycle_status "$lifecycle_status" \
+      --argjson red "$(yaml_bool "$tdd_body" "red_verified")" \
+      --argjson green "$(yaml_bool "$tdd_body" "green_verified")" \
+      --argjson vt_total "${vt_total:-0}" \
+      --argjson at_total "${at_total:-0}" \
+      --argjson gaps "$gaps_json" \
       --argjson must "$must_json" \
       --argjson mustnot "$mustnot_json" \
-      '{path:$path, name:$name, constraints:{must:$must, must_not:$mustnot}}')"
+      '{path:$path, name:$name, constraints:{must:$must, must_not:$mustnot}, lifecycle:{status:$lifecycle_status}, tdd:{red_verified:$red, green_verified:$green}, verification_tests:{total:$vt_total}, acceptance_tests:{total:$at_total}, traceability:{gaps:$gaps}}')"
     modules_json="$(echo "$modules_json" | jq --argjson mod "$mod_json" '. + [$mod]')"
   done
 
@@ -146,8 +203,13 @@ for cdir in "${DIRS[@]}"; do
   awk 'BEGIN{n=0}
        /^##[[:space:]]+Constraints/{n=1;next}
        /^##[[:space:]]+/{n=0}
-       n && $0 ~ /^- MUST:/{print "  MUST: " substr($0,9)}
-       n && $0 ~ /^- MUST NOT:/{print "  MUST NOT: " substr($0,13)}' "$cdir/CONTRACT.md" || true
+       n && $0 ~ /^- MUST([[:space:]]+\[REQ-[0-9][0-9][0-9]\])?:/{sub(/^- MUST([[:space:]]+\[REQ-[0-9][0-9][0-9]\])?:[[:space:]]*/,"  MUST: "); print}
+       n && $0 ~ /^- MUST NOT([[:space:]]+\[REQ-[0-9][0-9][0-9]\])?:/{sub(/^- MUST NOT([[:space:]]+\[REQ-[0-9][0-9][0-9]\])?:[[:space:]]*/,"  MUST NOT: "); print}' "$cdir/CONTRACT.md" || true
+
+  yaml="$cdir/CONTRACT.yaml"
+  lifecycle_status="$(yaml_section "$yaml" "lifecycle" | awk '$1=="status:" {gsub(/"/,"",$2); print $2; exit}')"
+  [[ -n "$lifecycle_status" ]] || lifecycle_status="missing"
+  echo "  Lifecycle: $lifecycle_status"
 
   echo ""
 done

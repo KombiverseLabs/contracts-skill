@@ -22,6 +22,7 @@ Compare planned or completed work against `CONTRACT.md`:
 - List all functions/classes/exports created or modified
 - Check each against `CONTRACT.yaml` → `features[]` and `validation.exports[]`
 - **New export not in contract?** → Flag: "Created `[name]` which isn't in the contract."
+- **New behavior without `F-*` or `REQ-*` coverage?** → Flag the missing traceability before proposing implementation.
 
 ### 2. Attestation Freshness
 
@@ -41,6 +42,14 @@ Check `registry.yaml` for contracts that `consumed_by` or `depends_on` the chang
 Count features in `CONTRACT.md` vs actual implementation:
 - More features implemented than specified → suggest adding to contract
 - Specified features not implemented → note gap with current status
+- Feature marked `implemented` without `tdd.red_verified`, `tdd.green_verified`, and a passing `VT-001` → recommend reverting status to `in-progress` or running the missing verification.
+
+### 4a. SDD/TDD Lifecycle Review
+
+Check `lifecycle.status` and phase booleans:
+- If `specified`, `clarified`, or `planned` is false, recommend a contract clarification/planning pass before code work.
+- If implementation changed behavior before `CONTRACT.md` was updated, recommend updating `CONTRACT.md`, syncing YAML, then restarting the TDD path.
+- If `REQ-*` IDs are not covered by any `VT-*` or `AC-*`, recommend adding coverage links.
 
 ### 5. Present Review Summary
 

@@ -107,8 +107,8 @@ function Parse-ContractConstraints([string]$ContractMdPath) {
     if ($content -match '(?ms)##\s+Constraints\s*(?<body>.*?)(?:\r?\n##\s+|\z)') {
         $body = $matches['body']
 
-        $must = [regex]::Matches($body, '(?m)^\s*-\s*MUST:\s*(.+?)\s*$') | ForEach-Object { $_.Groups[1].Value.Trim() }
-        $mustNot = [regex]::Matches($body, '(?m)^\s*-\s*MUST\s+NOT:\s*(.+?)\s*$') | ForEach-Object { $_.Groups[1].Value.Trim() }
+        $must = [regex]::Matches($body, '(?m)^\s*-\s*MUST(?:\s+\[REQ-\d{3}\])?:\s*(.+?)\s*$') | ForEach-Object { $_.Groups[1].Value.Trim() }
+        $mustNot = [regex]::Matches($body, '(?m)^\s*-\s*MUST\s+NOT(?:\s+\[REQ-\d{3}\])?:\s*(.+?)\s*$') | ForEach-Object { $_.Groups[1].Value.Trim() }
     }
 
     return [pscustomobject]@{
@@ -129,6 +129,108 @@ function Read-SourceHashFromYaml([string]$YamlPath) {
         return $val.Trim()
     }
     return $null
+}
+
+function Get-YamlSection([string]$YamlContent, [string]$Section) {
+    if ([string]::IsNullOrWhiteSpace($YamlContent)) { return "" }
+    if ($YamlContent -match "(?ms)^$([regex]::Escape($Section))\s*:\s*(?<body>.*?)(?:\r?\n\w[^\r\n]*:\s*|\z)") {
+        return $matches['body']
+    }
+    return ""
+}
+
+function Convert-ToBool($Value) {
+    return "$Value".Trim().ToLowerInvariant() -eq "true"
+}
+
+function Parse-Lifecycle([string]$YamlContent) {
+    $section = Get-YamlSection -YamlContent $YamlContent -Section "lifecycle"
+    $status = "missing"
+    if ($section -match '(?m)^\s*status:\s*"?([^"\r\n]+)"?') {
+        $status = $matches[1].Trim()
+    }
+
+    $result = [ordered]@{
+        status = $status
+        specify = $false
+        clarify = $false
+        plan = $false
+        test_first = $false
+        implement = $false
+        verify = $false
+        attest = $false
+    }
+
+    foreach ($key in @("specify", "clarify", "plan", "test_first", "implement", "verify", "attest")) {
+        if ($section -match "(?m)^\s*$key\s*:\s*(true|false)") {
+            $result[$key] = Convert-ToBool $matches[1]
+        }
+    }
+
+    return [pscustomobject]$result
+}
+
+function Parse-Tdd([string]$YamlContent) {
+    $section = Get-YamlSection -YamlContent $YamlContent -Section "tdd"
+    $red = $false
+    $green = $false
+    if ($section -match '(?m)^\s*red_verified:\s*(true|false)') { $red = Convert-ToBool $matches[1] }
+    if ($section -match '(?m)^\s*green_verified:\s*(true|false)') { $green = Convert-ToBool $matches[1] }
+    return [pscustomobject]@{
+        red_verified = $red
+        green_verified = $green
+    }
+}
+
+function Parse-StatusCounts([string]$YamlContent, [string]$Section) {
+    $body = Get-YamlSection -YamlContent $YamlContent -Section $Section
+    $total = ([regex]::Matches($body, '(?m)^\s*-\s+(?:id|name):')).Count
+    $passing = ([regex]::Matches($body, '(?m)^\s*status:\s*passing')).Count
+    $failing = ([regex]::Matches($body, '(?m)^\s*status:\s*failing')).Count
+    $implemented = ([regex]::Matches($body, '(?m)^\s*status:\s*implemented')).Count
+    return [pscustomobject]@{
+        total = $total
+        passing = $passing
+        failing = $failing
+        implemented = $implemented
+    }
+}
+
+function Parse-AcceptanceTests([string]$YamlContent) {
+    $body = Get-YamlSection -YamlContent $YamlContent -Section "acceptance_tests"
+    $total = ([regex]::Matches($body, '(?m)^\s*-\s+(?:id|name):')).Count
+    $passed = ([regex]::Matches($body, '(?m)^\s*passed:\s*true')).Count
+    return [pscustomobject]@{
+        total = $total
+        passed = $passed
+    }
+}
+
+function Get-TraceabilityGaps([string]$ContractMdPath, [string]$YamlContent) {
+    $gaps = @()
+    $md = if (Test-Path $ContractMdPath) { Get-Content $ContractMdPath -Raw } else { "" }
+    $ids = @([regex]::Matches($md + "`n" + $YamlContent, '\bREQ-\d{3}\b') | ForEach-Object { $_.Value } | Sort-Object -Unique)
+
+    foreach ($id in $ids) {
+        $escaped = [regex]::Escape($id)
+        $coveredBy = $YamlContent -match "id:\s*""?$escaped""?[\s\S]*?covered_by:\s*\[[^\]]*(VT-\d{3}|AC-\d{3})"
+        $verifies = $YamlContent -match "verifies:\s*\[[^\]]*$escaped"
+        if (-not ($coveredBy -or $verifies)) {
+            $gaps += "$id not covered"
+        }
+    }
+
+    if ($md -match "(?ms)##\s+Core Features\s*(?<body>.*?)(?:\r?\n##\s+|\z)") {
+        $featureLines = @($matches['body'] -split "`n" | Where-Object { $_ -match '^\s*-\s*\[[ xX]\]' })
+        foreach ($line in $featureLines) {
+            if ($line -notmatch '\[F-\d{3}\]') {
+                $gaps += "missing feature id"
+                break
+            }
+        }
+    }
+
+    return @($gaps)
 }
 
 $root = (Resolve-Path $Path).Path
@@ -190,6 +292,7 @@ foreach ($dir in ($contractDirs | Sort-Object)) {
 
     $currentHash = Get-Sha256 -FilePath $md
     $storedHash = Read-SourceHashFromYaml -YamlPath $yaml
+    $yamlContent = if (Test-Path $yaml) { Get-Content $yaml -Raw } else { "" }
 
     $driftStatus = 'unknown'
     if ($storedHash -and $currentHash) {
@@ -206,6 +309,13 @@ foreach ($dir in ($contractDirs | Sort-Object)) {
         contract_md = (Get-RelativePath -Root $root -FullPath $md)
         contract_yaml = if (Test-Path $yaml) { (Get-RelativePath -Root $root -FullPath $yaml) } else { $null }
         constraints = $parsed.constraints
+        lifecycle = Parse-Lifecycle -YamlContent $yamlContent
+        tdd = Parse-Tdd -YamlContent $yamlContent
+        verification_tests = Parse-StatusCounts -YamlContent $yamlContent -Section "verification_tests"
+        acceptance_tests = Parse-AcceptanceTests -YamlContent $yamlContent
+        traceability = [pscustomobject]@{
+            gaps = @(Get-TraceabilityGaps -ContractMdPath $md -YamlContent $yamlContent)
+        }
         drift = [pscustomobject]@{
             status = $driftStatus
             current_hash = $currentHash
@@ -245,6 +355,9 @@ foreach ($m in $modules) {
 
     Write-Host "- $title ($($m.path))" -ForegroundColor White
     Write-Host "  Drift: $($m.drift.status)" -ForegroundColor $color
+    Write-Host "  Lifecycle: $($m.lifecycle.status)" -ForegroundColor Gray
+    Write-Host "  TDD: red=$($m.tdd.red_verified), green=$($m.tdd.green_verified)" -ForegroundColor Gray
+    Write-Host "  VTs: $($m.verification_tests.total), Acceptance: $($m.acceptance_tests.total), Traceability gaps: $($m.traceability.gaps.Count)" -ForegroundColor Gray
 
     if ($m.constraints.must.Count -gt 0) {
         Write-Host "  MUST:" -ForegroundColor Gray

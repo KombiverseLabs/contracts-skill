@@ -5,18 +5,18 @@
 [1-3 sentences: the external system and the value of integrating with it]
 
 ## Core Features
-- [ ] Connection management (establish, maintain, retry) → Test: [file or "TODO"]
-- [ ] Authentication/authorization handling → Test: [file or "TODO"]
-- [ ] Request formatting and validation → Test: [file or "TODO"]
-- [ ] Response parsing and error handling → Test: [file or "TODO"]
-- [ ] Rate limiting compliance → Test: [file or "TODO"]
+- [ ] [F-001] Connection management (establish, maintain, retry) -> Test: [file or "TODO"] -> Verifies: [REQ-001]
+- [ ] [F-002] Authentication/authorization handling -> Test: [file or "TODO"] -> Verifies: [REQ-002]
+- [ ] [F-003] Request formatting and validation -> Test: [file or "TODO"] -> Verifies: [REQ-003]
+- [ ] [F-004] Response parsing and error handling -> Test: [file or "TODO"] -> Verifies: [REQ-004]
+- [ ] [F-005] Rate limiting compliance -> Test: [file or "TODO"] -> Verifies: [REQ-005]
 
 ## Constraints
-- MUST: Handle all API error codes gracefully
-- MUST: Implement exponential backoff for retries
-- MUST: Validate all inputs before sending to external system
-- MUST NOT: Expose API keys in logs or error messages
-- MUST NOT: Block the main thread during network operations
+- MUST [REQ-001]: Handle all API error codes gracefully
+- MUST [REQ-002]: Implement exponential backoff for retries
+- MUST [REQ-003]: Validate all inputs before sending to external system
+- MUST NOT [REQ-004]: Expose API keys in logs or error messages
+- MUST NOT [REQ-005]: Block the main thread during network operations
 
 ## Configuration
 | Setting | Description | Required |
@@ -27,10 +27,10 @@
 
 ## Success Criteria
 <!-- Each criterion should reference a test -->
-- [ ] Given valid credentials, when connecting, then auth succeeds → Test: [file]
-- [ ] Given API timeout, when requesting, then retries with backoff → Test: [file]
-- [ ] Given rate limit hit, when requesting, then queues and retries → Test: [file]
-- [ ] Given service unavailable, when requesting, then degrades gracefully → Test: [file]
+- [ ] [AC-001] Given valid credentials, when connecting, then auth succeeds -> Test: [file] -> Verifies: [REQ-002]
+- [ ] [AC-002] Given API timeout, when requesting, then retries with backoff -> Test: [file] -> Verifies: [REQ-001, REQ-002]
+- [ ] [AC-003] Given rate limit hit, when requesting, then queues and retries -> Test: [file] -> Verifies: [REQ-005]
+- [ ] [AC-004] Given service unavailable, when requesting, then degrades gracefully -> Test: [file] -> Verifies: [REQ-001]
 
 ## Out of Scope
 <!-- What this integration does NOT handle (e.g., billing, admin features). -->
@@ -38,15 +38,15 @@
 
 ## Acceptance Tests
 <!-- REQUIRED. At least one measurable done-criterion beyond VTs. -->
-- [ ] All verification tests pass
-- [ ] Build succeeds
-- [ ] Integration test suite passes against staging
-- [ ] [Additional measurable criterion — e.g., latency target, error rate]
+- [ ] [AT-001] All verification tests pass
+- [ ] [AT-002] Build succeeds
+- [ ] [AT-003] Integration test suite passes against staging
+- [ ] [AT-004] [Additional measurable criterion, e.g. latency target or error rate]
 
 ## Verification Tests
 <!--
   1-3 tests that prove the integration ACTUALLY CONNECTS and RETURNS REAL DATA.
-  Integration tests are worthless if they only test mocks. At least VT-1 must
+  Integration tests are worthless if they only test mocks. At least VT-001 must
   hit the real external system (or a faithful staging environment).
 
   PRINCIPLE: Verify the CONTENT of the response, not just the HTTP status.
@@ -66,13 +66,15 @@
   - The assertion must check response CONTENT, not just shape/status
   - Ask: "Could a misconfigured integration pass this test?" → No = good test
 -->
-- [ ] **VT-1: [Real round-trip name]**
+- [ ] **VT-001: [Real round-trip name]**
   - Do: [send minimal valid request → capture response]
   - Assert: [domain-specific content in response — not just status/shape]
+  - Verifies: [REQ-001, REQ-003, REQ-004]
 
-- [ ] **VT-2: [Failure resilience name]** *(if standard/complex tier)*
+- [ ] **VT-002: [Failure resilience name]** *(if standard/complex tier)*
   - Do: [trigger timeout/error condition]
   - Assert: [specific fallback output — not generic error]
+  - Verifies: [REQ-001, REQ-002]
 
 ## Notes
 - [Link to API documentation]

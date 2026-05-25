@@ -17,6 +17,7 @@ Initialization is agent-led. Scripts may assist analysis, but the agent owns dis
    - `CONTRACT.md` from `references/templates/`
    - `CONTRACT.yaml` with normalized SHA256 of the draft `CONTRACT.md`
    - `.contracts/registry.yaml`
+   - `.contracts/CONSTITUTION.md`
    - `.contracts/CONTRACTS-GUIDE.md` from `references/project-guide.md`
 6. Show the draft or diff to the user.
 7. Write files only after explicit approval.
@@ -39,11 +40,13 @@ Never run apply mode without both `--apply` and `--yes`, and never treat helper 
 Good contracts:
 
 - describe the user or system responsibility in `Purpose`
-- map features to real or planned tests
-- express constraints as testable MUST/MUST NOT statements
+- map features to real or planned tests with stable `F-*` IDs
+- express constraints as testable `MUST [REQ-*]` / `MUST NOT [REQ-*]` statements
 - include out-of-scope boundaries
-- include at least one measurable acceptance test
-- define VTs with content/value/state assertions, not only "no error" or "status 200"
+- include measurable acceptance criteria with `AC-*` IDs and acceptance tests (gates) with `AT-*` IDs
+- define VTs with `VT-*` IDs and content/value/state assertions, not only "no error" or "status 200"
+- link every `REQ-*` to at least one `VT-*`, `AC-*`, or `AT-*`
+- reach lifecycle status `specified`, then `clarified`, then `planned` before implementation
 
 Use `references/examples/` to match the expected quality level.
 
@@ -58,4 +61,4 @@ Use `references/examples/` to match the expected quality level.
 
 ## After Writing
 
-Tell the user to review each `CONTRACT.md`, remove draft markers when satisfied, and commit `.contracts/` plus contract files. Recommend implementing VT-1 for each new contract before broad feature work. If contract locking is enabled, run the lock script after human approval.
+Tell the user to review each `CONTRACT.md`, remove draft markers when satisfied, and commit `.contracts/` plus contract files. Recommend implementing VT-001 and the first red/green TDD path for each new contract before broad feature work. If contract locking is enabled, run the lock script after human approval.

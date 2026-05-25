@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-05-25
+
+### Added
+
+- Spec-Driven Development (SDD/TDD) lifecycle tracking with `lifecycle:`, `requirements:`, `acceptance_criteria:`, and `tdd:` sections in CONTRACT.yaml.
+- Traceability IDs (`F-001`, `REQ-001`, `AC-001`, `AT-001`, `VT-001`) for all new or migrated contracts.
+- `AT-*` prefix for acceptance tests (aggregate gates like "All VTs pass"), distinct from `AC-*` acceptance criteria (Given/When/Then specifications).
+- `references/constitution.md` — project constitution template for `.contracts/CONSTITUTION.md`.
+- `references/spec-driven-methodology.md` — Spec-Kit-inspired lifecycle, traceability, and TDD evidence rules.
+- Lifecycle gate enforcement in preflight and validation scripts: no implementation before specify/clarify/plan.
+- TDD evidence tracking (`red_verified`/`green_verified`) in CONTRACT.yaml with timestamp support.
+- Traceability gap detection in `validate-contracts.ps1` and `contract-preflight.sh`.
+- Init-agent now generates CONSTITUTION.md during project initialization.
+
+### Changed
+
+- Sample project contracts migrated to the new ID scheme and SDD/TDD schema.
+- All four templates (core, feature, integration, utility) updated with SDD/TDD sections and `AT-*` acceptance test IDs.
+- Reference examples (auth-core, dashboard-feature, stripe-integration) updated with `AT-*` IDs.
+- Validation scripts now check for `VT-*`, `AT-*`, and `AC-*` traceability links.
+- Removed redundant `source_id` field from CONTRACT.yaml requirements (always duplicated `id`).
+- Expanded `must_not` in YAML template from empty array to structured example matching `must`.
+
+### Fixed
+
+- PowerShell operator precedence bug in `validate-contracts.ps1` traceability check that could report false coverage.
+- Bash traceability regex in `contract-preflight.sh` that could never match across lines, producing false gaps.
+
 ## [2.8.1] - 2026-05-09
 
 ### Fixed

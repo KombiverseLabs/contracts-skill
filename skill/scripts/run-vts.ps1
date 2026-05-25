@@ -259,6 +259,17 @@ function Update-YamlVtStatus([string]$YamlPath, [array]$Results) {
         $content = $content -replace "(id:\s*`"$($r.id)`"[\s\S]*?)last_result:\s*\S+", "`$1last_result: $(if ($r.status -eq 'passing') { 'pass' } else { 'fail' })"
     }
 
+    $allRunnablePassed = ($Results | Where-Object { $_.status -ne "skipped" -and $_.status -ne "passing" }).Count -eq 0 -and
+                         ($Results | Where-Object { $_.status -ne "skipped" }).Count -gt 0
+    $passText = if ($allRunnablePassed) { "true" } else { "false" }
+    $confidence = if ($allRunnablePassed) { "high" } elseif (($Results | Where-Object { $_.status -eq "failing" }).Count -gt 0) { "medium" } else { "low" }
+
+    if ($content -match "(?m)^attestation\s*:") {
+        $content = $content -replace "(verification_tests_pass:\s*)\S+", "`$1$passText"
+        $content = $content -replace "(last_verified:\s*)\S+", "`$1`"$now`""
+        $content = $content -replace "(confidence:\s*)\S+", "`$1$confidence"
+    }
+
     Set-Content $YamlPath -Value $content -NoNewline
 }
 
@@ -314,7 +325,11 @@ foreach ($yamlFile in $yamlFiles) {
 
 # Output
 if ($OutputFormat -eq 'json') {
-    $allResults | ConvertTo-Json -Depth 10
+    if ($allResults.Count -eq 0) {
+        Write-Output "[]"
+    } else {
+        $allResults | ConvertTo-Json -Depth 10
+    }
 } elseif ($OutputFormat -eq 'cvr') {
     # Contract Verification Report — one CVR per module
     $cvrReports = @()

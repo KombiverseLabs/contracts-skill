@@ -179,6 +179,69 @@ function Test-FeatureCoverage {
     return $warnings
 }
 
+function Test-SddTraceability {
+    param(
+        [string]$ContractMdPath,
+        [string]$YamlPath
+    )
+
+    $md = Get-Content $ContractMdPath -Raw
+    $yaml = Get-Content $YamlPath -Raw
+    $warnings = @()
+
+    $recommendedKeys = @("lifecycle", "requirements", "acceptance_criteria", "verification_tests", "acceptance_tests", "tdd", "attestation")
+    foreach ($key in $recommendedKeys) {
+        if ($yaml -notmatch "(?m)^${key}\s*:") {
+            $warnings += "Missing SDD/TDD schema section: $key"
+        }
+    }
+
+    if ($md -match "(?ms)##\s+Core Features\s*(?<body>.*?)(?:\r?\n##\s+|\z)") {
+        $featureLines = @($matches['body'] -split "`n" | Where-Object { $_ -match '^\s*-\s*\[[ xX]\]' })
+        foreach ($line in $featureLines) {
+            if ($line -notmatch '\[F-\d{3}\]') {
+                $warnings += "Missing feature id in CONTRACT.md Core Features (expected [F-001] style): $($line.Trim())"
+                break
+            }
+        }
+    }
+
+    if ($yaml -match "(?ms)^features\s*:\s*(?<body>.*?)(?:\r?\n\w|\z)") {
+        $featureBody = $matches['body']
+        if ($featureBody -match '(?m)^\s+id:\s*(""|$)') {
+            $warnings += "Missing feature id in CONTRACT.yaml features (expected F-001 style)"
+        }
+    }
+
+    $reqMatches = [regex]::Matches($md, '\[(REQ-\d{3})\]')
+    $reqIds = @($reqMatches | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
+
+    foreach ($reqId in $reqIds) {
+        $escapedReq = [regex]::Escape($reqId)
+        $inVerifies = $yaml -match "verifies:\s*\[[^\]]*$escapedReq"
+        $hasCoverage = ($yaml -match "covered_by:\s*\[[^\]]*(VT-\d{3}|AT-\d{3}|AC-\d{3})[^\]]*\]") -and
+                       ($yaml -match $escapedReq)
+        $covered = $inVerifies -or $hasCoverage
+
+        if (-not $covered) {
+            $warnings += "$reqId is not covered by any VT-*, AT-*, or AC-* traceability link"
+        }
+    }
+
+    $mustLines = [regex]::Matches($md, '(?m)^\s*-\s*MUST(?:\s+NOT)?(?:\s+\[REQ-\d{3}\])?:\s*(.+)$')
+    foreach ($m in $mustLines) {
+        $line = $m.Value
+        if ($line -notmatch '\[REQ-\d{3}\]') {
+            $warnings += "MUST/MUST NOT constraint lacks REQ id: $($line.Trim())"
+        }
+        if ($line -match '\b(correctly|properly|fast|secure|robust|user-friendly|as needed)\b') {
+            $warnings += "Requirement may be untestable or vague: $($line.Trim())"
+        }
+    }
+
+    return $warnings
+}
+
 function Test-DependencyImpact {
     param(
         [string]$ModulePath,
@@ -339,7 +402,17 @@ foreach ($mdFile in $contractFiles) {
         Write-Result -Type "warn" -Path $relativePath -Message $aw
     }
 
-    # Check 7: Dependency impact
+    # Check 7: SDD/TDD traceability and schema quality
+    $traceWarnings = Test-SddTraceability -ContractMdPath $mdFile.FullName -YamlPath $yamlPath
+    foreach ($tw in $traceWarnings) {
+        $results.warnings += @{
+            path = $relativePath
+            message = $tw
+        }
+        Write-Result -Type "warn" -Path $relativePath -Message $tw
+    }
+
+    # Check 8: Dependency impact
     $depWarnings = Test-DependencyImpact -ModulePath $mdFile.FullName -RootPath $Path
     foreach ($dw in $depWarnings) {
         $results.warnings += @{
@@ -352,7 +425,7 @@ foreach ($mdFile in $contractFiles) {
 
 # Summary
 Write-Host ""
-Write-Host "=" * 50 -ForegroundColor DarkGray
+Write-Host ("=" * 50) -ForegroundColor DarkGray
 Write-Host "Summary:" -ForegroundColor Cyan
 Write-Host "  Scanned:  $($results.scanned)"
 Write-Host "  Passed:   $($results.passed)" -ForegroundColor Green

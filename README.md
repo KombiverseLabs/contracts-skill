@@ -10,6 +10,8 @@ Contracts keep code changes aligned with durable module specs:
 - `CONTRACT.md` is the human-owned specification.
 - `CONTRACT.yaml` is the AI-maintained technical mapping for hashes, status, VTs, acceptance tests, and attestation.
 - A contract preflight checks drift and constraints before implementation.
+- The default lifecycle is Spec-Kit-inspired without requiring `specify`: Specify -> Clarify -> Plan -> Test First -> Implement -> Verify -> Attest.
+- New or migrated contracts use traceability IDs: `F-001`, `REQ-001`, `AC-001`, `AT-001`, and `VT-001`.
 
 ## Installation
 
@@ -93,6 +95,9 @@ contracts-skill/
 │   │   ├── instruction-hooks/
 │   │   ├── templates/
 │   │   ├── examples/
+│   │   ├── project-guide.md
+│   │   ├── constitution.md
+│   │   ├── spec-driven-methodology.md
 │   │   ├── contract-locking.md
 │   │   └── beads-enforcement.md
 │   ├── scripts/

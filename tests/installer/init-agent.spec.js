@@ -123,8 +123,26 @@ test('init-agent apply --yes writes synced contract hash', async () => {
     expect(fs.existsSync(guidePath)).toBe(true);
 
     const expectedHash = sha256Contract(readFile(mdPath));
-    expect(readFile(yamlPath)).toContain(`source_hash: "${expectedHash}"`);
+    const mdText = readFile(mdPath);
+    const yamlText = readFile(yamlPath);
+
+    expect(yamlText).toContain(`source_hash: "${expectedHash}"`);
     expect(readFile(guidePath)).toContain('sample-init-project');
+    expect(readFile(path.join(projectRoot, '.contracts', 'CONSTITUTION.md'))).toContain('Contract Constitution');
+
+    expect(mdText).toContain('[F-001]');
+    expect(mdText).toContain('MUST [REQ-001]');
+    expect(mdText).toContain('[AC-001]');
+    expect(mdText).toContain('VT-001');
+
+    expect(yamlText).toMatch(/^lifecycle:/m);
+    expect(yamlText).toMatch(/^requirements:/m);
+    expect(yamlText).toMatch(/^acceptance_criteria:/m);
+    expect(yamlText).toMatch(/^verification_tests:/m);
+    expect(yamlText).toMatch(/^tdd:/m);
+    expect(yamlText).toMatch(/^attestation:/m);
+    expect(yamlText).toContain('red_verified: false');
+    expect(yamlText).toContain('green_verified: false');
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }

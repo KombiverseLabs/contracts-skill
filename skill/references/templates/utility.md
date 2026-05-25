@@ -6,16 +6,16 @@
 Example: "Collection of string manipulation helpers used across the application."
 
 ## Core Functions/Methods
-- [ ] `function1(param)` - Brief description
-- [ ] `function2(param)` - Brief description
-- [ ] `function3(param)` - Brief description
+- [ ] [F-001] `function1(param)` - Brief description -> Test: [file or "TODO"] -> Verifies: [REQ-001]
+- [ ] [F-002] `function2(param)` - Brief description -> Test: [file or "TODO"] -> Verifies: [REQ-002]
+- [ ] [F-003] `function3(param)` - Brief description -> Test: [file or "TODO"] -> Verifies: [REQ-003]
 
 ## Constraints
-- MUST: Be pure functions (no side effects)
-- MUST: Handle null/undefined inputs gracefully
-- MUST: Include JSDoc/type annotations
-- MUST NOT: Depend on external state
-- MUST NOT: Throw unexpected exceptions (return Results/Options instead)
+- MUST [REQ-001]: Be pure functions (no side effects)
+- MUST [REQ-002]: Handle null/undefined inputs gracefully
+- MUST [REQ-003]: Include JSDoc/type annotations
+- MUST NOT [REQ-004]: Depend on external state
+- MUST NOT [REQ-005]: Throw unexpected exceptions (return Results/Options instead)
 
 ## API
 
@@ -34,10 +34,10 @@ const result = function1(input);
 ```
 
 ## Success Criteria
-- [ ] All functions have unit tests
-- [ ] 100% code coverage
-- [ ] Documentation complete for all exports
-- [ ] No dependencies on other project modules
+- [ ] [AC-001] All functions have unit tests -> Verifies: [REQ-001, REQ-002]
+- [ ] [AC-002] 100% code coverage -> Verifies: [REQ-001]
+- [ ] [AC-003] Documentation complete for all exports -> Verifies: [REQ-003]
+- [ ] [AC-004] No dependencies on other project modules -> Verifies: [REQ-004]
 
 ## Out of Scope
 <!-- What this utility does NOT handle. -->
@@ -45,9 +45,9 @@ const result = function1(input);
 
 ## Acceptance Tests
 <!-- REQUIRED. At least one measurable done-criterion. -->
-- [ ] All verification tests pass
-- [ ] Build succeeds
-- [ ] [Additional measurable done-criterion]
+- [ ] [AT-001] All verification tests pass
+- [ ] [AT-002] Build succeeds
+- [ ] [AT-003] [Additional measurable done-criterion]
 
 ## Verification Tests
 <!--
@@ -68,9 +68,10 @@ const result = function1(input);
   - The expected output must be exact (not "looks right" but "equals X")
   - Ask: "If the core algorithm was broken, would this test catch it?" → Yes = good test
 -->
-- [ ] **VT-1: [Composite correctness check name]**
+- [ ] **VT-001: [Composite correctness check name]**
   - Do: [call with input that exercises multiple code paths]
   - Assert: [exact expected output — literal value comparison]
+  - Verifies: [REQ-001, REQ-002]
 
 ## Notes
 - Keep this module dependency-free when possible

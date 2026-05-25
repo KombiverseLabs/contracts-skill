@@ -171,12 +171,16 @@ for yf in "${YAML_FILES[@]}"; do
     continue
   fi
 
-  # Extract VT IDs
+  # Extract VT IDs from verification_tests only
   vt_ids=()
   while IFS= read -r line; do
     id="$(echo "$line" | sed 's/.*"\(.*\)".*/\1/')"
     [[ -n "$id" ]] && vt_ids+=("$id")
-  done < <(echo "$yaml_content" | grep -E '^\s+-\s+id:' || true)
+  done < <(echo "$yaml_content" | awk '
+    /^verification_tests:/ {in_vt=1; next}
+    in_vt && /^[A-Za-z_][A-Za-z0-9_]*:/ {exit}
+    in_vt && /^[[:space:]]*-[[:space:]]+id:/ {print}
+  ' || true)
 
   if [[ ${#vt_ids[@]} -eq 0 ]]; then
     continue
@@ -200,7 +204,7 @@ for yf in "${YAML_FILES[@]}"; do
     IFS='|' read -r r_status r_matched r_duration r_details <<< "$result"
 
     # Convert matched string to boolean for jq
-    local matched_bool="false"
+    matched_bool="false"
     [[ "$r_matched" == "true" ]] && matched_bool="true"
 
     VT_RESULTS+=("$(jq -nc \
@@ -228,8 +232,30 @@ for yf in "${YAML_FILES[@]}"; do
     fi
   done
 
+  if $UPDATE_YAML; then
+    passing_count=0
+    failing_count=0
+    runnable_count=0
+    for result_json in "${VT_RESULTS[@]}"; do
+      status="$(echo "$result_json" | jq -r '.status')"
+      [[ "$status" == "skipped" ]] && continue
+      runnable_count=$((runnable_count + 1))
+      [[ "$status" == "passing" ]] && passing_count=$((passing_count + 1))
+      [[ "$status" == "failing" ]] && failing_count=$((failing_count + 1))
+    done
+    now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    if [[ $runnable_count -gt 0 && $passing_count -eq $runnable_count ]]; then
+      pass_text="true"; confidence="high"
+    elif [[ $failing_count -gt 0 ]]; then
+      pass_text="false"; confidence="medium"
+    else
+      pass_text="false"; confidence="low"
+    fi
+    sed -i.bak -E "s/(verification_tests_pass:[[:space:]]*).*/\1$pass_text/; s/(last_verified:[[:space:]]*).*/\1\"$now\"/; s/(confidence:[[:space:]]*).*/\1$confidence/" "$yf"
+    rm -f "${yf}.bak"
+  fi
+
   # Build module JSON with jq
-  local vt_json_array
   vt_json_array="$(printf '%s\n' "${VT_RESULTS[@]}" | jq -sc '.')"
   JSON_MODULES+=("$(jq -nc --arg mod "$mod_name" --arg path "$mod_path" --argjson vts "$vt_json_array" \
     '{module:$mod, path:$path, vt_results:$vts}')")
@@ -237,7 +263,11 @@ done
 
 # Output
 if [[ "$OUTPUT" == "json" ]]; then
-  printf '%s\n' "${JSON_MODULES[@]}" | jq -sc '.'
+  if [[ ${#JSON_MODULES[@]} -eq 0 ]]; then
+    echo '[]'
+  else
+    printf '%s\n' "${JSON_MODULES[@]}" | jq -sc '.'
+  fi
 elif [[ "$OUTPUT" == "cvr" ]]; then
   # Contract Verification Report — one per module
   cvr_array="[]"

@@ -2,46 +2,94 @@
 # This file is auto-synced with CONTRACT.md.
 
 meta:
-  source_hash: "sha256:4901e08fb0dac50f7156e69bffa34c628d71a8c2efdd13dde68b2a694bef89b4"
-  last_sync: "2026-02-28T12:00:00Z"
+  source_hash: "sha256:b1a3a1f948b8b854869d320435a6ff3759d5a2c9d55841516e4cc64488968142"
+  last_sync: "2026-05-09T12:00:00Z"
   tier: core
-  version: "1.1"
+  version: "1.2"
 
 module:
   name: "auth"
   type: "core"
   path: "src/core/auth"
 
+lifecycle:
+  status: attested
+  specify: true
+  clarify: true
+  plan: true
+  test_first: true
+  implement: true
+  verify: true
+  attest: true
+
 features:
-  - id: "email-password-login"
+  - id: "F-001"
     description: "Email/password login"
     status: implemented
     entry_point: "./login.ts"
     tests: "./login.test.ts"
-
-  - id: "session-tokens"
+    verifies: ["REQ-001"]
+  - id: "F-002"
     description: "Session tokens with automatic refresh"
     status: implemented
     entry_point: "./session.ts"
     tests: "./session.test.ts"
-
-  - id: "oauth2-integration"
+    verifies: ["REQ-002", "REQ-003"]
+  - id: "F-003"
     description: "OAuth2 integration (Google, GitHub)"
     status: planned
     notes: "Waiting for OAuth app credentials"
-
-  - id: "password-reset"
+    verifies: ["REQ-003"]
+  - id: "F-004"
     description: "Password reset via email"
     status: planned
+    verifies: ["REQ-004"]
+
+requirements:
+  - id: "REQ-001"
+    level: MUST
+    text: "Use bcrypt with cost factor 12 for password hashing"
+
+    covered_by: ["VT-001", "AC-001"]
+  - id: "REQ-002"
+    level: MUST
+    text: "Expire sessions after 24 hours of inactivity"
+
+    covered_by: ["VT-001", "AC-002"]
+  - id: "REQ-003"
+    level: MUST
+    text: "Use HTTP-only cookies for session tokens"
+
+    covered_by: ["VT-001"]
+  - id: "REQ-004"
+    level: MUST NOT
+    text: "Store passwords in plain text"
+
+    covered_by: ["AC-003"]
+  - id: "REQ-005"
+    level: MUST NOT
+    text: "Log sensitive authentication data"
+
+    covered_by: ["AC-003"]
 
 constraints:
   must:
-    - "Use bcrypt with cost factor 12 for password hashing"
-    - "Expire sessions after 24 hours of inactivity"
-    - "Use HTTP-only cookies for session tokens"
+    - id: "REQ-001"
+      text: "Use bcrypt with cost factor 12 for password hashing"
+      covered_by: ["VT-001", "AC-001"]
+    - id: "REQ-002"
+      text: "Expire sessions after 24 hours of inactivity"
+      covered_by: ["VT-001", "AC-002"]
+    - id: "REQ-003"
+      text: "Use HTTP-only cookies for session tokens"
+      covered_by: ["VT-001"]
   must_not:
-    - "Store passwords in plain text"
-    - "Log sensitive authentication data"
+    - id: "REQ-004"
+      text: "Store passwords in plain text"
+      covered_by: ["AC-003"]
+    - id: "REQ-005"
+      text: "Log sensitive authentication data"
+      covered_by: ["AC-003"]
 
 relationships:
   depends_on: []
@@ -53,23 +101,60 @@ validation:
   test_pattern: "*.test.ts"
   custom_script: null
 
+acceptance_criteria:
+  - id: "AC-001"
+    description: "Given valid credentials, when login() is called, then returns session token within 200ms"
+    verifies: ["REQ-001"]
+    test_file: "./login.test.ts"
+  - id: "AC-002"
+    description: "Given expired session, when validateSession() is called, then returns false and triggers refresh"
+    verifies: ["REQ-002"]
+    test_file: "./session.test.ts"
+  - id: "AC-003"
+    description: "All verification tests pass without plaintext secrets in output"
+    verifies: ["REQ-004", "REQ-005"]
+    test_file: "./auth.vt.test.ts"
+
 verification_tests:
-  - id: "VT-1"
+  - id: "VT-001"
     name: "Full auth round-trip with credential verification"
     status: passing
+    verifies: ["REQ-001", "REQ-002", "REQ-003"]
     test_file: "./auth.vt.test.ts"
+    test_command: ""
+    assertion_type: content
+    expected_output: ""
     last_run: "2026-02-28T12:00:00Z"
     last_result: pass
 
+acceptance_tests:
+  - id: "AT-001"
+    name: "All VTs pass"
+    type: vt_pass
+    target: "all"
+    verifies: ["REQ-001", "REQ-002", "REQ-003", "REQ-004", "REQ-005"]
+    passed: true
+
+tdd:
+  red_verified: true
+  green_verified: true
+  last_red_run: "2026-02-28T11:55:00Z"
+  last_green_run: "2026-02-28T12:00:00Z"
+  test_plan: ["./login.test.ts", "./session.test.ts", "./auth.vt.test.ts"]
+
 attestation:
-  contract_version: "1.1"
+  contract_version: "1.2"
   last_verified: "2026-02-28T12:00:00Z"
   verification_tests_pass: true
-  features_implemented: ["email-password-login", "session-tokens"]
+  features_implemented: ["F-001", "F-002"]
   confidence: high
-  next_review: "2026-03-30T12:00:00Z"
+  next_review: "2026-06-08T12:00:00Z"
 
 changelog:
+  - date: "2026-05-09"
+    version: "1.2"
+    change: "Migrated to SDD/TDD traceability IDs and lifecycle metadata"
+    author: "system"
   - date: "2026-02-28"
     version: "1.1"
     change: "Added verification tests and attestation; updated success criteria"
